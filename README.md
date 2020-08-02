@@ -21,8 +21,12 @@ $ py -m wizwalker
 ```
 
 ## building
+You'll need the dev install (see above) for this to work
 ```shell script
-$ pyinstaller -F --uac-admin wizwalker/__main__.py
+# Admin if needed
+$ pyinstaller -F --uac-admin --name WizWalker wizwalker/__main__.py
+# Normal
+$ pyinstaller -F --name WizWalker wizwalker/__main__.py
 ```
 
 ## console commands
