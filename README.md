@@ -10,11 +10,11 @@ join the offical discord [here]()
 ## development install
 This package uses [poetry](https://python-poetry.org/)
 ```shell script
-$ poetry install --dev
+$ poetry install
 ```
 
 ## running
-Shell must have admin perms
+Shell may need admin perms
 ```shell script
 $ poetry shell
 $ py -m wizwalker

@@ -1,120 +1,149 @@
 import logging
 import struct
 import threading
+from typing import Any, Tuple, Optional
 
 import pymem
 import pymem.pattern
 
+from pymem.ressources.structure import MODULEINFO
+
 logger = logging.getLogger(__name__)
 
 
-class CordReaderThread(threading.Thread):
+class MemoryHook:
     def __init__(self, memory_handler):
-        super().__init__()
         self.memory_handler = memory_handler
+        self.jump_original_bytecode = None
 
-    def run(self) -> None:
-        process = self.memory_handler.process
-        cord_struct = self.memory_handler.cord_struct_addr
-        while True:
-            self.memory_handler.x = process.read_float(cord_struct)
-            self.memory_handler.y = process.read_float(cord_struct + 0x4)
-            self.memory_handler.z = process.read_float(cord_struct + 0x8)
+        self.hook_address = None
+        self.jump_address = None
 
-class MemoryHandler:
-    MODULE_NAME = "WizardGraphicalClient.exe"
-    TARGET_SIGNATURE = b"\x8B\x48\x2C\x8B\x50\x30\x8B\x40\x34\xEB\x2A"
+        self.jump_bytecode = None
+        self.hook_bytecode = None
 
-    def __init__(self, pid: int):
-        self.process = pymem.Pymem()
-        self.process.open_process_from_id(pid)
-        self.process.check_wow64()
-
-        self.cord_thread = None
-        self.cord_struct_addr = None
-        self.x = None
-        self.y = None
-        self.z = None
-
-    def start_cord_thread(self):
-        self.cord_struct_addr = self.inject_cord_reader()
-        self.cord_thread = CordReaderThread(self)
-        self.cord_thread.start()
-
-    def inject_cord_reader(self):
+    def get_jump_address(self, pattern: bytes, mask: str, *, module=None) -> int:
         """
-        Injects bytecode to construct a structre for player cords and returns it
+        gets the address to write jump at
         """
-        module = pymem.process.module_from_name(self.process.process_handle, self.MODULE_NAME)
-        logger.debug(f"module={module}")
+        if module:
+            jump_address = pymem.pattern.pattern_scan_module(
+                self.memory_handler.process.process_handle,
+                module,
+                pattern,
+                mask
+            )
 
-        target_func = pymem.pattern.pattern_scan_module(
-            self.process.process_handle,
-            module,
-            self.TARGET_SIGNATURE,
-            "x" * len(self.TARGET_SIGNATURE)
+        else:
+            # Todo: find faster way than scanning entire memory
+            raise NotImplemented()
+
+        return jump_address
+
+    def get_hook_address(self, size: int) -> int:
+        hook_address = self.memory_handler.process.allocate(size)
+        return hook_address
+
+    def get_jump_bytecode(self) -> bytes:
+        """
+        Gets the bytecode to write to the jump address
+        """
+        raise NotImplemented()
+
+    def get_hook_bytecode(self) -> bytes:
+        """
+        Gets the bytecord to write to the hook address
+        """
+        raise NotImplemented()
+
+    def get_pattern_and_mask(self) -> Tuple[bytes, Optional[str], Optional[MODULEINFO]]:
+        raise NotImplemented()
+
+    def hook(self) -> Any:
+        """
+        Writes jump_bytecode to jump address and hook bytecode to hook address
+        """
+        pattern, mask, module = self.get_pattern_and_mask()
+
+        if mask is None:
+            mask = "x" * len(pattern)
+
+        self.jump_address = self.get_jump_address(pattern, mask, module=module)
+        self.hook_address = self.get_hook_address(200)
+
+        self.jump_bytecode = self.get_jump_bytecode()
+        self.hook_bytecode = self.get_hook_bytecode()
+
+        self.jump_original_bytecode = self.memory_handler.process.read_bytes(
+            self.jump_address,
+            len(self.jump_bytecode)
         )
-        logger.debug(f"target_func={target_func} ({hex(target_func)})")
 
-        jump_mem = self.process.allocate(1000)
-        logger.debug(f"jump_mem={jump_mem} ({hex(jump_mem)})")
-
-        player_cords_struct = self.process.allocate(12)  # 3 4 byte long cords
-        logger.debug(f"player_cords_struct={player_cords_struct} ({hex(player_cords_struct)})")
-
-        jumper_byte_code = self.get_jumper_bytecode(target_func, jump_mem)
-        logger.debug(f"jumper_byte_code={jumper_byte_code}")
-
-        return_jump_addr = target_func + len(jumper_byte_code)
-        logger.debug(f"return_jump_addr={return_jump_addr} ({hex(return_jump_addr)})")
-
-        bytecode = self.construct_byte_code(player_cords_struct, return_jump_addr, jump_mem)
-        logger.debug(f"bytecode={bytecode}")
-
+        # pymem doesnt have write_bytes on the Pymem obj, will fix later
         pymem.memory.write_bytes(
-            self.process.process_handle,
-            jump_mem,
-            bytecode,
-            len(bytecode)
+            self.memory_handler.process.process_handle,
+            self.hook_address,
+            self.hook_bytecode,
+            len(self.hook_bytecode)
         )
-
         pymem.memory.write_bytes(
-            self.process.process_handle,
-            target_func,
-            jumper_byte_code,
-            len(jumper_byte_code)
+            self.memory_handler.process.process_handle,
+            self.jump_address,
+            self.jump_bytecode,
+            len(self.jump_bytecode)
         )
 
-        return player_cords_struct
+        return None
 
-    @staticmethod
-    def construct_byte_code(player_cords: int, return_addr: int, inject_point: int) -> bytes:
+    def unhook(self):
         """
-        Converts an address into bytecode for us to inject
+        Deallocates hook memory and rewrites jump addr to it's origional code,
+        also called when a client is closed
+        """
+        pymem.memory.write_bytes(
+            self.memory_handler.process.process_handle,
+            self.jump_address,
+            self.jump_original_bytecode,
+            len(self.jump_original_bytecode)
+        )
+        self.memory_handler.process.free(self.hook_address)
 
-        ---
-        314B0000 - 8B C8                 - mov ecx,eax
-        314B0002 - 81 C1 2C030000        - add ecx,0000032C { 812 }
-        314B0008 - 8B 11                 - mov edx,[ecx]
-        314B000A - 83 FA 08              - cmp edx,08 { 8 }
-        314B000D - 0F85 23000000         - jne 314B0036
-        314B0013 - 8B C8                 - mov ecx,eax
-        314B0015 - 83 C1 2C              - add ecx,2C { 44 }
-        314B0018 - 8B 11                 - mov edx,[ecx]
-        314B001A - 89 15 00084B31        - mov [player_cords],edx { (790.40) }
-        314B0020 - 83 C1 04              - add ecx,04 { 4 }
-        314B0023 - 8B 11                 - mov edx,[ecx]
-        314B0025 - 89 15 04084B31        - mov [314B0804],edx { (-15.88) }
-        314B002B - 83 C1 04              - add ecx,04 { 4 }
-        314B002E - 8B 11                 - mov edx,[ecx]
-        314B0030 - 89 15 08084B31        - mov [314B0808],edx { (-28.79) }
-        314B0036 - 8B 48 2C              - mov ecx,[eax+2C]
-        314B0039 - 8B 50 30              - mov edx,[eax+30]
-        314B003C - E9 ACBA99CF           - jmp WizardGraphicalClient.exe+A4BAED
+
+class CordHook(MemoryHook):
+    def __init__(self, memory_handler):
+        super().__init__(memory_handler)
+        self.cord_struct = None
+
+    def get_pattern_and_mask(self) -> Tuple[bytes, Optional[str], Optional[MODULEINFO]]:
+        module = pymem.process.module_from_name(
+            self.memory_handler.process.process_handle,
+            "WizardGraphicalClient.exe"
+        )
+        return b"\x8B\x48\x2C\x8B\x50\x30\x8B\x40\x34\xEB\x2A", None, module
+
+    def set_cord_struct(self):
+        self.cord_struct = self.memory_handler.process.allocate(12)
+
+    def free_cord_struct(self):
+        if self.cord_struct:
+            self.memory_handler.process.free(self.cord_struct)
+
+    def get_jump_bytecode(self) -> bytes:
         """
-        packed_addr = struct.pack("<i", player_cords)  # litte-endian int
-        packed_addr_4 = struct.pack("<i", player_cords + 0x4)
-        packed_addr_8 = struct.pack("<i", player_cords + 0x8)
+        INJECT                           - E9 14458E01           - jmp 02730000
+        WizardGraphicalClient.exe+A4BAEC - 90                    - nop
+        """
+        # distance = end - start
+        distance = self.hook_address - self.jump_address
+        relitive_jump = distance - 5  # size of this line
+        packed_relitive_jump = struct.pack("<i", relitive_jump)
+        return b"\xE9" + packed_relitive_jump + b"\x90"
+
+    def get_hook_bytecode(self) -> bytes:
+        self.set_cord_struct()
+        packed_addr = struct.pack("<i", self.cord_struct)  # little-endian int
+        packed_addr_4 = struct.pack("<i", self.cord_struct + 0x4)
+        packed_addr_8 = struct.pack("<i", self.cord_struct + 0x8)
 
         bytecode_lines = [
             b"\x8B\xC8",  # mov ecx,eax
@@ -143,20 +172,59 @@ class MemoryHandler:
 
         bytecode = b"".join(bytecode_lines)
 
-        relitive_return_jump = return_addr - (inject_point + len(bytecode)) - 5
+        return_addr = self.jump_address + len(self.jump_bytecode)
+
+        relitive_return_jump = return_addr - (self.hook_address + len(bytecode)) - 5
         packed_relitive_return_jump = struct.pack("<i", relitive_return_jump)
 
         bytecode += b"\xE9" + packed_relitive_return_jump  # jmp WizardGraphicalClient.exe+A4BAED
 
         return bytecode
 
-    @staticmethod
-    def get_jumper_bytecode(start_jump: int, end_jump: int) -> bytes:
+    def unhook(self):
+        super().unhook()
+        self.free_cord_struct()
+
+
+class CordReaderThread(threading.Thread):
+    def __init__(self, memory_handler):
+        super().__init__()
+        self.memory_handler = memory_handler
+
+    def run(self) -> None:
+        process = self.memory_handler.process
+        cord_struct = self.memory_handler.cord_struct_addr
+        while True:
+            self.memory_handler.x = process.read_float(cord_struct)
+            self.memory_handler.y = process.read_float(cord_struct + 0x4)
+            self.memory_handler.z = process.read_float(cord_struct + 0x8)
+
+
+class MemoryHandler:
+    def __init__(self, pid: int):
+        self.process = pymem.Pymem()
+        self.process.open_process_from_id(pid)
+        self.process.check_wow64()
+
+        self.cord_thread = None
+        self.cord_struct_addr = None
+        self.x = None
+        self.y = None
+        self.z = None
+
+        self.hooks = []
+
+    def close(self):
         """
-        INJECT                           - E9 14458E01           - jmp 02730000
-        WizardGraphicalClient.exe+A4BAEC - 90                    - nop
+        Closes MemoryHandler, closing all hooks and threads
         """
-        distance = end_jump - start_jump
-        relitive_jump = distance - 5  # size of this line
-        packed_relitive_jump = struct.pack("<i", relitive_jump)
-        return b"\xE9" + packed_relitive_jump + b"\x90"
+        for hook in self.hooks:
+            hook.unhook()
+
+    def start_cord_thread(self):
+        cord_hook = CordHook(self)
+        cord_hook.hook()
+        self.hooks.append(cord_hook)
+        self.cord_struct_addr = cord_hook.cord_struct
+        self.cord_thread = CordReaderThread(self)
+        self.cord_thread.start()

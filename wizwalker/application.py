@@ -19,6 +19,10 @@ class WizWalker:
     def install_location(self):
         return utils.get_wiz_install()
 
+    def close(self):
+        for client in self.clients:
+            client.close()
+
     def run(self):
         # Todo: remove debugging
         import logging

@@ -11,6 +11,9 @@ class Client:
         self.keyboard = KeyboardHandler(window_handle)
         self.memory = MemoryHandler(self.process_id)
 
+    def close(self):
+        self.memory.close()
+
     def _get_pid(self):
         # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowthreadprocessid
         pid = ctypes.wintypes.DWORD()
@@ -21,17 +24,3 @@ class Client:
     @property
     def xyz(self) -> tuple:
         return self.memory.x, self.memory.y, self.memory.z
-
-    # Movement
-
-    # def forward(self, units: int):
-    #     self._keyboard.send_key("W", units)
-    #
-    # def backward(self, units: int):
-    #     self._keyboard.send_key("S", units)
-    #
-    # def right(self, units: int):
-    #     self._keyboard.send_key("D", units)
-    #
-    # def left(self, units: int):
-    #     self._keyboard.send_key("A", units)
