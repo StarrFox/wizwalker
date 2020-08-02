@@ -1,6 +1,6 @@
 import logging
 
-from . import packets, utils, windows
+from . import packets, utils, windows, cli
 from .client import Client
 from .application import WizWalker
 

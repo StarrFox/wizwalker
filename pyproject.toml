@@ -1,14 +1,15 @@
 [tool.poetry]
 name = "wizwalker"
-version = "0.2.0"
+version = "0.3.0"
 description = "Automation bot for wizard101"
 authors = ["StarrFox <starrfox6312@gmail.com>"]
 license = "GPL-3.0-or-later"
-include = ["wizwalker/data/*", "wizwalker/tools/*"]
+include = ["wizwalker/data/*", "wizwalker/tools/*", "wizwalker/cli/*"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
 pymem = "^1.2"
+prompt_toolkit = "^3.0.5"
 
 [tool.poetry.dev-dependencies]
 pyinstaller = "^3.6"

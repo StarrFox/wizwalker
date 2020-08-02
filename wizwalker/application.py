@@ -11,13 +11,17 @@ class WizWalker:
     and handles all windows
     """
     def __init__(self):
-        self.window_handles = None
-        self.clients = None
+        self.window_handles = []
+        self.clients = []
         self.socket_listener = None
 
     @cached_property
     def install_location(self):
         return utils.get_wiz_install()
+
+    def get_clients(self):
+        self.get_handles()
+        self.clients = [Client(handle) for handle in self.window_handles]
 
     def close(self):
         for client in self.clients:
@@ -31,10 +35,7 @@ class WizWalker:
         print("Starting wizwalker")
         print(f'Found install under "{self.install_location}"')
 
-        self.get_handles()
-        print(f"Found {len(self.window_handles)} client(s), loading")
-
-        self.clients = [Client(handle) for handle in self.window_handles]
+        self.get_clients()
 
         for client in self.clients:
             client.memory.start_cord_thread()
