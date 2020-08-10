@@ -109,7 +109,7 @@ class MemoryHook:
         self.memory_handler.process.free(self.hook_address)
 
 
-class CordHook(MemoryHook):
+class PlayerHook(MemoryHook):
     def __init__(self, memory_handler):
         super().__init__(memory_handler)
         self.cord_struct = None
@@ -185,6 +185,63 @@ class CordHook(MemoryHook):
         super().unhook()
         self.free_cord_struct()
 
+class QuestHook(MemoryHook):
+
+    def __init__(self, memory_handler):
+        super().__init__(memory_handler)
+        self.cord_struct = None
+
+    def get_pattern_and_mask(self) -> Tuple[bytes, Optional[str], Optional[MODULEINFO]]:
+        module = pymem.process.module_from_name(
+            self.memory_handler.process.process_handle,
+            "WizardGraphicalClient.exe"
+        )
+        return b"\xD9\x86\x1C\x08\x00\x00", "xxxx??", module
+
+    def set_cord_struct(self):
+        self.cord_struct = self.memory_handler.process.allocate(4)
+
+    def free_cord_struct(self):
+        if self.cord_struct:
+            self.memory_handler.process.free(self.cord_struct)
+
+    def get_jump_bytecode(self) -> bytes:
+        """
+        INJECT                           - E9 14458E01           - jmp 02730000
+        WizardGraphicalClient.exe+A4BAEC - 90                    - nop
+        """
+        # distance = end - start
+        distance = self.hook_address - self.jump_address
+        relitive_jump = distance - 5  # size of this line
+        packed_relitive_jump = struct.pack("<i", relitive_jump)
+        return b"\xE9" + packed_relitive_jump + b"\x90"
+
+    def get_hook_bytecode(self) -> bytes:
+        self.set_cord_struct()
+        packed_addr = struct.pack("<i", self.cord_struct)  # little-endian int
+
+        bytecode_lines = [
+            # origional code
+            b"\xD9\x86\x1C\x08\x00\00",  # original instruction one
+            b"\x8D\xBE\x1C\x08\x00\00",  # original instruction two
+            b"\x89\x35" + packed_addr,
+        ]
+
+        bytecode = b"".join(bytecode_lines)
+
+        return_addr = self.jump_address + len(self.jump_bytecode)
+
+        relitive_return_jump = return_addr - (self.hook_address + len(bytecode)) - 5
+        packed_relitive_return_jump = struct.pack("<i", relitive_return_jump)
+
+        bytecode += b"\xE9" + packed_relitive_return_jump  # jmp WizardGraphicalClient.exe+A4BAED
+
+        return bytecode
+
+    def unhook(self):
+        super().unhook()
+        self.free_cord_struct()
+
 
 class CordReaderThread(threading.Thread):
     def __init__(self, memory_handler):
@@ -194,10 +251,16 @@ class CordReaderThread(threading.Thread):
     def run(self) -> None:
         process = self.memory_handler.process
         cord_struct = self.memory_handler.cord_struct_addr
+        quest_struct = self.memory_handler.quest_struct_addr
+        print(f"Quest struct: {quest_struct}")
         while True:
             self.memory_handler.x = process.read_float(cord_struct)
             self.memory_handler.y = process.read_float(cord_struct + 0x4)
             self.memory_handler.z = process.read_float(cord_struct + 0x8)
+
+            self.memory_handler.quest_x = process.read_float(quest_struct + 0x81C)
+            self.memory_handler.quest_y = process.read_float(quest_struct + 0x81C + 0x4)
+            self.memory_handler.quest_y = process.read_float(quest_struct + 0x81C + 0x8)
 
 
 class MemoryHandler:
@@ -208,9 +271,13 @@ class MemoryHandler:
 
         self.cord_thread = None
         self.cord_struct_addr = None
+        self.quest_struct_addr = None
         self.x = None
         self.y = None
         self.z = None
+        self.quest_x = None
+        self.quest_y = None
+        self.quest_z = None
 
         self.hooks = []
 
@@ -222,9 +289,13 @@ class MemoryHandler:
             hook.unhook()
 
     def start_cord_thread(self):
-        cord_hook = CordHook(self)
+        cord_hook = PlayerHook(self)
         cord_hook.hook()
+        quest_hook = QuestHook(self)
+        quest_hook.hook()
         self.hooks.append(cord_hook)
+        self.hooks.append(quest_hook)
         self.cord_struct_addr = cord_hook.cord_struct
+        self.quest_struct_addr = quest_hook.cord_struct
         self.cord_thread = CordReaderThread(self)
         self.cord_thread.start()

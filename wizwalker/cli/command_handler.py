@@ -87,6 +87,11 @@ class CommandHandler(TextArea):
         for idx, client in enumerate(self.walker.clients):
             self.write_output(f"client-{idx}: {client.xyz}")
 
+    def command_quest(self, args):
+        """Gets cords of quests"""
+        for idx, client in enumerate(self.walker.clients):
+            self.write_output(f"client-{idx}: {client.quest_xyz}")
+
     def command_send(self, args):
         """send a key to a client
         EX:

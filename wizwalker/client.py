@@ -24,3 +24,7 @@ class Client:
     @property
     def xyz(self) -> tuple:
         return self.memory.x, self.memory.y, self.memory.z
+
+    @property
+    def quest_xyz(self) -> tuple:
+        return self.memory.quest_x, self.memory.quest_y, self.memory.quest_z
