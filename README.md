@@ -5,7 +5,7 @@ Wizard101 bot for autoquesting
 download latest release from [here](https://github.com/StarrFox/WizWalker/releases)
 
 ## discord
-join the offical discord [here]()
+join the offical discord [here](https://discord.gg/JHrdCNK)
 
 ## development install
 This package uses [poetry](https://python-poetry.org/)

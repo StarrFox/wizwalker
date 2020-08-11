@@ -263,7 +263,7 @@ class CordReaderThread(threading.Thread):
                 self.memory_handler.quest_y = process.read_float(quest_struct_addr + 0x81C + 0x4)
                 self.memory_handler.quest_z = process.read_float(quest_struct_addr + 0x81C + 0x8)
             # The values aren't set for a while
-            except pymem.exception:
+            except (pymem.exception.WinAPIError, pymem.exception.MemoryReadError):
                 pass
 
 

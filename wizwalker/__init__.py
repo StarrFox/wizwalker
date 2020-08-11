@@ -7,9 +7,9 @@ from .application import WizWalker
 logging.basicConfig(
     format="[%(asctime)s] [%(levelname)s:%(name)s] %(message)s",
     level=logging.INFO,
-    # Todo: remove
-    filename="debug.log",
-    filemode='w+'
+    # Todo: remove on release
+    filename="wizwalker_debug.log",
+    filemode="w+"
 )
 
 logging.getLogger(__name__)
