@@ -75,7 +75,7 @@ class CommandHandler(TextArea):
         self.update_status()
         self.write_output("Attached")
 
-    def command_inject_cords(self, args):
+    def command_inject(self, args):
         """Inject code to get current cords, enables cords command"""
         for client in self.walker.clients:
             client.memory.start_cord_thread()

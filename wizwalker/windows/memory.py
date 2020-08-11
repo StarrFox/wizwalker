@@ -165,7 +165,7 @@ class PlayerHook(MemoryHook):
             b"\x8B\x11",  # mov edx,[ecx]
             # Z
             b"\x89\x15" + packed_addr_8,  # mov [314B0808],edx { (-28.79) }
-            # origional code
+            # original code
             b"\x8B\x48\x2C",  # mov ecx,[eax+2C]
             b"\x8B\x50\x30",  # mov edx,[eax+30]
         ]
@@ -221,7 +221,7 @@ class QuestHook(MemoryHook):
         packed_addr = struct.pack("<i", self.cord_struct)  # little-endian int
 
         bytecode_lines = [
-            # origional code
+            # original code
             b"\xD9\x86\x1C\x08\x00\00",  # original instruction one
             b"\x8D\xBE\x1C\x08\x00\00",  # original instruction two
             b"\x89\x35" + packed_addr,
@@ -252,15 +252,19 @@ class CordReaderThread(threading.Thread):
         process = self.memory_handler.process
         cord_struct = self.memory_handler.cord_struct_addr
         quest_struct = self.memory_handler.quest_struct_addr
-        print(f"Quest struct: {quest_struct}")
         while True:
             self.memory_handler.x = process.read_float(cord_struct)
             self.memory_handler.y = process.read_float(cord_struct + 0x4)
             self.memory_handler.z = process.read_float(cord_struct + 0x8)
 
-            self.memory_handler.quest_x = process.read_float(quest_struct + 0x81C)
-            self.memory_handler.quest_y = process.read_float(quest_struct + 0x81C + 0x4)
-            self.memory_handler.quest_y = process.read_float(quest_struct + 0x81C + 0x8)
+            quest_struct_addr = process.read_int(quest_struct)
+            try:
+                self.memory_handler.quest_x = process.read_float(quest_struct_addr + 0x81C)
+                self.memory_handler.quest_y = process.read_float(quest_struct_addr + 0x81C + 0x4)
+                self.memory_handler.quest_z = process.read_float(quest_struct_addr + 0x81C + 0x8)
+            # The values aren't set for a while
+            except pymem.exception:
+                pass
 
 
 class MemoryHandler:
