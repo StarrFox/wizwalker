@@ -8,8 +8,8 @@ include = ["wizwalker/data/*", "wizwalker/tools/*", "wizwalker/cli/*"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-pymem = "^1.2"
 prompt_toolkit = "^3.0.5"
+pymem = {git = "https://github.com/srounet/Pymem"}
 
 [tool.poetry.dev-dependencies]
 pyinstaller = "^3.6"

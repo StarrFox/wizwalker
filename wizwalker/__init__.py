@@ -13,4 +13,4 @@ logging.basicConfig(
 )
 
 logging.getLogger(__name__)
-logging.getLogger("pymem").setLevel(logging.ERROR)
+logging.getLogger("pymem").setLevel(logging.FATAL)
