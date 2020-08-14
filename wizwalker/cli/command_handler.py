@@ -2,6 +2,9 @@ from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.document import Document
 from prompt_toolkit.widgets import TextArea
 
+from ..wad import Wad
+
+
 class CommandHandler(TextArea):
     def __init__(self, *args, **kwargs):
         self.output = kwargs.pop("output")
@@ -111,6 +114,24 @@ class CommandHandler(TextArea):
             self.write_output(f"Client with index {client} not found")
         else:
             self.write_output(f"Sent {key} for {seconds} seconds")
+
+    def command_wad(self, args):
+        """
+        extract a file from a wad archive
+        EX:
+        wad WizardCity-WC_Streets-WC_Unicorn.wad Compass.xml
+        """
+        try:
+            wad_name, file_name = args
+        except ValueError:
+            self.write_output("Not enough or too many args")
+            return
+
+        wad = Wad(wad_name)
+        file_data = wad.get_file(file_name)
+
+        with open(file_name, "wb+") as fp:
+            fp.write(file_data)
 
     def command_exit(self, args):
         """Exit cli"""
