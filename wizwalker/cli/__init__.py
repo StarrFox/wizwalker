@@ -1,7 +1,7 @@
 from prompt_toolkit import Application
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import HSplit, Layout, VSplit
-from prompt_toolkit.widgets import TextArea, VerticalLine, HorizontalLine
+from prompt_toolkit.widgets import HorizontalLine, TextArea, VerticalLine
 
 from .command_handler import CommandHandler
 

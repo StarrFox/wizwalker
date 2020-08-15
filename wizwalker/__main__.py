@@ -1,11 +1,7 @@
-import logging
-import atexit
 from sys import platform
 
 from wizwalker import WizWalker
 from wizwalker.cli import WizWalkerCli
-
-logger = logging.getLogger(__name__)
 
 
 def main():

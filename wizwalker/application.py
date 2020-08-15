@@ -1,16 +1,12 @@
 import json
-import sys
-import time
-import logging
 from collections import defaultdict
 from functools import cached_property
 
-from wizwalker import Client, packets, utils
+from loguru import logger
 
+from wizwalker import packets, utils
+from .client import Client
 from .wad import Wad
-
-
-logger = logging.getLogger(__name__)
 
 
 class WizWalker:
@@ -23,6 +19,9 @@ class WizWalker:
         self.window_handles = []
         self.clients = []
         self.socket_listener = None
+
+    def __repr__(self):
+        return f"WizWalker {self.window_handles=} {self.clients=}"
 
     @cached_property
     def install_location(self):
@@ -90,7 +89,7 @@ class WizWalker:
                 json.dump(pharsed_messages, fp)
 
         template_file = {
-            "TemplateManifest.xml": root_wad.journal["TemplateManifest.xml"]
+            "TemplateManifest.xml": root_wad.get_file_info("TemplateManifest.xml")
         }
 
         template_file = self.check_updated(root_wad, template_file)
@@ -111,8 +110,14 @@ class WizWalker:
 
         for file_name, file_info in files.items():
             if self.wad_cache[wad_file.name][file_name] != file_info.size:
+                logger.debug(
+                    f"{file_name} has updated. old: {self.wad_cache[wad_file.name][file_name]} new: {file_info.size}"
+                )
                 res.append(file_name)
                 self.wad_cache[wad_file.name][file_name] = file_info.size
+
+            else:
+                logger.debug(f"{file_name} has not updated from {file_info.size}")
 
         return res
 
@@ -127,25 +132,6 @@ class WizWalker:
 
         self.get_clients()
         self.cache_data()
-
-        # for client in self.clients:
-        #     client.memory.start_cord_thread()
-        #
-        # # temp stuff for demo
-        # old_cords = {}
-        # while True:
-        #     for idx, client in enumerate(self.clients, 1):
-        #         xyz = client.xyz
-        #         try:
-        #             old = old_cords[idx]
-        #         except KeyError:
-        #             old = (999, 999, 999)
-        #
-        #         if xyz != old:
-        #             print(
-        #                 f"client-{idx}: x={client.memory.x} y={client.memory.y} z={client.memory.z}"
-        #             )
-        #             old_cords[idx] = xyz
 
     @staticmethod
     def listen_packets():
@@ -173,18 +159,6 @@ class WizWalker:
         current_handles = utils.get_all_wizard_handles()
 
         if not current_handles:
-            if input("No wizard101 clients running, start one? [y/n]: ").lower() == "y":
-                utils.start_wiz(self.install_location)
-                print("Sleeping 10 seconds then rescanning")
-                time.sleep(10)
-
-                current_handles = utils.get_all_wizard_handles()
-                if not current_handles:
-                    print("Critical error starting client")
-                    sys.exit(1)
-
-            else:
-                print("Exiting...")
-                sys.exit(0)
+            raise RuntimeError("No handles found")
 
         self.window_handles = current_handles

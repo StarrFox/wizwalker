@@ -1,10 +1,9 @@
-import zlib
-import struct
 import pathlib
+import struct
+import zlib
 from collections import namedtuple
 
 from .utils import get_wiz_install
-
 
 wad_file_info = namedtuple("wad_file_info", "offset, size, is_zip, crc, unzipped_size")
 
@@ -23,6 +22,9 @@ class Wad:
 
         self.journal = {}
         self.refresh_journal()
+
+    def __repr__(self):
+        return f"<Wad {self.name=} {self.total_size=}>"
 
     @property
     def total_size(self):
@@ -81,3 +83,15 @@ class Wad:
         del fp
 
         return data
+
+    def get_file_info(self, name: str) -> wad_file_info:
+        """
+        Gets a wad_file_info for a file
+        this is the same as journal[name]
+        """
+        try:
+            file_info = self.journal[name]
+        except KeyError:
+            raise RuntimeError(f"File {name} not found")
+        else:
+            return file_info

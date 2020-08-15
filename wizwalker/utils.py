@@ -3,8 +3,8 @@ import io
 import struct
 import winreg
 import zlib
-from xml.etree import ElementTree
 from os import system as cmd
+from xml.etree import ElementTree
 
 from pymem.ptypes import RemotePointer
 

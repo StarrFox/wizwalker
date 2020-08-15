@@ -3,6 +3,7 @@ from prompt_toolkit.document import Document
 from prompt_toolkit.widgets import TextArea
 
 from ..wad import Wad
+from ..utils import quick_launch
 
 
 class CommandHandler(TextArea):
@@ -138,6 +139,38 @@ class CommandHandler(TextArea):
         """
         self.walker.cache_data()
         self.write_output("Completed")
+
+    def command_mouse(self, args):
+        """
+        Test mouse input sending
+        This does not work
+        """
+        try:
+            x, y = args
+        except ValueError:
+            self.write_output("Too many or not enough args")
+            return
+
+        from wizwalker.windows import user32
+
+        client = self.walker.clients[0]
+        handle = client.window_handle
+
+        lparam = int(y) << 16 | (int(x) & 0xffff)
+
+        self.write_output(f"{lparam=}")
+        user32.PostMessageW(handle, 0x201, 0, lparam)
+        import time
+        time.sleep(2)
+        user32.PostMessageW(handle, 0x202, 1, lparam)
+        self.write_output("Completed")
+
+    def command_wiz(self, args):
+        """
+        Starts a wizard101 instance
+        """
+        quick_launch()
+        self.write_output("Started")
 
     def command_exit(self, args):
         """Exit cli"""

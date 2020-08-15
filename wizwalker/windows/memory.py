@@ -1,15 +1,10 @@
-import logging
 import struct
 import threading
-from typing import Any, Tuple, Optional
+from typing import Any, Optional, Tuple
 
 import pymem
 import pymem.pattern
-
 from pymem.ressources.structure import MODULEINFO
-
-
-logger = logging.getLogger(__name__)
 
 
 class MemoryHook:

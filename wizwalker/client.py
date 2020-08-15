@@ -12,6 +12,9 @@ class Client:
         self.keyboard = KeyboardHandler(window_handle)
         self.memory = MemoryHandler(self.process_id)
 
+    def __repr__(self):
+        return f"<Client {self.window_handle=} {self.process_id=}>"
+
     def close(self):
         self.memory.close()
 
