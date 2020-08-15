@@ -1,6 +1,8 @@
 import json
+import sys
 from collections import defaultdict
 from functools import cached_property
+from pathlib import Path
 
 from loguru import logger
 
@@ -24,13 +26,22 @@ class WizWalker:
         return f"WizWalker {self.window_handles=} {self.clients=}"
 
     @cached_property
+    def cache_dir(self):
+        if getattr(sys, "frozen", False):
+            root = Path(sys.executable).parent
+        else:
+            root = Path(__file__).parent.parent
+
+        return root / "cache"
+
+    @cached_property
     def install_location(self):
         return utils.get_wiz_install()
 
     @cached_property
     def wizard_messages(self):
         try:
-            with open("wizard_messages.json") as fp:
+            with (self.cache_dir / "wizard_messages.json").open() as fp:
                 message_data = fp.read()
         except OSError:
             raise RuntimeError("Messages not yet cached, please run .run or .cache_data")
@@ -40,7 +51,7 @@ class WizWalker:
     @cached_property
     def template_ids(self):
         try:
-            with open("template_ids.json") as fp:
+            with (self.cache_dir / "template_ids.json").open() as fp:
                 message_data = fp.read()
         except OSError:
             raise RuntimeError("template_ids not yet cached, please run .run or .cache_data")
@@ -50,7 +61,7 @@ class WizWalker:
     @cached_property
     def wad_cache(self):
         try:
-            with open("wad_cache.data", "r+") as fp:
+            with (self.cache_dir / "wad_cache.data").open() as fp:
                 data = fp.read()
         except OSError:
             data = None
@@ -64,18 +75,18 @@ class WizWalker:
         return wad_cache
 
     def write_wad_cache(self):
-        with open("wad_cache.data", "w+") as fp:
+        with (self.cache_dir / "wad_cache.data").open("w+") as fp:
             json.dump(self.wad_cache, fp)
 
     @cached_property
     def node_cache(self):
         try:
-            with open("node_cache.data") as fp:
+            with (self.cache_dir / "node_cache.data").open() as fp:
                 data = fp.read()
         except OSError:
             data = None
 
-        wad_cache = defaultdict(lambda: -1)
+        wad_cache = defaultdict(lambda: 0)
 
         if data:
             wad_cache_data = json.loads(data)
@@ -84,8 +95,8 @@ class WizWalker:
         return wad_cache
 
     def write_node_cache(self):
-        with open("node_cache.data", "w+") as fp:
-            json.dump(self.wad_cache, fp)
+        with (self.cache_dir / "node_cache.data").open("w+") as fp:
+            json.dump(self.node_cache, fp)
 
     def get_clients(self):
         self.get_handles()
@@ -101,6 +112,7 @@ class WizWalker:
 
         self._cache_messages(root_wad)
         self._cache_template(root_wad)
+        self._cache_nodes()
 
         self.write_wad_cache()
 
@@ -132,7 +144,7 @@ class WizWalker:
                 pharsed_messages.update(utils.pharse_message_file(file_data))
                 del file_data
 
-            with open("wizard_messages.json", "w+") as fp:
+            with (self.cache_dir / "wizard_messages.json").open("w+") as fp:
                 json.dump(pharsed_messages, fp)
 
     def _cache_template(self, root_wad):
@@ -147,11 +159,48 @@ class WizWalker:
             pharsed_template_ids = utils.pharse_template_id_file(file_data)
             del file_data
 
-            with open("template_ids.json", "w+") as fp:
+            with (self.cache_dir / "template_ids.json").open("w+") as fp:
                 json.dump(pharsed_template_ids, fp)
 
     def _cache_nodes(self):
-        pass
+        game_data = Path(self.install_location) / "Data" / "GameData"
+        all_wads = game_data.glob("*.wad")
+
+        new_node_data = {}
+        for wad_name in all_wads:
+            wad_name = wad_name.name
+            if not self.node_cache[wad_name]:
+                logger.debug(f"Checking {wad_name} for node data")
+                wad = Wad(wad_name)
+                self.node_cache[wad_name] = 1
+
+                try:
+                    file_info = wad.get_file_info("pathNodeData.bin")
+                    if file_info.size == 20:
+                        continue
+
+                    node_data = wad.get_file("pathNodeData.bin")
+                except RuntimeError:
+                    continue
+                else:
+                    pharsed_node_data = utils.pharse_node_data(node_data)
+                    new_node_data[wad_name] = pharsed_node_data
+
+        if new_node_data:
+            node_data_json = self.cache_dir / "node_data.json"
+            if node_data_json.exists():
+                with node_data_json.open() as fp:
+                    old_node_data = json.load(fp)
+
+            else:
+                old_node_data = {}
+
+            old_node_data.update(new_node_data)
+
+            with node_data_json.open("w+") as fp:
+                json.dump(old_node_data, fp)
+
+        self.write_node_cache()
 
     def check_updated(self, wad_file: Wad, files: dict):
         """Checks if some wad files have changed since we last accessed them"""

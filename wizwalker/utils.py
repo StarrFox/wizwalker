@@ -161,3 +161,27 @@ def pharse_message_file(file_data: bytes):
     pharsed_service_data["messages"] = parsed_msgs
 
     return {service_id: pharsed_service_data}
+
+
+def pharse_node_data(file_data: bytes) -> dict:
+    """
+    Converts data into a dict of node nums to points
+    """
+    total_size = len(file_data)
+    fp = io.BytesIO(file_data)
+
+    node_data = {}
+    # header data
+    fp.seek(20)
+    while fp.tell() < total_size:
+        entry = fp.read(92)
+        cords_data = entry[16:16 + (4 * 3)]
+        x = struct.unpack("<f", cords_data[0:4])[0]
+        y = struct.unpack("<f", cords_data[4:8])[0]
+        z = struct.unpack("<f", cords_data[8:12])[0]
+        node_num = entry[48:48 + 2]
+        unpacked_num = struct.unpack("<H", node_num)[0]
+
+        node_data[unpacked_num] = (x, y, z)
+
+    return node_data
