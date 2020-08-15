@@ -5,18 +5,33 @@ from collections import namedtuple
 
 from .utils import get_wiz_install
 
+
 wad_file_info = namedtuple("wad_file_info", "offset, size, is_zip, crc, unzipped_size")
 
 
 class Wad:
     def __init__(self, name: str):
+        if not name.endswith(".wad"):
+            name += ".wad"
+
         self.name = name
-        self.file_path = pathlib.Path(get_wiz_install()) / "Data" / "GameData" / self.name
+        self.file_path = (
+            pathlib.Path(get_wiz_install()) / "Data" / "GameData" / self.name
+        )
         if not self.file_path.exists():
             raise RuntimeError(f"{self.name} not found.")
 
         self.journal = {}
         self.refresh_journal()
+
+    @property
+    def total_size(self):
+        """Total size of the files in this wad"""
+        total = 0
+        for file_info in self.journal.values():
+            total += file_info.size
+
+        return total
 
     def refresh_journal(self):
         fp = self.file_path.open("rb")
@@ -38,11 +53,7 @@ class Wad:
             name = fp.read(name_length).decode("utf-8")[:-1]
 
             self.journal[name] = wad_file_info(
-                offset=offset,
-                size=size,
-                is_zip=is_zip,
-                crc=crc,
-                unzipped_size=zsize,
+                offset=offset, size=size, is_zip=is_zip, crc=crc, unzipped_size=zsize,
             )
 
         fp.close()
@@ -65,5 +76,8 @@ class Wad:
 
         else:
             data = raw_data
+
+        fp.close()
+        del fp
 
         return data

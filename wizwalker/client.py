@@ -5,6 +5,7 @@ from .windows import KeyboardHandler, MemoryHandler, user32
 
 class Client:
     """Represents a connected wizard client"""
+
     def __init__(self, window_handle: int):
         self.window_handle = window_handle
         self.process_id = self._get_pid()

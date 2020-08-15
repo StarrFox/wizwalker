@@ -10,17 +10,17 @@ logger = logging.getLogger(__name__)
 
 
 TYPE_TABLE = {
-    "BYT":	"b",
-    "UBYT":	"B",
-    "SHRT":	"<h",
+    "BYT": "b",
+    "UBYT": "B",
+    "SHRT": "<h",
     "USHRT": "<H",
     "INT": "<i",
     "UINT": "<I",
     "STR": "",
     "WSTR": "",
-    "FLT":	"<f",
-    "DBL":	"<d",
-    "GID":	"<Q",
+    "FLT": "<f",
+    "DBL": "<d",
+    "GID": "<Q",
 }
 
 
@@ -89,7 +89,9 @@ class PacketProcesser:
             f"op_code={op_code}"
         )
 
-        service_name, message_name, description, params = self.lookup_message_data(service_id, message_id)
+        service_name, message_name, description, params = self.lookup_message_data(
+            service_id, message_id
+        )
 
         logger.debug(f"Got packet data: {service_name}: {message_name} ({description})")
 
@@ -116,7 +118,7 @@ class PacketProcesser:
             p_name = param["name"]
 
             if p_type == "STR":
-                #logger.debug("String type skipped")
+                # logger.debug("String type skipped")
                 str_len = struct.unpack(TYPE_TABLE["USHRT"], data.read(2))[0]
                 str_value = data.read(str_len)
                 logger.debug(f"Got string param {str_len=} {str_value=}")

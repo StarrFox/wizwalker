@@ -8,6 +8,7 @@ import pymem.pattern
 
 from pymem.ressources.structure import MODULEINFO
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -28,10 +29,7 @@ class MemoryHook:
         """
         if module:
             jump_address = pymem.pattern.pattern_scan_module(
-                self.memory_handler.process.process_handle,
-                module,
-                pattern,
-                mask
+                self.memory_handler.process.process_handle, module, pattern, mask
             )
 
         else:
@@ -75,22 +73,20 @@ class MemoryHook:
         self.hook_bytecode = self.get_hook_bytecode()
 
         self.jump_original_bytecode = self.memory_handler.process.read_bytes(
-            self.jump_address,
-            len(self.jump_bytecode)
+            self.jump_address, len(self.jump_bytecode)
         )
 
-        # pymem doesnt have write_bytes on the Pymem obj, will fix later
-        pymem.memory.write_bytes(
+        self.memory_handler.process.write_bytes(
             self.memory_handler.process.process_handle,
             self.hook_address,
             self.hook_bytecode,
-            len(self.hook_bytecode)
+            len(self.hook_bytecode),
         )
-        pymem.memory.write_bytes(
+        self.memory_handler.process.write_bytes(
             self.memory_handler.process.process_handle,
             self.jump_address,
             self.jump_bytecode,
-            len(self.jump_bytecode)
+            len(self.jump_bytecode),
         )
 
         return None
@@ -100,11 +96,11 @@ class MemoryHook:
         Deallocates hook memory and rewrites jump addr to it's origional code,
         also called when a client is closed
         """
-        pymem.memory.write_bytes(
+        self.memory_handler.process.write_bytes(
             self.memory_handler.process.process_handle,
             self.jump_address,
             self.jump_original_bytecode,
-            len(self.jump_original_bytecode)
+            len(self.jump_original_bytecode),
         )
         self.memory_handler.process.free(self.hook_address)
 
@@ -116,8 +112,7 @@ class PlayerHook(MemoryHook):
 
     def get_pattern_and_mask(self) -> Tuple[bytes, Optional[str], Optional[MODULEINFO]]:
         module = pymem.process.module_from_name(
-            self.memory_handler.process.process_handle,
-            "WizardGraphicalClient.exe"
+            self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
         )
         return b"\x8B\x48\x2C\x8B\x50\x30\x8B\x40\x34\xEB\x2A", None, module
 
@@ -151,7 +146,7 @@ class PlayerHook(MemoryHook):
             b"\x8B\x11",  # mov edx,[ecx]
             # check if player
             b"\x83\xFA\x08",  # cmp edx,08 { 8 }
-            b"\x0F\x85\x23\x00\x00\x00",  # jne 314B0036 (relitive jump 23 down)
+            b"\x0F\x85\x23\x00\x00\x00",  # jne 314B0036 (relative jump 23 down)
             b"\x8B\xC8",  # mov ecx,eax
             b"\x83\xC1\x2C",  # add ecx,2C { 44 }
             b"\x8B\x11",  # mov edx,[ecx]
@@ -177,7 +172,9 @@ class PlayerHook(MemoryHook):
         relitive_return_jump = return_addr - (self.hook_address + len(bytecode)) - 5
         packed_relitive_return_jump = struct.pack("<i", relitive_return_jump)
 
-        bytecode += b"\xE9" + packed_relitive_return_jump  # jmp WizardGraphicalClient.exe+A4BAED
+        bytecode += (
+            b"\xE9" + packed_relitive_return_jump
+        )  # jmp WizardGraphicalClient.exe+A4BAED
 
         return bytecode
 
@@ -185,16 +182,15 @@ class PlayerHook(MemoryHook):
         super().unhook()
         self.free_cord_struct()
 
-class QuestHook(MemoryHook):
 
+class QuestHook(MemoryHook):
     def __init__(self, memory_handler):
         super().__init__(memory_handler)
         self.cord_struct = None
 
     def get_pattern_and_mask(self) -> Tuple[bytes, Optional[str], Optional[MODULEINFO]]:
         module = pymem.process.module_from_name(
-            self.memory_handler.process.process_handle,
-            "WizardGraphicalClient.exe"
+            self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
         )
         return b"\xD9\x86\x1C\x08\x00\x00", "xxxx??", module
 
@@ -234,7 +230,9 @@ class QuestHook(MemoryHook):
         relitive_return_jump = return_addr - (self.hook_address + len(bytecode)) - 5
         packed_relitive_return_jump = struct.pack("<i", relitive_return_jump)
 
-        bytecode += b"\xE9" + packed_relitive_return_jump  # jmp WizardGraphicalClient.exe+A4BAED
+        bytecode += (
+            b"\xE9" + packed_relitive_return_jump
+        )  # jmp WizardGraphicalClient.exe+A4BAED
 
         return bytecode
 
@@ -259,9 +257,15 @@ class CordReaderThread(threading.Thread):
 
             quest_struct_addr = process.read_int(quest_struct)
             try:
-                self.memory_handler.quest_x = process.read_float(quest_struct_addr + 0x81C)
-                self.memory_handler.quest_y = process.read_float(quest_struct_addr + 0x81C + 0x4)
-                self.memory_handler.quest_z = process.read_float(quest_struct_addr + 0x81C + 0x8)
+                self.memory_handler.quest_x = process.read_float(
+                    quest_struct_addr + 0x81C
+                )
+                self.memory_handler.quest_y = process.read_float(
+                    quest_struct_addr + 0x81C + 0x4
+                )
+                self.memory_handler.quest_z = process.read_float(
+                    quest_struct_addr + 0x81C + 0x8
+                )
             # The values aren't set for a while
             except (pymem.exception.WinAPIError, pymem.exception.MemoryReadError):
                 pass

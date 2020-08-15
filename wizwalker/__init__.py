@@ -7,10 +7,10 @@ from .wad import Wad
 
 logging.basicConfig(
     format="[%(asctime)s] [%(levelname)s:%(name)s] %(message)s",
-    level=logging.INFO,
+    level=logging.DEBUG,
     # Todo: remove on release
     filename="wizwalker_debug.log",
-    filemode="w+"
+    filemode="w+",
 )
 
 logging.getLogger(__name__)

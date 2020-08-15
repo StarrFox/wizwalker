@@ -73,9 +73,9 @@ keycodes = {
     "X": 88,
     "Y": 89,
     "Z": 90,
-    "Left Windows  )": 91,
-    "Right Windows  )": 92,
-    "Applications  )": 93,
+    "Left Windows": 91,
+    "Right Windows": 92,
+    "Applications": 93,
     "Reserved": 252,
     "Computer Sleep": 95,
     "Numeric pad 0": 96,
@@ -153,5 +153,5 @@ keycodes = {
     "Play": 250,
     "Zoom": 251,
     "PA1": 253,
-    "Clear": 254
+    "Clear": 254,
 }

@@ -130,3 +130,6 @@ dmypy.json
 
 # Wiz files
 *.wad
+template_ids.json
+wad_cache.data
+wizard_messages.json

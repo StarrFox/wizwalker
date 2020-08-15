@@ -35,7 +35,9 @@ class CommandHandler(TextArea):
         )
 
     def update_status(self):
-        status_message = "\n".join([f"{key}: {value}" for key, value in self.status_keys.items()])
+        status_message = "\n".join(
+            [f"{key}: {value}" for key, value in self.status_keys.items()]
+        )
         self.status.buffer.text = status_message
 
     @property
@@ -46,11 +48,7 @@ class CommandHandler(TextArea):
         cmds = {}
         for item in dir(self):
             if item.startswith("command_"):
-                cmds.update(
-                    {
-                        item.replace("command_", ""): getattr(self, item)
-                    }
-                )
+                cmds.update({item.replace("command_", ""): getattr(self, item)})
 
         self._cmds = cmds
         return cmds
@@ -133,7 +131,14 @@ class CommandHandler(TextArea):
         with open(file_name, "wb+") as fp:
             fp.write(file_data)
 
+    def command_cache_data(self, args):
+        """
+        Caches various wad data for later use,
+        such as template ids and message structure
+        """
+        self.walker.cache_data()
+        self.write_output("Completed")
+
     def command_exit(self, args):
         """Exit cli"""
         self.app.exit()
-
