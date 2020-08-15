@@ -28,6 +28,26 @@ class WizWalker:
         return utils.get_wiz_install()
 
     @cached_property
+    def wizard_messages(self):
+        try:
+            with open("wizard_messages.json") as fp:
+                message_data = fp.read()
+        except OSError:
+            raise RuntimeError("Messages not yet cached, please run .run or .cache_data")
+        else:
+            return json.loads(message_data)
+
+    @cached_property
+    def template_ids(self):
+        try:
+            with open("template_ids.json") as fp:
+                message_data = fp.read()
+        except OSError:
+            raise RuntimeError("template_ids not yet cached, please run .run or .cache_data")
+        else:
+            return json.loads(message_data)
+
+    @cached_property
     def wad_cache(self):
         try:
             with open("wad_cache.data", "r+") as fp:
@@ -47,6 +67,26 @@ class WizWalker:
         with open("wad_cache.data", "w+") as fp:
             json.dump(self.wad_cache, fp)
 
+    @cached_property
+    def node_cache(self):
+        try:
+            with open("node_cache.data") as fp:
+                data = fp.read()
+        except OSError:
+            data = None
+
+        wad_cache = defaultdict(lambda: -1)
+
+        if data:
+            wad_cache_data = json.loads(data)
+            wad_cache.update(wad_cache_data)
+
+        return wad_cache
+
+    def write_node_cache(self):
+        with open("node_cache.data", "w+") as fp:
+            json.dump(self.wad_cache, fp)
+
     def get_clients(self):
         self.get_handles()
         self.clients = [Client(handle) for handle in self.window_handles]
@@ -58,6 +98,13 @@ class WizWalker:
     def cache_data(self):
         """Caches various file data we will need later"""
         root_wad = Wad("Root")
+
+        self._cache_messages(root_wad)
+        self._cache_template(root_wad)
+
+        self.write_wad_cache()
+
+    def _cache_messages(self, root_wad):
         message_files = {
             k: v
             for k, v in root_wad.journal.items()
@@ -88,6 +135,7 @@ class WizWalker:
             with open("wizard_messages.json", "w+") as fp:
                 json.dump(pharsed_messages, fp)
 
+    def _cache_template(self, root_wad):
         template_file = {
             "TemplateManifest.xml": root_wad.get_file_info("TemplateManifest.xml")
         }
@@ -102,7 +150,8 @@ class WizWalker:
             with open("template_ids.json", "w+") as fp:
                 json.dump(pharsed_template_ids, fp)
 
-        self.write_wad_cache()
+    def _cache_nodes(self):
+        pass
 
     def check_updated(self, wad_file: Wad, files: dict):
         """Checks if some wad files have changed since we last accessed them"""

@@ -72,13 +72,11 @@ class MemoryHook:
         )
 
         self.memory_handler.process.write_bytes(
-            self.memory_handler.process.process_handle,
             self.hook_address,
             self.hook_bytecode,
             len(self.hook_bytecode),
         )
         self.memory_handler.process.write_bytes(
-            self.memory_handler.process.process_handle,
             self.jump_address,
             self.jump_bytecode,
             len(self.jump_bytecode),
@@ -92,7 +90,6 @@ class MemoryHook:
         also called when a client is closed
         """
         self.memory_handler.process.write_bytes(
-            self.memory_handler.process.process_handle,
             self.jump_address,
             self.jump_original_bytecode,
             len(self.jump_original_bytecode),
@@ -103,7 +100,7 @@ class MemoryHook:
 class PlayerHook(MemoryHook):
     def __init__(self, memory_handler):
         super().__init__(memory_handler)
-        self.cord_struct = None
+        self.player_struct = None
 
     def get_pattern_and_mask(self) -> Tuple[bytes, Optional[str], Optional[MODULEINFO]]:
         module = pymem.process.module_from_name(
@@ -111,12 +108,12 @@ class PlayerHook(MemoryHook):
         )
         return b"\x8B\x48\x2C\x8B\x50\x30\x8B\x40\x34\xEB\x2A", None, module
 
-    def set_cord_struct(self):
-        self.cord_struct = self.memory_handler.process.allocate(12)
+    def set_player_struct(self):
+        self.player_struct = self.memory_handler.process.allocate(4)
 
-    def free_cord_struct(self):
-        if self.cord_struct:
-            self.memory_handler.process.free(self.cord_struct)
+    def free_player_struct(self):
+        if self.player_struct:
+            self.memory_handler.process.free(self.player_struct)
 
     def get_jump_bytecode(self) -> bytes:
         """
@@ -130,10 +127,8 @@ class PlayerHook(MemoryHook):
         return b"\xE9" + packed_relitive_jump + b"\x90"
 
     def get_hook_bytecode(self) -> bytes:
-        self.set_cord_struct()
-        packed_addr = struct.pack("<i", self.cord_struct)  # little-endian int
-        packed_addr_4 = struct.pack("<i", self.cord_struct + 0x4)
-        packed_addr_8 = struct.pack("<i", self.cord_struct + 0x8)
+        self.set_player_struct()
+        packed_addr = struct.pack("<i", self.player_struct)
 
         bytecode_lines = [
             b"\x8B\xC8",  # mov ecx,eax
@@ -141,20 +136,8 @@ class PlayerHook(MemoryHook):
             b"\x8B\x11",  # mov edx,[ecx]
             # check if player
             b"\x83\xFA\x08",  # cmp edx,08 { 8 }
-            b"\x0F\x85\x23\x00\x00\x00",  # jne 314B0036 (relative jump 23 down)
-            b"\x8B\xC8",  # mov ecx,eax
-            b"\x83\xC1\x2C",  # add ecx,2C { 44 }
-            b"\x8B\x11",  # mov edx,[ecx]
-            # X
-            b"\x89\x15" + packed_addr,  # mov [player_cords],edx { (790.40) }
-            b"\x83\xC1\x04",  # add ecx,04 { 4 }
-            b"\x8B\x11",  # mov edx,[ecx]
-            # Y
-            b"\x89\x15" + packed_addr_4,  # mov [314B0804],edx { (-15.88) }
-            b"\x83\xC1\x04",  # add ecx,04 { 4 }
-            b"\x8B\x11",  # mov edx,[ecx]
-            # Z
-            b"\x89\x15" + packed_addr_8,  # mov [314B0808],edx { (-28.79) }
+            b"\x0F\x85\x05\x00\x00\x00",  # jne 314B0036 (relative jump 5 down)
+            b"\xA3" + packed_addr,
             # original code
             b"\x8B\x48\x2C",  # mov ecx,[eax+2C]
             b"\x8B\x50\x30",  # mov edx,[eax+30]
@@ -175,7 +158,7 @@ class PlayerHook(MemoryHook):
 
     def unhook(self):
         super().unhook()
-        self.free_cord_struct()
+        self.free_player_struct()
 
 
 class QuestHook(MemoryHook):
@@ -236,19 +219,20 @@ class QuestHook(MemoryHook):
         self.free_cord_struct()
 
 
-class CordReaderThread(threading.Thread):
+class MemoryReaderThread(threading.Thread):
     def __init__(self, memory_handler):
         super().__init__()
         self.memory_handler = memory_handler
 
     def run(self) -> None:
         process = self.memory_handler.process
-        cord_struct = self.memory_handler.cord_struct_addr
+        player_struct = self.memory_handler.player_struct_addr
         quest_struct = self.memory_handler.quest_struct_addr
         while True:
-            self.memory_handler.x = process.read_float(cord_struct)
-            self.memory_handler.y = process.read_float(cord_struct + 0x4)
-            self.memory_handler.z = process.read_float(cord_struct + 0x8)
+            player_struct_addr = process.read_int(player_struct)
+            self.memory_handler.x = process.read_float(player_struct_addr + 0x2C)
+            self.memory_handler.y = process.read_float(player_struct_addr + 0x30)
+            self.memory_handler.z = process.read_float(player_struct_addr + 0x34)
 
             quest_struct_addr = process.read_int(quest_struct)
             try:
@@ -272,8 +256,8 @@ class MemoryHandler:
         self.process.open_process_from_id(pid)
         self.process.check_wow64()
 
-        self.cord_thread = None
-        self.cord_struct_addr = None
+        self.memory_thread = None
+        self.player_struct_addr = None
         self.quest_struct_addr = None
         self.x = None
         self.y = None
@@ -291,14 +275,14 @@ class MemoryHandler:
         for hook in self.hooks:
             hook.unhook()
 
-    def start_cord_thread(self):
+    def start_memory_thread(self):
         cord_hook = PlayerHook(self)
         cord_hook.hook()
         quest_hook = QuestHook(self)
         quest_hook.hook()
         self.hooks.append(cord_hook)
         self.hooks.append(quest_hook)
-        self.cord_struct_addr = cord_hook.cord_struct
+        self.player_struct_addr = cord_hook.player_struct
         self.quest_struct_addr = quest_hook.cord_struct
-        self.cord_thread = CordReaderThread(self)
-        self.cord_thread.start()
+        self.memory_thread = MemoryReaderThread(self)
+        self.memory_thread.start()

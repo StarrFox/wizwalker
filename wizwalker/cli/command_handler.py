@@ -80,7 +80,7 @@ class CommandHandler(TextArea):
     def command_inject(self, args):
         """Inject code to get current cords, enables cords command"""
         for client in self.walker.clients:
-            client.memory.start_cord_thread()
+            client.memory.start_memory_thread()
 
         self.write_output("Injected cords")
 
