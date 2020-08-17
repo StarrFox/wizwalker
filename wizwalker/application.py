@@ -5,6 +5,7 @@ from functools import cached_property
 from pathlib import Path
 
 from loguru import logger
+import aiofiles
 
 from wizwalker import packets, utils
 from .client import Client
@@ -20,7 +21,12 @@ class WizWalker:
     def __init__(self):
         self.window_handles = []
         self.clients = []
+
         self.socket_listener = None
+        self.wad_cache = None
+        self.wizard_messages = None
+        self.template_ids = None
+        self.node_cache = None
 
     def __repr__(self):
         return f"<WizWalker {self.window_handles=} {self.clients=}>"
@@ -38,31 +44,28 @@ class WizWalker:
     def install_location(self):
         return utils.get_wiz_install()
 
-    @cached_property
-    def wizard_messages(self):
+    async def get_wizard_messages(self):
         try:
-            with (self.cache_dir / "wizard_messages.json").open() as fp:
-                message_data = fp.read()
+            async with aiofiles.open(self.cache_dir / "wizard_messages.json") as fp:
+                message_data = await fp.read()
         except OSError:
             raise RuntimeError("Messages not yet cached, please run .run or .cache_data")
         else:
             return json.loads(message_data)
 
-    @cached_property
-    def template_ids(self):
+    async def get_template_ids(self):
         try:
-            with (self.cache_dir / "template_ids.json").open() as fp:
-                message_data = fp.read()
+            async with aiofiles.open(self.cache_dir / "template_ids.json") as fp:
+                message_data = await fp.read()
         except OSError:
             raise RuntimeError("template_ids not yet cached, please run .run or .cache_data")
         else:
             return json.loads(message_data)
 
-    @cached_property
-    def wad_cache(self):
+    async def get_wad_cache(self):
         try:
-            with (self.cache_dir / "wad_cache.data").open() as fp:
-                data = fp.read()
+            async with aiofiles.open(self.cache_dir / "wad_cache.data") as fp:
+                data = await fp.read()
         except OSError:
             data = None
 
@@ -74,61 +77,62 @@ class WizWalker:
 
         return wad_cache
 
-    def write_wad_cache(self):
-        with (self.cache_dir / "wad_cache.data").open("w+") as fp:
-            json.dump(self.wad_cache, fp)
+    async def write_wad_cache(self):
+        async with aiofiles.open(self.cache_dir / "wad_cache.data", "w+") as fp:
+            json_data = json.dumps(self.wad_cache)
+            await fp.wrtie(json_data)
 
-    @cached_property
-    def node_cache(self):
+    async def get_node_cache(self):
         try:
-            with (self.cache_dir / "node_cache.data").open() as fp:
-                data = fp.read()
+            async with aiofiles.open(self.cache_dir / "node_cache.data") as fp:
+                data = await fp.read()
         except OSError:
             data = None
 
-        wad_cache = defaultdict(lambda: 0)
+        node_cache = defaultdict(lambda: 0)
 
         if data:
-            wad_cache_data = json.loads(data)
-            wad_cache.update(wad_cache_data)
+            node_cache_data = json.loads(data)
+            node_cache.update(node_cache_data)
 
-        return wad_cache
+        return node_cache
 
-    def write_node_cache(self):
-        with (self.cache_dir / "node_cache.data").open("w+") as fp:
-            json.dump(self.node_cache, fp)
+    async def write_node_cache(self):
+        async with aiofiles.open(self.cache_dir / "node_cache.data", "w+")as fp:
+            json_data = json.dumps(self.node_cache)
+            await fp.write(json_data)
 
     def get_clients(self):
         self.get_handles()
         self.clients = [Client(handle) for handle in self.window_handles]
 
-    def close(self):
+    async def close(self):
         for client in self.clients:
-            client.close()
+            await client.close()
 
-    def cache_data(self):
+    async def cache_data(self):
         """Caches various file data we will need later"""
         root_wad = Wad("Root")
 
-        self._cache_messages(root_wad)
-        self._cache_template(root_wad)
-        self._cache_nodes()
+        await self._cache_messages(root_wad)
+        await self._cache_template(root_wad)
+        await self._cache_nodes()
 
-        self.write_wad_cache()
+        await self.write_wad_cache()
 
-    def _cache_messages(self, root_wad):
+    async def _cache_messages(self, root_wad):
         message_files = {
             k: v
             for k, v in root_wad.journal.items()
             if "Messages" in k and k.endswith(".xml")
         }
 
-        message_files = self.check_updated(root_wad, message_files)
+        message_files = await self.check_updated(root_wad, message_files)
 
         if message_files:
             pharsed_messages = {}
             for message_file in message_files:
-                file_data = root_wad.get_file(message_file)
+                file_data = await root_wad.get_file(message_file)
                 logger.debug(f"pharsing {message_file}")
 
                 # They messed up one of their xml files so I have to fix it for them
@@ -147,22 +151,24 @@ class WizWalker:
             with (self.cache_dir / "wizard_messages.json").open("w+") as fp:
                 json.dump(pharsed_messages, fp)
 
-    def _cache_template(self, root_wad):
+    async def _cache_template(self, root_wad):
         template_file = {
             "TemplateManifest.xml": root_wad.get_file_info("TemplateManifest.xml")
         }
 
-        template_file = self.check_updated(root_wad, template_file)
+        template_file = await self.check_updated(root_wad, template_file)
 
         if template_file:
-            file_data = root_wad.get_file("TemplateManifest.xml")
+            file_data = await root_wad.get_file("TemplateManifest.xml")
             pharsed_template_ids = utils.pharse_template_id_file(file_data)
             del file_data
 
-            with (self.cache_dir / "template_ids.json").open("w+") as fp:
+            async with aiofiles.open(self.cache_dir / "template_ids.json", "w+") as fp:
                 json.dump(pharsed_template_ids, fp)
 
-    def _cache_nodes(self):
+    async def _cache_nodes(self):
+        self.node_cache = await self.get_node_cache()
+
         game_data = Path(self.install_location) / "Data" / "GameData"
         all_wads = game_data.glob("*.wad")
 
@@ -179,7 +185,7 @@ class WizWalker:
                     if file_info.size == 20:
                         continue
 
-                    node_data = wad.get_file("pathNodeData.bin")
+                    node_data = await wad.get_file("pathNodeData.bin")
                 except RuntimeError:
                     continue
                 else:
@@ -189,21 +195,26 @@ class WizWalker:
         if new_node_data:
             node_data_json = self.cache_dir / "node_data.json"
             if node_data_json.exists():
-                with node_data_json.open() as fp:
-                    old_node_data = json.load(fp)
+                async with aiofiles.open(node_data_json) as fp:
+                    json_data = await fp.read()
+                    old_node_data = json.loads(json_data)
 
             else:
                 old_node_data = {}
 
             old_node_data.update(new_node_data)
 
-            with node_data_json.open("w+") as fp:
-                json.dump(old_node_data, fp)
+            async with aiofiles.open(node_data_json, "w+") as fp:
+                json_data = json.dumps(old_node_data)
+                await fp.write(json_data)
 
-        self.write_node_cache()
+        await self.write_node_cache()
 
-    def check_updated(self, wad_file: Wad, files: dict):
+    async def check_updated(self, wad_file: Wad, files: dict):
         """Checks if some wad files have changed since we last accessed them"""
+        if not self.wad_cache:
+            self.wad_cache = await self.get_wad_cache()
+
         res = []
 
         for file_name, file_info in files.items():

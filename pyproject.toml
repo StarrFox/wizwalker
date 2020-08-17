@@ -7,9 +7,10 @@ license = "GPL-3.0-or-later"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-prompt_toolkit = "^3.0.5"
 pymem = {git = "https://github.com/srounet/Pymem"}
 loguru = "^0.5.1"
+aioconsole = "^0.2.1"
+aiofiles = "^0.5.0"
 
 [tool.poetry.dev-dependencies]
 pyinstaller = "^3.6"

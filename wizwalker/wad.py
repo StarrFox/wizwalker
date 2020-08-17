@@ -3,6 +3,8 @@ import struct
 import zlib
 from collections import namedtuple
 
+import aiofiles
+
 from .utils import get_wiz_install
 
 wad_file_info = namedtuple("wad_file_info", "offset, size, is_zip, crc, unzipped_size")
@@ -21,13 +23,12 @@ class Wad:
             raise RuntimeError(f"{self.name} not found.")
 
         self.journal = {}
-        self.refresh_journal()
+        self.refreshed_once = False
 
     def __repr__(self):
-        return f"<Wad {self.name=} {self.total_size=}>"
+        return f"<Wad {self.name=}>"
 
-    @property
-    def total_size(self):
+    async def total_size(self):
         """Total size of the files in this wad"""
         total = 0
         for file_info in self.journal.values():
@@ -35,52 +36,50 @@ class Wad:
 
         return total
 
-    def refresh_journal(self):
-        fp = self.file_path.open("rb")
-        # KIWAD id string
-        fp.seek(5)
-        version = struct.unpack("<l", fp.read(4))[0]
-        file_num = struct.unpack("<l", fp.read(4))[0]
+    async def refresh_journal(self):
+        self.refreshed_once = True
 
-        if version >= 2:
-            fp.read(1)
+        async with aiofiles.open(self.file_path, "rb") as fp:
+            # KIWAD id string
+            await fp.seek(5)
+            version = struct.unpack("<l", await fp.read(4))[0]
+            file_num = struct.unpack("<l", await fp.read(4))[0]
 
-        for _ in range(file_num):
-            offset = struct.unpack("<l", fp.read(4))[0]
-            size = struct.unpack("<l", fp.read(4))[0]
-            zsize = struct.unpack("<l", fp.read(4))[0]
-            is_zip = struct.unpack("?", fp.read(1))[0]
-            crc = struct.unpack("<l", fp.read(4))[0]
-            name_length = struct.unpack("<l", fp.read(4))[0]
-            name = fp.read(name_length).decode("utf-8")[:-1]
+            if version >= 2:
+                await fp.read(1)
 
-            self.journal[name] = wad_file_info(
-                offset=offset, size=size, is_zip=is_zip, crc=crc, unzipped_size=zsize,
-            )
+            for _ in range(file_num):
+                offset = struct.unpack("<l", await fp.read(4))[0]
+                size = struct.unpack("<l", await fp.read(4))[0]
+                zsize = struct.unpack("<l", await fp.read(4))[0]
+                is_zip = struct.unpack("?", await fp.read(1))[0]
+                crc = struct.unpack("<l", await fp.read(4))[0]
+                name_length = struct.unpack("<l", await fp.read(4))[0]
+                name = (await fp.read(name_length)).decode("utf-8")[:-1]
 
-        fp.close()
-        del fp
+                self.journal[name] = wad_file_info(
+                    offset=offset, size=size, is_zip=is_zip, crc=crc, unzipped_size=zsize,
+                )
 
-    def get_file(self, name: str) -> bytes:
+    async def get_file(self, name: str) -> bytes:
         """Get the data contents of the named file"""
+        if not self.refreshed_once:
+            await self.refresh_journal()
+
         target_file = self.journal.get(name)
 
         if not target_file:
             raise RuntimeError(f"File {name} not found.")
 
-        fp = self.file_path.open("rb")
+        async with aiofiles.open(self.file_path, "rb") as fp:
+            fp.seek(target_file.offset)
+            raw_data = fp.read(target_file.size)
 
-        fp.seek(target_file.offset)
-        raw_data = fp.read(target_file.size)
+            if target_file.is_zip:
+                data = zlib.decompress(raw_data)
 
-        if target_file.is_zip:
-            data = zlib.decompress(raw_data)
-
-        else:
-            data = raw_data
-
-        fp.close()
-        del fp
+            else:
+                data = raw_data
 
         return data
 

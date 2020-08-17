@@ -1,10 +1,13 @@
 import struct
 import threading
+from collections import namedtuple
 from typing import Any, Optional, Tuple
 
 import pymem
 import pymem.pattern
 from pymem.ressources.structure import MODULEINFO
+
+from .. import utils
 
 
 class MemoryHook:
@@ -72,14 +75,10 @@ class MemoryHook:
         )
 
         self.memory_handler.process.write_bytes(
-            self.hook_address,
-            self.hook_bytecode,
-            len(self.hook_bytecode),
+            self.hook_address, self.hook_bytecode, len(self.hook_bytecode),
         )
         self.memory_handler.process.write_bytes(
-            self.jump_address,
-            self.jump_bytecode,
-            len(self.jump_bytecode),
+            self.jump_address, self.jump_bytecode, len(self.jump_bytecode),
         )
 
         return None
@@ -256,6 +255,8 @@ class MemoryHandler:
         self.process.open_process_from_id(pid)
         self.process.check_wow64()
 
+        self.is_injected = False
+
         self.memory_thread = None
         self.player_struct_addr = None
         self.quest_struct_addr = None
@@ -271,12 +272,50 @@ class MemoryHandler:
     def __repr__(self):
         return f"<MemoryHandler {self.player_struct_addr=} {self.quest_struct_addr=} {self.memory_thread=}>"
 
+    @utils.executor_function
     def close(self):
         """
         Closes MemoryHandler, closing all hooks and threads
         """
         for hook in self.hooks:
             hook.unhook()
+
+    @utils.executor_function
+    def read_xyz(self):
+        if not self.is_injected:
+            return None
+
+        player_struct = self.process.read_int(self.player_struct_addr)
+        x = self.process.read_float(player_struct + 0x2C)
+        y = self.process.read_float(player_struct + 0x30)
+        z = self.process.read_float(player_struct + 0x34)
+
+        return utils.XYZ(x, y, z)
+
+    @utils.executor_function
+    def read_quest_xyz(self):
+        if not self.is_injected:
+            return None
+
+        quest_struct = self.process.read_int(self.quest_struct_addr)
+        x = self.process.read_float(quest_struct + 0x81C)
+        y = self.process.read_float(quest_struct + 0x81C + 0x4)
+        z = self.process.read_float(quest_struct + 0x81C + 0x8)
+
+        return utils.XYZ(x, y, z)
+
+    @utils.executor_function
+    def inject(self):
+        self.is_injected = True
+
+        cord_hook = PlayerHook(self)
+        cord_hook.hook()
+        quest_hook = QuestHook(self)
+        quest_hook.hook()
+        self.hooks.append(cord_hook)
+        self.hooks.append(quest_hook)
+        self.player_struct_addr = cord_hook.player_struct
+        self.quest_struct_addr = quest_hook.cord_struct
 
     def start_memory_thread(self):
         cord_hook = PlayerHook(self)

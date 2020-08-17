@@ -1,8 +1,9 @@
 import sys
+import asyncio
 from pathlib import Path
 
 from wizwalker import WizWalker
-from wizwalker.cli import WizWalkerCli
+from wizwalker.cli import WizWalkerConsole
 
 # https://pyinstaller.readthedocs.io/en/stable/runtime-information.html
 if getattr(sys, "frozen", False):
@@ -15,13 +16,14 @@ if not cache_dir.exists():
     cache_dir.mkdir()
 
 
-def main():
+async def main():
     if sys.platform != "win32":
         raise RuntimeError(f"This program is windows only, not {sys.platform}")
 
     walker = WizWalker()
-    cli = WizWalkerCli(walker)
-    cli.run()
+    console = WizWalkerConsole(walker)
+    await console.interact()
+    await walker.close()
 
     # app = WizWalker()
     #
@@ -32,4 +34,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

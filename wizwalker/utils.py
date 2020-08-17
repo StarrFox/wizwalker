@@ -1,14 +1,56 @@
+import asyncio
 import ctypes
+import functools
 import io
 import struct
 import winreg
 import zlib
+from collections import namedtuple
+from concurrent.futures.thread import ThreadPoolExecutor
 from os import system as cmd
+from typing import Callable
 from xml.etree import ElementTree
+from ctypes import WinDLL
 
 from pymem.ptypes import RemotePointer
 
-from wizwalker.windows import user32
+user32 = WinDLL("user32")
+XYZ = namedtuple("XYZ", "x, y, z")
+
+
+# Modified from https://github.com/Gorialis/jishaku/blob/master/jishaku/functools.py#L19
+# This license covers the below function
+# MIT License
+#
+# Copyright (c) 2020 Devon (Gorialis) R
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+def executor_function(sync_function: Callable):
+    @functools.wraps(sync_function)
+    async def sync_wrapper(*args, **kwargs):
+        loop = asyncio.get_event_loop()
+        internal_function = functools.partial(sync_function, *args, **kwargs)
+
+        with ThreadPoolExecutor() as pool:
+            return await loop.run_in_executor(pool, internal_function)
+
+    return sync_wrapper
 
 
 def get_wiz_install():

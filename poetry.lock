@@ -1,4 +1,20 @@
 [[package]]
+category = "main"
+description = "Asynchronous console and interfaces for asyncio"
+name = "aioconsole"
+optional = false
+python-versions = "*"
+version = "0.2.1"
+
+[[package]]
+category = "main"
+description = "File support for asyncio."
+name = "aiofiles"
+optional = false
+python-versions = "*"
+version = "0.5.0"
+
+[[package]]
 category = "dev"
 description = "Python graph (network) package"
 name = "altgraph"
@@ -58,17 +74,6 @@ version = "2019.4.18"
 future = "*"
 
 [[package]]
-category = "main"
-description = "Library for building powerful interactive command lines in Python"
-name = "prompt-toolkit"
-optional = false
-python-versions = ">=3.6.1"
-version = "3.0.5"
-
-[package.dependencies]
-wcwidth = "*"
-
-[[package]]
 category = "dev"
 description = "PyInstaller bundles a Python application and all its dependencies into a single package."
 name = "pyinstaller"
@@ -108,14 +113,6 @@ version = "0.2.0"
 
 [[package]]
 category = "main"
-description = "Measures the displayed width of unicode strings in a terminal"
-name = "wcwidth"
-optional = false
-python-versions = "*"
-version = "0.2.5"
-
-[[package]]
-category = "main"
 description = "A small Python utility to set file creation time on Windows"
 marker = "sys_platform == \"win32\""
 name = "win32-setctime"
@@ -127,10 +124,17 @@ version = "1.0.1"
 dev = ["pytest (>=4.6.2)", "black (>=19.3b0)"]
 
 [metadata]
-content-hash = "c63539836a1e3ff2b0456528d24ff9aaa813c56ca44283c905a06713560c6259"
+content-hash = "2716df67a350e04e1ab1d10a18d4751c6d0c11076f9f0a0bc657b65a7ad18867"
 python-versions = "^3.8"
 
 [metadata.files]
+aioconsole = [
+    {file = "aioconsole-0.2.1.tar.gz", hash = "sha256:f63d007c5c0fd5a30769af0a6b749307ea86001c4f217d3e5e9e248ccdfec1d0"},
+]
+aiofiles = [
+    {file = "aiofiles-0.5.0-py3-none-any.whl", hash = "sha256:377fdf7815cc611870c59cbd07b68b180841d2a2b79812d8c218be02448c2acb"},
+    {file = "aiofiles-0.5.0.tar.gz", hash = "sha256:98e6bcfd1b50f97db4980e182ddd509b7cc35909e903a8fe50d8849e02d815af"},
+]
 altgraph = [
     {file = "altgraph-0.17-py2.py3-none-any.whl", hash = "sha256:c623e5f3408ca61d4016f23a681b9adb100802ca3e3da5e718915a9e4052cebe"},
     {file = "altgraph-0.17.tar.gz", hash = "sha256:1f05a47122542f97028caf78775a095fbe6a2699b5089de8477eb583167d69aa"},
@@ -154,10 +158,6 @@ loguru = [
 pefile = [
     {file = "pefile-2019.4.18.tar.gz", hash = "sha256:a5d6e8305c6b210849b47a6174ddf9c452b2888340b8177874b862ba6c207645"},
 ]
-prompt-toolkit = [
-    {file = "prompt_toolkit-3.0.5-py3-none-any.whl", hash = "sha256:df7e9e63aea609b1da3a65641ceaf5bc7d05e0a04de5bd45d05dbeffbabf9e04"},
-    {file = "prompt_toolkit-3.0.5.tar.gz", hash = "sha256:563d1a4140b63ff9dd587bda9557cffb2fe73650205ab6f4383092fb882e7dc8"},
-]
 pyinstaller = [
     {file = "PyInstaller-3.6.tar.gz", hash = "sha256:3730fa80d088f8bb7084d32480eb87cbb4ddb64123363763cf8f2a1378c1c4b7"},
 ]
@@ -165,10 +165,6 @@ Pymem = []
 pywin32-ctypes = [
     {file = "pywin32-ctypes-0.2.0.tar.gz", hash = "sha256:24ffc3b341d457d48e8922352130cf2644024a4ff09762a2261fd34c36ee5942"},
     {file = "pywin32_ctypes-0.2.0-py2.py3-none-any.whl", hash = "sha256:9dc2d991b3479cc2df15930958b674a48a227d5361d413827a4cfd0b5876fc98"},
-]
-wcwidth = [
-    {file = "wcwidth-0.2.5-py2.py3-none-any.whl", hash = "sha256:beb4802a9cebb9144e99086eff703a642a13d6a0052920003a230f3294bbe784"},
-    {file = "wcwidth-0.2.5.tar.gz", hash = "sha256:c4d647b99872929fdb7bdcaa4fbe7f01413ed3d98077df798530e5b04f116c83"},
 ]
 win32-setctime = [
     {file = "win32_setctime-1.0.1-py3-none-any.whl", hash = "sha256:568fd636c68350bcc54755213fe01966fe0a6c90b386c0776425944a0382abef"},

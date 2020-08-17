@@ -1,6 +1,8 @@
 import ctypes.wintypes
 from functools import cached_property
+from typing import Optional
 
+from . import utils
 from .windows import KeyboardHandler, MemoryHandler, user32
 
 
@@ -15,8 +17,8 @@ class Client:
     def __repr__(self):
         return f"<Client {self.window_handle=} {self.process_id=} {self.memory=}>"
 
-    def close(self):
-        self.memory.close()
+    async def close(self):
+        await self.memory.close()
 
     @cached_property
     def process_id(self):
@@ -26,10 +28,14 @@ class Client:
         user32.GetWindowThreadProcessId(self.window_handle, pid_ref)
         return pid.value
 
-    @property
-    def xyz(self) -> tuple:
-        return self.memory.x, self.memory.y, self.memory.z
+    async def xyz(self) -> Optional[utils.XYZ]:
+        """
+        Player xyz if memory hooks are injected, otherwise None
+        """
+        return await self.memory.read_xyz()
 
-    @property
-    def quest_xyz(self) -> tuple:
-        return self.memory.quest_x, self.memory.quest_y, self.memory.quest_z
+    async def quest_xyz(self) -> Optional[utils.XYZ]:
+        """
+        Quest xyz if memory hooks are injected, otherwise None
+        """
+        return await self.memory.read_quest_xyz
