@@ -39,6 +39,9 @@ class WizWalkerConsole(AsynchronousCli):
         wad_parser.add_argument("file_name", type=str)
         commands["wad"] = (self.wad_command, wad_parser)
 
+        cache_parser = ArgumentParser(description="Cache Wad data")
+        commands["cache"] = (self.cache_command, cache_parser)
+
         wiz_parser = ArgumentParser(description="Start a Wizard101 instance")
         commands["wiz"] = (self.wiz_command, wiz_parser)
 

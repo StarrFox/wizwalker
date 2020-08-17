@@ -72,8 +72,8 @@ class Wad:
             raise RuntimeError(f"File {name} not found.")
 
         async with aiofiles.open(self.file_path, "rb") as fp:
-            fp.seek(target_file.offset)
-            raw_data = fp.read(target_file.size)
+            await fp.seek(target_file.offset)
+            raw_data = await fp.read(target_file.size)
 
             if target_file.is_zip:
                 data = zlib.decompress(raw_data)
@@ -83,11 +83,14 @@ class Wad:
 
         return data
 
-    def get_file_info(self, name: str) -> wad_file_info:
+    async def get_file_info(self, name: str) -> wad_file_info:
         """
         Gets a wad_file_info for a file
         this is the same as journal[name]
         """
+        if not self.refreshed_once:
+            await self.refresh_journal()
+
         try:
             file_info = self.journal[name]
         except KeyError:

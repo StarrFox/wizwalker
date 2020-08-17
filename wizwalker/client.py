@@ -38,4 +38,4 @@ class Client:
         """
         Quest xyz if memory hooks are injected, otherwise None
         """
-        return await self.memory.read_quest_xyz
+        return await self.memory.read_quest_xyz()

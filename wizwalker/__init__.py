@@ -2,10 +2,11 @@ import logging
 
 from loguru import logger
 
+from .wad import Wad
 from . import cli, packets, utils, windows
 from .application import WizWalker
 from .client import Client
-from .wad import Wad
+
 
 # logging.basicConfig(
 #     format="[%(asctime)s] [%(levelname)s:%(name)s] %(message)s",

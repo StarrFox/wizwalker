@@ -33,5 +33,8 @@ async def main():
     # app.run()
 
 
-if __name__ == "__main__":
+def sync_main():
     asyncio.run(main())
+
+if __name__ == "__main__":
+    sync_main()

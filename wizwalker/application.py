@@ -80,7 +80,7 @@ class WizWalker:
     async def write_wad_cache(self):
         async with aiofiles.open(self.cache_dir / "wad_cache.data", "w+") as fp:
             json_data = json.dumps(self.wad_cache)
-            await fp.wrtie(json_data)
+            await fp.write(json_data)
 
     async def get_node_cache(self):
         try:
@@ -153,7 +153,7 @@ class WizWalker:
 
     async def _cache_template(self, root_wad):
         template_file = {
-            "TemplateManifest.xml": root_wad.get_file_info("TemplateManifest.xml")
+            "TemplateManifest.xml": await root_wad.get_file_info("TemplateManifest.xml")
         }
 
         template_file = await self.check_updated(root_wad, template_file)
@@ -181,7 +181,7 @@ class WizWalker:
                 self.node_cache[wad_name] = 1
 
                 try:
-                    file_info = wad.get_file_info("pathNodeData.bin")
+                    file_info = await wad.get_file_info("pathNodeData.bin")
                     if file_info.size == 20:
                         continue
 
