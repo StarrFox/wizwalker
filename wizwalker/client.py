@@ -1,4 +1,5 @@
 import ctypes.wintypes
+from functools import cached_property
 
 from .windows import KeyboardHandler, MemoryHandler, user32
 
@@ -8,17 +9,17 @@ class Client:
 
     def __init__(self, window_handle: int):
         self.window_handle = window_handle
-        self.process_id = self._get_pid()
         self.keyboard = KeyboardHandler(window_handle)
         self.memory = MemoryHandler(self.process_id)
 
     def __repr__(self):
-        return f"<Client {self.window_handle=} {self.process_id=}>"
+        return f"<Client {self.window_handle=} {self.process_id=} {self.memory=}>"
 
     def close(self):
         self.memory.close()
 
-    def _get_pid(self):
+    @cached_property
+    def process_id(self):
         # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowthreadprocessid
         pid = ctypes.wintypes.DWORD()
         pid_ref = ctypes.byref(pid)  # we need a pointer to the pid val's memory

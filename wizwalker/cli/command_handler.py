@@ -1,3 +1,5 @@
+from functools import cached_property
+
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.document import Document
 from prompt_toolkit.widgets import TextArea
@@ -41,17 +43,13 @@ class CommandHandler(TextArea):
         )
         self.status.buffer.text = status_message
 
-    @property
+    @cached_property
     def commands(self):
-        if hasattr(self, "_cmds"):
-            return self._cmds
-
         cmds = {}
         for item in dir(self):
             if item.startswith("command_"):
                 cmds.update({item.replace("command_", ""): getattr(self, item)})
 
-        self._cmds = cmds
         return cmds
 
     def command_test(self, args):
@@ -82,7 +80,7 @@ class CommandHandler(TextArea):
         for client in self.walker.clients:
             client.memory.start_memory_thread()
 
-        self.write_output("Injected cords")
+        self.write_output("Injected")
 
     def command_cords(self, args):
         """Get cords of all clients"""
@@ -171,6 +169,12 @@ class CommandHandler(TextArea):
         """
         quick_launch()
         self.write_output("Started")
+
+    def command_debug(self, args):
+        """
+        Print current objects
+        """
+        self.write_output(repr(self.walker))
 
     def command_exit(self, args):
         """Exit cli"""

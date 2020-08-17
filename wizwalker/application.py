@@ -23,7 +23,7 @@ class WizWalker:
         self.socket_listener = None
 
     def __repr__(self):
-        return f"WizWalker {self.window_handles=} {self.clients=}"
+        return f"<WizWalker {self.window_handles=} {self.clients=}>"
 
     @cached_property
     def cache_dir(self):

@@ -268,6 +268,9 @@ class MemoryHandler:
 
         self.hooks = []
 
+    def __repr__(self):
+        return f"<MemoryHandler {self.player_struct_addr=} {self.quest_struct_addr=} {self.memory_thread=}>"
+
     def close(self):
         """
         Closes MemoryHandler, closing all hooks and threads
