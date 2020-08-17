@@ -209,18 +209,29 @@ def pharse_node_data(file_data: bytes) -> dict:
     """
     Converts data into a dict of node nums to points
     """
-    total_size = len(file_data)
-    fp = io.BytesIO(file_data)
+    entry_start = b"\xFE\xDB\xAE\x04"
 
     node_data = {}
-    # header data
-    fp.seek(20)
-    while fp.tell() < total_size:
-        entry = fp.read(92)
+    # no nodes
+    if len(file_data) == 20:
+        return node_data
+
+    # header
+    file_data = file_data[20:]
+
+    last_start = 0
+    while file_data:
+        start = file_data.find(entry_start, last_start)
+        if start == -1:
+            break
+
+        entry = file_data[start:start + 48 + 2]
+
         cords_data = entry[16:16 + (4 * 3)]
         x = struct.unpack("<f", cords_data[0:4])[0]
         y = struct.unpack("<f", cords_data[4:8])[0]
         z = struct.unpack("<f", cords_data[8:12])[0]
+
         node_num = entry[48:48 + 2]
         unpacked_num = struct.unpack("<H", node_num)[0]
 
