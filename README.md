@@ -7,6 +7,7 @@ Wizard101 bot for autoquesting
 
 ## install
 download latest release from [here](https://github.com/StarrFox/WizWalker/releases)
+or install from pypi `pip install -U wizwalker`
 
 ## discord
 join the offical discord [here](https://discord.gg/JHrdCNK)

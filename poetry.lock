@@ -89,19 +89,14 @@ setuptools = "*"
 [[package]]
 category = "main"
 description = "pymem: python memory access made easy"
-name = "Pymem"
+name = "pymem"
 optional = false
 python-versions = "*"
-version = "1.3"
+version = "1.2"
 
 [package.extras]
 doc = ["recommonmark", "sphinx", "sphinx-rtd-theme", "sphinxcontrib-napoleon"]
 test = ["codecov", "pytest", "pytest-cov"]
-
-[package.source]
-reference = "9e6ab2e6ee29db00ff8da5270fb0f8cd8692b7ab"
-type = "git"
-url = "https://github.com/srounet/Pymem"
 
 [[package]]
 category = "dev"
@@ -124,7 +119,7 @@ version = "1.0.1"
 dev = ["pytest (>=4.6.2)", "black (>=19.3b0)"]
 
 [metadata]
-content-hash = "2716df67a350e04e1ab1d10a18d4751c6d0c11076f9f0a0bc657b65a7ad18867"
+content-hash = "7e211be2a89b05d3af249b63b59a5b7087cec59b275871b741f4e8ca04ccf89f"
 python-versions = "^3.8"
 
 [metadata.files]
@@ -161,7 +156,9 @@ pefile = [
 pyinstaller = [
     {file = "PyInstaller-3.6.tar.gz", hash = "sha256:3730fa80d088f8bb7084d32480eb87cbb4ddb64123363763cf8f2a1378c1c4b7"},
 ]
-Pymem = []
+pymem = [
+    {file = "Pymem-1.2.tar.gz", hash = "sha256:c83d87a58c559f936c6eec929774232aeacab4eb1d4b3f4e990078e1e1c5dfac"},
+]
 pywin32-ctypes = [
     {file = "pywin32-ctypes-0.2.0.tar.gz", hash = "sha256:24ffc3b341d457d48e8922352130cf2644024a4ff09762a2261fd34c36ee5942"},
     {file = "pywin32_ctypes-0.2.0-py2.py3-none-any.whl", hash = "sha256:9dc2d991b3479cc2df15930958b674a48a227d5361d413827a4cfd0b5876fc98"},
