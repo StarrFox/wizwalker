@@ -74,11 +74,24 @@ class MemoryHook:
             self.jump_address, len(self.jump_bytecode)
         )
 
-        self.memory_handler.process.write_bytes(
-            self.hook_address, self.hook_bytecode, len(self.hook_bytecode),
+        # Todo: Fix this whenever pymem is updated
+        # self.memory_handler.process.write_bytes(
+        #     self.hook_address, self.hook_bytecode, len(self.hook_bytecode),
+        # )
+        # self.memory_handler.process.write_bytes(
+        #     self.jump_address, self.jump_bytecode, len(self.jump_bytecode),
+        # )
+        pymem.memory.write_bytes(
+            self.memory_handler.process.process_handle,
+            self.hook_address,
+            self.hook_bytecode,
+            len(self.hook_bytecode),
         )
-        self.memory_handler.process.write_bytes(
-            self.jump_address, self.jump_bytecode, len(self.jump_bytecode),
+        pymem.memory.write_bytes(
+            self.memory_handler.process.process_handle,
+            self.jump_address,
+            self.jump_bytecode,
+            len(self.jump_bytecode),
         )
 
     def unhook(self):
@@ -86,7 +99,14 @@ class MemoryHook:
         Deallocates hook memory and rewrites jump addr to it's origional code,
         also called when a client is closed
         """
-        self.memory_handler.process.write_bytes(
+        # Todo: fix when pymem updates
+        # self.memory_handler.process.write_bytes(
+        #     self.jump_address,
+        #     self.jump_original_bytecode,
+        #     len(self.jump_original_bytecode),
+        # )
+        pymem.memory.write_bytes(
+            self.memory_handler.process.process_handle,
             self.jump_address,
             self.jump_original_bytecode,
             len(self.jump_original_bytecode),
@@ -344,6 +364,24 @@ class MemoryHandler:
             self.process.write_float(player_struct + 0x30, y)
         if z:
             self.process.write_float(player_struct + 0x34, z)
+
+        return True
+
+    @utils.executor_function
+    def read_player_yaw(self):
+        if not self.is_injected:
+            return None
+
+        player_struct = self.process.read_int(self.player_struct_addr)
+        return self.process.read_double(player_struct + 0x3C)
+
+    @utils.executor_function
+    def set_player_yaw(self, yaw):
+        if not self.is_injected:
+            return False
+
+        player_struct = self.process.read_int(self.player_struct_addr)
+        self.process.write_double(player_struct + 0x3C, yaw)
 
         return True
 

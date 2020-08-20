@@ -28,22 +28,40 @@ class Client:
         user32.GetWindowThreadProcessId(self.window_handle, pid_ref)
         return pid.value
 
-    async def teleport(self, *, x: float = None, y: float = None, z: float = None):
+    async def teleport(self, *, x: float = None, y: float = None, z: float = None, yaw: float = None):
         """
         Teleport the player to a set x, y, z
         returns False if not injected, True otherwise
         """
-        await self.memory.set_xyz(
+        res = await self.memory.set_xyz(
             x=x,
             y=y,
             z=z,
         )
+
+        if yaw:
+            await self.memory.set_player_yaw(yaw)
+
+        return res
 
     async def xyz(self) -> Optional[utils.XYZ]:
         """
         Player xyz if memory hooks are injected, otherwise None
         """
         return await self.memory.read_xyz()
+
+    async def yaw(self) -> Optional[float]:
+        """
+        Player yaw if memory hooks are injected, otherwise None
+        """
+        return await self.memory.read_player_yaw()
+
+    async def set_yaw(self, yaw: float) -> bool:
+        """
+        Set the player yaw to this value,
+        returns True if injected and value was set, False otherwise
+        """
+        return await self.memory.set_player_yaw(yaw)
 
     async def quest_xyz(self) -> Optional[utils.XYZ]:
         """

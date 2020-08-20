@@ -55,6 +55,7 @@ class WizWalkerConsole(AsynchronousCli):
         teleport_parser.add_argument("x", type=float)
         teleport_parser.add_argument("y", type=float)
         teleport_parser.add_argument("--z", type=float)
+        teleport_parser.add_argument("--yaw", type=float)
         commands["teleport"] = (self.teleport_command, teleport_parser)
 
         return commands
@@ -77,6 +78,7 @@ class WizWalkerConsole(AsynchronousCli):
                 f"mana={await client.mana()} "
                 f"potions={await client.potions()} "
                 f"gold={await client.gold()} "
+                f"yaw={await client.yaw()} "
                 f"player_base={hex(await client.memory.read_player_base())} "
                 f"player_stat_base={hex(await client.memory.read_player_stat_base())}\n"
             )
@@ -116,12 +118,13 @@ class WizWalkerConsole(AsynchronousCli):
 
         writer.write("Started\n")
 
-    async def teleport_command(self, _, writer, x, y, z=None):
+    async def teleport_command(self, _, writer, x, y, z=None, yaw=None):
         for client in self.walker.clients:
             await client.teleport(
                 x=x,
                 y=y,
                 z=z,
+                yaw=yaw
             )
 
         writer.write("Teleported\n")
