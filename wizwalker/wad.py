@@ -5,7 +5,7 @@ from collections import namedtuple
 
 import aiofiles
 
-from .utils import get_wiz_install
+from .utils import get_wiz_install, executor_function
 
 wad_file_info = namedtuple("wad_file_info", "offset, size, is_zip, crc, unzipped_size")
 
@@ -36,26 +36,30 @@ class Wad:
 
         return total
 
-    async def refresh_journal(self):
+    # This method runs in a thread bc it is very slow
+    @executor_function
+    def refresh_journal(self):
         self.refreshed_once = True
 
-        async with aiofiles.open(self.file_path, "rb") as fp:
+        with open(self.file_path, "rb") as fp:
             # KIWAD id string
-            await fp.seek(5)
-            version = struct.unpack("<l", await fp.read(4))[0]
-            file_num = struct.unpack("<l", await fp.read(4))[0]
+            fp.seek(5)
+            version = struct.unpack("<l", fp.read(4))[0]
+            file_num = struct.unpack("<l", fp.read(4))[0]
 
             if version >= 2:
-                await fp.read(1)
+                fp.read(1)
+
+            total_journal_size = (4 + 4 + 4 + 1 + 4)
 
             for _ in range(file_num):
-                offset = struct.unpack("<l", await fp.read(4))[0]
-                size = struct.unpack("<l", await fp.read(4))[0]
-                zsize = struct.unpack("<l", await fp.read(4))[0]
-                is_zip = struct.unpack("?", await fp.read(1))[0]
-                crc = struct.unpack("<l", await fp.read(4))[0]
-                name_length = struct.unpack("<l", await fp.read(4))[0]
-                name = (await fp.read(name_length)).decode("utf-8")[:-1]
+                offset = struct.unpack("<l", fp.read(4))[0]
+                size = struct.unpack("<l", fp.read(4))[0]
+                zsize = struct.unpack("<l", fp.read(4))[0]
+                is_zip = struct.unpack("?", fp.read(1))[0]
+                crc = struct.unpack("<l", fp.read(4))[0]
+                name_length = struct.unpack("<l", fp.read(4))[0]
+                name = (fp.read(name_length)).decode("utf-8")[:-1]
 
                 self.journal[name] = wad_file_info(
                     offset=offset, size=size, is_zip=is_zip, crc=crc, unzipped_size=zsize,

@@ -81,8 +81,6 @@ class MemoryHook:
             self.jump_address, self.jump_bytecode, len(self.jump_bytecode),
         )
 
-        return None
-
     def unhook(self):
         """
         Deallocates hook memory and rewrites jump addr to it's origional code,
@@ -160,6 +158,70 @@ class PlayerHook(MemoryHook):
         self.free_player_struct()
 
 
+class PlayerStatHook(MemoryHook):
+    def __init__(self, memory_handler):
+        super().__init__(memory_handler)
+        self.stat_addr = None
+
+    def get_pattern_and_mask(self) -> Tuple[bytes, Optional[str], Optional[MODULEINFO]]:
+        module = pymem.process.module_from_name(
+            self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
+        )
+        return b"\x89\x48\x40\x74\x69", None, module
+
+    def set_stat_addr(self):
+        self.stat_addr = self.memory_handler.process.allocate(4)
+
+    def free_stat_addr(self):
+        if self.stat_addr:
+            self.memory_handler.process.free(self.stat_addr)
+
+    def get_jump_bytecode(self) -> bytes:
+        # distance = end - start
+        distance = self.hook_address - self.jump_address
+        relitive_jump = distance - 5  # size of this line
+        packed_relitive_jump = struct.pack("<i", relitive_jump)
+        return b"\xE9" + packed_relitive_jump
+
+    def get_hook_bytecode(self) -> bytes:
+        self.set_stat_addr()
+        packed_addr = struct.pack("<i", self.stat_addr)
+
+        # registers gay
+        tmp = self.memory_handler.process.allocate(4)
+        packed_tmp = struct.pack("<i", tmp)
+
+        bytecode_lines = [
+            b"\x89\x3D" + packed_tmp,  # mov [02661004],edi { (472) }
+            b"\x8B\xF8",  # mov edi,eax
+            b"\x83\xC7\x40",  # add edi,40 { 64 }
+            b"\x89\x3D" + packed_addr,  # mov [player_stats],edi { (180) }
+            b"\x8B\x3D" + packed_tmp,  # mov edi,[02661004] { (472) }
+            # original code
+            b"\x89\x48\x40",  # mov [eax+40],ecx
+        ]
+
+        bytecode = b"".join(bytecode_lines)
+
+        # WizardGraphicalClient.exe+10060C3 + LEN(BYTECODE_LINES) - 6 (Length of this line)
+        # 4 (length of target line) 1 (no idea)
+        je_relitive_jump = (self.jump_address + 0x6e) - (self.hook_address + len(bytecode) + 6)
+        packed_je_relitive_jump = struct.pack("<i", je_relitive_jump)
+
+        bytecode += b"\x0F\x84" + packed_je_relitive_jump  # je WizardGraphicalClient.exe+10060C3
+
+        jmp_relitive_jump = (self.jump_address + 0x5) - (self.hook_address + len(bytecode) + 5)
+        packed_jmp_relitive_jump = struct.pack("<i", jmp_relitive_jump)
+
+        bytecode += b"\xE9" + packed_jmp_relitive_jump  # jmp WizardGraphicalClient.exe+100605A"
+
+        return bytecode
+
+    def unhook(self):
+        super().unhook()
+        self.free_stat_addr()
+
+
 class QuestHook(MemoryHook):
     def __init__(self, memory_handler):
         super().__init__(memory_handler)
@@ -218,37 +280,6 @@ class QuestHook(MemoryHook):
         self.free_cord_struct()
 
 
-class MemoryReaderThread(threading.Thread):
-    def __init__(self, memory_handler):
-        super().__init__()
-        self.memory_handler = memory_handler
-
-    def run(self) -> None:
-        process = self.memory_handler.process
-        player_struct = self.memory_handler.player_struct_addr
-        quest_struct = self.memory_handler.quest_struct_addr
-        while True:
-            player_struct_addr = process.read_int(player_struct)
-            self.memory_handler.x = process.read_float(player_struct_addr + 0x2C)
-            self.memory_handler.y = process.read_float(player_struct_addr + 0x30)
-            self.memory_handler.z = process.read_float(player_struct_addr + 0x34)
-
-            quest_struct_addr = process.read_int(quest_struct)
-            try:
-                self.memory_handler.quest_x = process.read_float(
-                    quest_struct_addr + 0x81C
-                )
-                self.memory_handler.quest_y = process.read_float(
-                    quest_struct_addr + 0x81C + 0x4
-                )
-                self.memory_handler.quest_z = process.read_float(
-                    quest_struct_addr + 0x81C + 0x8
-                )
-            # The values aren't set for a while
-            except (pymem.exception.WinAPIError, pymem.exception.MemoryReadError):
-                pass
-
-
 class MemoryHandler:
     def __init__(self, pid: int):
         self.process = pymem.Pymem()
@@ -260,12 +291,7 @@ class MemoryHandler:
         self.memory_thread = None
         self.player_struct_addr = None
         self.quest_struct_addr = None
-        self.x = None
-        self.y = None
-        self.z = None
-        self.quest_x = None
-        self.quest_y = None
-        self.quest_z = None
+        self.player_stat_addr = None
 
         self.hooks = []
 
@@ -281,6 +307,20 @@ class MemoryHandler:
             hook.unhook()
 
     @utils.executor_function
+    def read_player_base(self):
+        if not self.is_injected:
+            return None
+
+        return self.process.read_int(self.player_struct_addr)
+
+    @utils.executor_function
+    def read_player_stat_base(self):
+        if not self.is_injected:
+            return None
+
+        return self.process.read_int(self.player_stat_addr)
+
+    @utils.executor_function
     def read_xyz(self):
         if not self.is_injected:
             return None
@@ -291,6 +331,21 @@ class MemoryHandler:
         z = self.process.read_float(player_struct + 0x34)
 
         return utils.XYZ(x, y, z)
+
+    @utils.executor_function
+    def set_xyz(self, *, x=None, y=None, z=None):
+        if not self.is_injected:
+            return False
+
+        player_struct = self.process.read_int(self.player_struct_addr)
+        if x:
+            self.process.write_float(player_struct + 0x2C, x)
+        if y:
+            self.process.write_float(player_struct + 0x30, y)
+        if z:
+            self.process.write_float(player_struct + 0x34, z)
+
+        return True
 
     @utils.executor_function
     def read_quest_xyz(self):
@@ -305,6 +360,39 @@ class MemoryHandler:
         return utils.XYZ(x, y, z)
 
     @utils.executor_function
+    def read_player_health(self):
+        if not self.is_injected:
+            return None
+
+        stat_addr = self.process.read_int(self.player_stat_addr)
+        return self.process.read_int(stat_addr)
+
+    @utils.executor_function
+    def read_player_mana(self):
+        if not self.is_injected:
+            return None
+
+        stat_addr = self.process.read_int(self.player_stat_addr)
+        return self.process.read_int(stat_addr + 0x10)
+
+    @utils.executor_function
+    def read_player_potions(self):
+        if not self.is_injected:
+            return None
+
+        stat_addr = self.process.read_int(self.player_stat_addr)
+        # this is a float for some reason
+        return int(self.process.read_float(stat_addr + 0x2C))
+
+    @utils.executor_function
+    def read_player_gold(self):
+        if not self.is_injected:
+            return None
+
+        stat_addr = self.process.read_int(self.player_stat_addr)
+        return self.process.read_int(stat_addr + 0x4)
+
+    @utils.executor_function
     def inject(self):
         self.is_injected = True
 
@@ -312,19 +400,11 @@ class MemoryHandler:
         cord_hook.hook()
         quest_hook = QuestHook(self)
         quest_hook.hook()
+        stat_hook = PlayerStatHook(self)
+        stat_hook.hook()
         self.hooks.append(cord_hook)
         self.hooks.append(quest_hook)
+        self.hooks.append(stat_hook)
         self.player_struct_addr = cord_hook.player_struct
         self.quest_struct_addr = quest_hook.cord_struct
-
-    def start_memory_thread(self):
-        cord_hook = PlayerHook(self)
-        cord_hook.hook()
-        quest_hook = QuestHook(self)
-        quest_hook.hook()
-        self.hooks.append(cord_hook)
-        self.hooks.append(quest_hook)
-        self.player_struct_addr = cord_hook.player_struct
-        self.quest_struct_addr = quest_hook.cord_struct
-        self.memory_thread = MemoryReaderThread(self)
-        self.memory_thread.start()
+        self.player_stat_addr = stat_hook.stat_addr

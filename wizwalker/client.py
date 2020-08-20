@@ -28,6 +28,17 @@ class Client:
         user32.GetWindowThreadProcessId(self.window_handle, pid_ref)
         return pid.value
 
+    async def teleport(self, *, x: float = None, y: float = None, z: float = None):
+        """
+        Teleport the player to a set x, y, z
+        returns False if not injected, True otherwise
+        """
+        await self.memory.set_xyz(
+            x=x,
+            y=y,
+            z=z,
+        )
+
     async def xyz(self) -> Optional[utils.XYZ]:
         """
         Player xyz if memory hooks are injected, otherwise None
@@ -39,3 +50,27 @@ class Client:
         Quest xyz if memory hooks are injected, otherwise None
         """
         return await self.memory.read_quest_xyz()
+
+    async def health(self) -> Optional[int]:
+        """
+        Player health if memory hooks are injected, otherwise None
+        """
+        return await self.memory.read_player_health()
+
+    async def mana(self) -> Optional[int]:
+        """
+        Player mana if memory hooks are injected, otherwise None
+        """
+        return await self.memory.read_player_mana()
+
+    async def potions(self) -> Optional[int]:
+        """
+        Player full potions if memory hooks are injected, otherwise None
+        """
+        return await self.memory.read_player_potions()
+
+    async def gold(self) -> Optional[int]:
+        """
+        Player gold if memory hooks are injected, otherwise None
+        """
+        return await self.memory.read_player_gold()

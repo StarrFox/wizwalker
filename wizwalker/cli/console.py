@@ -37,6 +37,7 @@ class WizWalkerConsole(AsynchronousCli):
         wad_parser = ArgumentParser(description="Extract a wad file")
         wad_parser.add_argument("wad_name", type=str)
         wad_parser.add_argument("file_name", type=str)
+        wad_parser.add_argument("--output_name", type=str)
         commands["wad"] = (self.wad_command, wad_parser)
 
         cache_parser = ArgumentParser(description="Cache Wad data")
@@ -49,6 +50,12 @@ class WizWalkerConsole(AsynchronousCli):
         send_parser.add_argument("key", type=str)
         send_parser.add_argument("seconds", type=float)
         commands["send"] = (self.send_command, send_parser)
+
+        teleport_parser = ArgumentParser(description="Teleport to a certain x,y,z")
+        teleport_parser.add_argument("x", type=float)
+        teleport_parser.add_argument("y", type=float)
+        teleport_parser.add_argument("--z", type=float)
+        commands["teleport"] = (self.teleport_command, teleport_parser)
 
         return commands
 
@@ -64,21 +71,32 @@ class WizWalkerConsole(AsynchronousCli):
 
     async def player_command(self, _, writer):
         for idx, client in enumerate(self.walker.clients):
-            writer.write(f"client-{idx}: xyz={await client.xyz()}\n")
+            writer.write(
+                f"client-{idx}: xyz={await client.xyz()} "
+                f"health={await client.health()} "
+                f"mana={await client.mana()} "
+                f"potions={await client.potions()} "
+                f"gold={await client.gold()} "
+                f"player_base={hex(await client.memory.read_player_base())} "
+                f"player_stat_base={hex(await client.memory.read_player_stat_base())}\n"
+            )
 
     async def quest_command(self, _, writer):
         for idx, client in enumerate(self.walker.clients):
             writer.write(f"client-{idx}: quest_xyz={await client.quest_xyz()}\n")
 
     @staticmethod
-    async def wad_command(_, writer, wad_name, file_name):
+    async def wad_command(_, writer, wad_name, file_name, output_name=None):
         wad = Wad(wad_name)
         file_data = await wad.get_file(file_name)
 
-        async with aiofiles.open(file_name, "wb+") as fp:
+        if output_name is None:
+            output_name = file_name
+
+        async with aiofiles.open(output_name, "wb+") as fp:
             await fp.write(file_data)
 
-        writer.write(f"{wad_name=}, {file_name=}\n")
+        writer.write(f"Extracted {wad_name=}, {file_name=}\n")
 
     async def cache_command(self, _, writer):
         await self.walker.cache_data()
@@ -97,3 +115,13 @@ class WizWalkerConsole(AsynchronousCli):
             asyncio.create_task(client.keyboard.send_key(key, seconds))
 
         writer.write("Started\n")
+
+    async def teleport_command(self, _, writer, x, y, z=None):
+        for client in self.walker.clients:
+            await client.teleport(
+                x=x,
+                y=y,
+                z=z,
+            )
+
+        writer.write("Teleported\n")

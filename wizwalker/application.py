@@ -73,7 +73,12 @@ class WizWalker:
 
         if data:
             wad_cache_data = json.loads(data)
-            wad_cache.update(wad_cache_data)
+
+            # this is so the default dict inside the default dict isn't replaced
+            # by .update
+            for k, v in wad_cache_data.items():
+                for k1, v1 in v.items():
+                    wad_cache[k][k1] = v1
 
         return wad_cache
 
@@ -114,13 +119,20 @@ class WizWalker:
         """Caches various file data we will need later"""
         root_wad = Wad("Root")
 
+        logger.debug("Begining caching")
+
+        logger.debug("Caching messages")
         await self._cache_messages(root_wad)
+        logger.debug("Caching template")
         await self._cache_template(root_wad)
+        logger.debug("Caching nodes")
         await self._cache_nodes()
 
         await self.write_wad_cache()
 
     async def _cache_messages(self, root_wad):
+        await root_wad.refresh_journal()
+
         message_files = {
             k: v
             for k, v in root_wad.journal.items()
@@ -148,8 +160,9 @@ class WizWalker:
                 pharsed_messages.update(utils.pharse_message_file(file_data))
                 del file_data
 
-            with (self.cache_dir / "wizard_messages.json").open("w+") as fp:
-                json.dump(pharsed_messages, fp)
+            async with aiofiles.open(self.cache_dir / "wizard_messages.json", "w+") as fp:
+                json_data = json.dumps(pharsed_messages)
+                await fp.write(json_data)
 
     async def _cache_template(self, root_wad):
         template_file = {
@@ -164,7 +177,8 @@ class WizWalker:
             del file_data
 
             async with aiofiles.open(self.cache_dir / "template_ids.json", "w+") as fp:
-                json.dump(pharsed_template_ids, fp)
+                json_data = json.dumps(pharsed_template_ids)
+                await fp.write(json_data)
 
     async def _cache_nodes(self):
         self.node_cache = await self.get_node_cache()
@@ -214,6 +228,7 @@ class WizWalker:
         """Checks if some wad files have changed since we last accessed them"""
         if not self.wad_cache:
             self.wad_cache = await self.get_wad_cache()
+            logger.debug(f"TEMP {self.wad_cache=} {type(self.wad_cache)}")
 
         res = []
 
