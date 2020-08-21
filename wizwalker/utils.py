@@ -8,9 +8,10 @@ import zlib
 from collections import namedtuple
 from concurrent.futures.thread import ThreadPoolExecutor
 from os import system as cmd
-from typing import Callable
+from typing import Callable, Union
 from xml.etree import ElementTree
 from ctypes import WinDLL
+from pathlib import Path
 
 from pymem.ptypes import RemotePointer
 
@@ -53,7 +54,7 @@ def executor_function(sync_function: Callable):
     return sync_wrapper
 
 
-def get_wiz_install():
+def get_wiz_install() -> Path:
     r"""
     Computer\HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Uninstall\
     {A9E27FF5-6294-46A8-B8FD-77B1DECA3021}
@@ -72,11 +73,11 @@ def get_wiz_install():
     except OSError:
         raise Exception("Wizard101 install not found, do you have it installed?")
 
-    install_location = winreg.QueryValueEx(key, "InstallLocation")[0]
+    install_location = Path(winreg.QueryValueEx(key, "InstallLocation")[0]).absolute()
     return install_location
 
 
-def start_wiz(location: str):
+def start_wiz(location: Union[Path, str]):
     """
     <location>Bin\WizardGraphicalClient.exe -L login.us.wizard101.com 12000
     """

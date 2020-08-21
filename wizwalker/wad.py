@@ -17,7 +17,7 @@ class Wad:
 
         self.name = name
         self.file_path = (
-            pathlib.Path(get_wiz_install()) / "Data" / "GameData" / self.name
+            get_wiz_install() / "Data" / "GameData" / self.name
         )
         if not self.file_path.exists():
             raise RuntimeError(f"{self.name} not found.")

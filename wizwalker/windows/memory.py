@@ -301,7 +301,7 @@ class MemoryHandler:
     @utils.executor_function
     def close(self):
         """
-        Closes MemoryHandler, closing all hooks and threads
+        Closes MemoryHandler, closing all hooks
         """
         for hook in self.hooks:
             hook.unhook()
@@ -394,7 +394,10 @@ class MemoryHandler:
             return None
 
         stat_addr = self.process.read_int(self.player_stat_addr)
-        return self.process.read_int(stat_addr + 0x10)
+        try:
+            return self.process.read_int(stat_addr + 0x10)
+        except pymem.exception.MemoryReadError:
+            return None
 
     @utils.executor_function
     def read_player_potions(self):
@@ -402,8 +405,11 @@ class MemoryHandler:
             return None
 
         stat_addr = self.process.read_int(self.player_stat_addr)
-        # this is a float for some reason
-        return int(self.process.read_float(stat_addr + 0x2C))
+        try:
+            # this is a float for some reason
+            return int(self.process.read_float(stat_addr + 0x2C))
+        except pymem.exception.MemoryReadError:
+            return None
 
     @utils.executor_function
     def read_player_gold(self):
@@ -411,7 +417,10 @@ class MemoryHandler:
             return None
 
         stat_addr = self.process.read_int(self.player_stat_addr)
-        return self.process.read_int(stat_addr + 0x4)
+        try:
+            return self.process.read_int(stat_addr + 0x4)
+        except pymem.exception.MemoryReadError:
+            return None
 
     @utils.executor_function
     def inject(self):

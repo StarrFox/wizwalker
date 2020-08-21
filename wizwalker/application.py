@@ -41,7 +41,7 @@ class WizWalker:
         return root / "cache"
 
     @cached_property
-    def install_location(self):
+    def install_location(self) -> Path:
         return utils.get_wiz_install()
 
     async def get_wizard_messages(self):
@@ -183,7 +183,7 @@ class WizWalker:
     async def _cache_nodes(self):
         self.node_cache = await self.get_node_cache()
 
-        game_data = Path(self.install_location) / "Data" / "GameData"
+        game_data = self.install_location / "Data" / "GameData"
         all_wads = game_data.glob("*.wad")
 
         new_node_data = {}

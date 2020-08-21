@@ -79,17 +79,20 @@ class Client:
     async def mana(self) -> Optional[int]:
         """
         Player mana if memory hooks are injected, otherwise None
+        Can also be None if the injected function hasn't been triggered yet
         """
         return await self.memory.read_player_mana()
 
     async def potions(self) -> Optional[int]:
         """
         Player full potions if memory hooks are injected, otherwise None
+        Can also be None if the injected function hasn't been triggered yet
         """
         return await self.memory.read_player_potions()
 
     async def gold(self) -> Optional[int]:
         """
         Player gold if memory hooks are injected, otherwise None
+        Can also be None if the injected function hasn't been triggered yet
         """
         return await self.memory.read_player_gold()
