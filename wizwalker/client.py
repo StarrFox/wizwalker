@@ -72,6 +72,7 @@ class Client:
     async def health(self) -> Optional[int]:
         """
         Player health if memory hooks are injected, otherwise None
+        Can also be None if the injected function hasn't been triggered yet
         """
         return await self.memory.read_player_health()
 

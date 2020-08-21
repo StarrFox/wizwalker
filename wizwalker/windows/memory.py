@@ -74,24 +74,11 @@ class MemoryHook:
             self.jump_address, len(self.jump_bytecode)
         )
 
-        # Todo: Fix this whenever pymem is updated
-        # self.memory_handler.process.write_bytes(
-        #     self.hook_address, self.hook_bytecode, len(self.hook_bytecode),
-        # )
-        # self.memory_handler.process.write_bytes(
-        #     self.jump_address, self.jump_bytecode, len(self.jump_bytecode),
-        # )
-        pymem.memory.write_bytes(
-            self.memory_handler.process.process_handle,
-            self.hook_address,
-            self.hook_bytecode,
-            len(self.hook_bytecode),
+        self.memory_handler.process.write_bytes(
+            self.hook_address, self.hook_bytecode, len(self.hook_bytecode),
         )
-        pymem.memory.write_bytes(
-            self.memory_handler.process.process_handle,
-            self.jump_address,
-            self.jump_bytecode,
-            len(self.jump_bytecode),
+        self.memory_handler.process.write_bytes(
+            self.jump_address, self.jump_bytecode, len(self.jump_bytecode),
         )
 
     def unhook(self):
@@ -99,14 +86,7 @@ class MemoryHook:
         Deallocates hook memory and rewrites jump addr to it's origional code,
         also called when a client is closed
         """
-        # Todo: fix when pymem updates
-        # self.memory_handler.process.write_bytes(
-        #     self.jump_address,
-        #     self.jump_original_bytecode,
-        #     len(self.jump_original_bytecode),
-        # )
-        pymem.memory.write_bytes(
-            self.memory_handler.process.process_handle,
+        self.memory_handler.process.write_bytes(
             self.jump_address,
             self.jump_original_bytecode,
             len(self.jump_original_bytecode),
@@ -403,7 +383,10 @@ class MemoryHandler:
             return None
 
         stat_addr = self.process.read_int(self.player_stat_addr)
-        return self.process.read_int(stat_addr)
+        try:
+            return self.process.read_int(stat_addr)
+        except pymem.exception.MemoryReadError:
+            return None
 
     @utils.executor_function
     def read_player_mana(self):
