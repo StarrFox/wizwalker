@@ -40,11 +40,11 @@ wizwalker: Runs the wizwalker bot
 wiz: Starts a Wizard101 instance
 
 ## project goals in order of importance
-0. basic info by memory
+0. ~~basic info by memory~~
 1. able to determine current quest
 2. teleportion mode
 3. info by memory
 4. info by packet
 5. able to combat
-6. cli for end users
+6. ~~cli for end users~~
 7. gui for end users

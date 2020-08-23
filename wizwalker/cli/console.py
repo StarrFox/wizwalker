@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 from aioconsole import AsynchronousCli
 
 from wizwalker import Wad, utils
+from wizwalker.windows.memory import MemoryHandler
 
 
 class WizWalkerConsole(AsynchronousCli):
@@ -25,11 +26,15 @@ class WizWalkerConsole(AsynchronousCli):
         attach_parser = ArgumentParser(description="Attach to currently running wiz instances")
         commands["attach"] = (self.attach_command, attach_parser)
 
-        inject_parser = ArgumentParser(description="Inject hooks into all processes")
-        commands["inject"] = (self.inject_command, inject_parser)
+        hook_parser = ArgumentParser(description="Hooks into all processes")
+        hook_parser.add_argument("--target_hook", type=str)
+        commands["hook"] = (self.hook_command, hook_parser)
 
         player_parser = ArgumentParser(description="Output various player information")
         commands["player"] = (self.player_command, player_parser)
+
+        backpack_parser = ArgumentParser(description="Output various backpack information")
+        commands["backpack"] = (self.backpack_command, backpack_parser)
 
         quest_parser = ArgumentParser(description="Output various quest information")
         commands["quest"] = (self.quest_command, quest_parser)
@@ -64,11 +69,28 @@ class WizWalkerConsole(AsynchronousCli):
         self.walker.get_clients()
         writer.write(f"Attached to {len(self.walker.clients)} clients\n")
 
-    async def inject_command(self, _, writer):
-        for client in self.walker.clients:
-            await client.memory.inject()
+    async def hook_command(self, _, writer, target_hook: str = None):
+        hook = False
+        if target_hook is not None:
+            md_dir = dir(MemoryHandler)
+            try:
+                hook_index = md_dir.index("hook_" + target_hook.replace(" ", "_"))
+            except ValueError:
+                writer.write(f"Hook {target_hook} not found\n")
+                return
+            else:
+                hook = md_dir[hook_index]
 
-        writer.write("Injected\n")
+        for client in self.walker.clients:
+            if hook:
+                await getattr(client.memory, hook)()
+            else:
+                await client.memory.hook_all()
+
+        if target_hook:
+            writer.write(f"Hooked {target_hook}\n")
+        else:
+            writer.write("Hooked\n")
 
     async def player_command(self, _, writer):
         for idx, client in enumerate(self.walker.clients):
@@ -81,6 +103,14 @@ class WizWalkerConsole(AsynchronousCli):
                 f"yaw={await client.yaw()} "
                 f"player_base={hex(await client.memory.read_player_base())} "
                 f"player_stat_base={hex(await client.memory.read_player_stat_base())}\n"
+            )
+
+    async def backpack_command(self, _, writer):
+        for idx, client in enumerate(self.walker.clients):
+            writer.write(
+                f"client-{idx}: used_space={await client.backpack_space_used()} "
+                f"total_space={await client.backpack_space_total()} "
+                f"backpack_struct_addr={hex(await client.memory.read_backpack_stat_base())}\n"
             )
 
     async def quest_command(self, _, writer):

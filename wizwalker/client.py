@@ -31,7 +31,7 @@ class Client:
     async def teleport(self, *, x: float = None, y: float = None, z: float = None, yaw: float = None):
         """
         Teleport the player to a set x, y, z
-        returns False if not injected, True otherwise
+        returns raises RuntimeError if not injected, True otherwise
         """
         res = await self.memory.set_xyz(
             x=x,
@@ -46,53 +46,67 @@ class Client:
 
     async def xyz(self) -> Optional[utils.XYZ]:
         """
-        Player xyz if memory hooks are injected, otherwise None
+        Player xyz if memory hooks are injected, otherwise raises RuntimeError
         """
         return await self.memory.read_xyz()
 
     async def yaw(self) -> Optional[float]:
         """
-        Player yaw if memory hooks are injected, otherwise None
+        Player yaw if memory hooks are injected, otherwise raises RuntimeError
         """
         return await self.memory.read_player_yaw()
 
     async def set_yaw(self, yaw: float) -> bool:
         """
         Set the player yaw to this value,
-        returns True if injected and value was set, False otherwise
+        returns True if injected and value was set, otherwise raises RuntimeError
         """
         return await self.memory.set_player_yaw(yaw)
 
     async def quest_xyz(self) -> Optional[utils.XYZ]:
         """
-        Quest xyz if memory hooks are injected, otherwise None
+        Quest xyz if memory hooks are injected, otherwise raises RuntimeError
         """
         return await self.memory.read_quest_xyz()
 
     async def health(self) -> Optional[int]:
         """
-        Player health if memory hooks are injected, otherwise None
+        Player health if memory hooks are injected, otherwise raises RuntimeError
         Can also be None if the injected function hasn't been triggered yet
         """
         return await self.memory.read_player_health()
 
     async def mana(self) -> Optional[int]:
         """
-        Player mana if memory hooks are injected, otherwise None
+        Player mana if memory hooks are injected, otherwise raises RuntimeError
         Can also be None if the injected function hasn't been triggered yet
         """
         return await self.memory.read_player_mana()
 
     async def potions(self) -> Optional[int]:
         """
-        Player full potions if memory hooks are injected, otherwise None
+        Player full potions if memory hooks are injected, otherwise raises RuntimeError
         Can also be None if the injected function hasn't been triggered yet
         """
         return await self.memory.read_player_potions()
 
     async def gold(self) -> Optional[int]:
         """
-        Player gold if memory hooks are injected, otherwise None
+        Player gold if memory hooks are injected, otherwise raises RuntimeError
         Can also be None if the injected function hasn't been triggered yet
         """
         return await self.memory.read_player_gold()
+
+    async def backpack_space_used(self) -> Optional[int]:
+        """
+        Player backpack used space if memory hooks are injected, otherwise raises RuntimeError
+        Can also be None if the injected function hasn't been triggered yet
+        """
+        return await self.memory.read_player_backpack_used()
+
+    async def backpack_space_total(self) -> Optional[int]:
+        """
+        Player backpack total space if memory hooks are injected, otherwise raises RuntimeError
+        Can also be None if the injected function hasn't been triggered yet
+        """
+        return await self.memory.read_player_backpack_total()

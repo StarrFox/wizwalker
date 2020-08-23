@@ -1,6 +1,6 @@
+import asyncio
 import struct
-import threading
-from collections import namedtuple
+from collections import defaultdict
 from typing import Any, Optional, Tuple
 
 import pymem
@@ -195,7 +195,7 @@ class PlayerStatHook(MemoryHook):
             b"\x89\x3D" + packed_tmp,  # mov [02661004],edi { (472) }
             b"\x8B\xF8",  # mov edi,eax
             b"\x83\xC7\x40",  # add edi,40 { 64 }
-            b"\x89\x3D" + packed_addr,  # mov [player_stats],edi { (180) }
+            b"\x89\x3D" + packed_addr,  # mov [packed_addr],edi { (180) }
             b"\x8B\x3D" + packed_tmp,  # mov edi,[02661004] { (472) }
             # original code
             b"\x89\x48\x40",  # mov [eax+40],ecx
@@ -241,10 +241,6 @@ class QuestHook(MemoryHook):
             self.memory_handler.process.free(self.cord_struct)
 
     def get_jump_bytecode(self) -> bytes:
-        """
-        INJECT                           - E9 14458E01           - jmp 02730000
-        WizardGraphicalClient.exe+A4BAEC - 90                    - nop
-        """
         # distance = end - start
         distance = self.hook_address - self.jump_address
         relitive_jump = distance - 5  # size of this line
@@ -271,7 +267,7 @@ class QuestHook(MemoryHook):
 
         bytecode += (
             b"\xE9" + packed_relitive_return_jump
-        )  # jmp WizardGraphicalClient.exe+A4BAED
+        )
 
         return bytecode
 
@@ -280,20 +276,80 @@ class QuestHook(MemoryHook):
         self.free_cord_struct()
 
 
+class BackpackStatHook(MemoryHook):
+    def __init__(self, memory_handler):
+        super().__init__(memory_handler)
+        self.backpack_struct_addr = None
+
+    def set_backpack_struct(self):
+        self.backpack_struct_addr = self.memory_handler.process.allocate(4)
+
+    def free_backpack_struct(self):
+        self.memory_handler.process.free(self.backpack_struct_addr)
+
+    def get_pattern_and_mask(self) -> Tuple[bytes, Optional[str], Optional[MODULEINFO]]:
+        module = pymem.process.module_from_name(
+            self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
+        )
+        return b"\xC7\x86\x70\x03\x00\x00\x00\x00\x00\x00\x74", None, module
+
+    def get_jump_bytecode(self) -> bytes:
+        # distance = end - start
+        distance = self.hook_address - self.jump_address
+        relitive_jump = distance - 5  # size of this line
+        packed_relitive_jump = struct.pack("<i", relitive_jump)
+        return b"\xE9" + packed_relitive_jump + b"\x0F\x1F\x44"
+
+    def get_hook_bytecode(self) -> bytes:
+        self.set_backpack_struct()
+        packed_addr = struct.pack("<i", self.backpack_struct_addr)  # little-endian int
+
+        ecx_tmp = self.memory_handler.process.allocate(4)
+        packed_ecx_tmp = struct.pack("<i", ecx_tmp)
+
+        bytecode_lines = [
+            b"\x89\x0D" + packed_ecx_tmp,  # 89 0D 0410A902        - mov [02A91004],ecx { (0) }
+            b"\x8B\xCE",  # 8B CE                 - mov ecx,esi
+            b"\x81\xC1\x70\x03\x00\x00",  # 81 C1 70030000        - add ecx,00000370 { 880 }
+            b"\x89\x0D" + packed_addr,  # 89 0D 0010A902        - mov [packed_addr],ecx { (0) }
+            b"\x8B\x0D" + packed_ecx_tmp,  # 8B 0D 0410A902        - mov ecx,[02A91004] { (0) }
+            # original code
+            b"\xC7\x86\x70\x03\x00\x00\x00\x00\x00\x00",  # C7 86 70030000 00000000 - mov [esi+00000370],00000000 { 0 }
+        ]
+
+        bytecode = b"".join(bytecode_lines)
+
+        # len of code at jump_address
+        return_addr = self.jump_address + 10
+
+        relitive_return_jump = return_addr - (self.hook_address + len(bytecode)) - 5
+        packed_relitive_return_jump = struct.pack("<i", relitive_return_jump)
+
+        bytecode += (
+            b"\xE9" + packed_relitive_return_jump
+        )  # jmp WizardGraphicalClient.exe+43ECD5
+
+        return bytecode
+
+    def unhook(self):
+        super().unhook()
+        self.free_backpack_struct()
+
+
 class MemoryHandler:
     def __init__(self, pid: int):
         self.process = pymem.Pymem()
         self.process.open_process_from_id(pid)
         self.process.check_wow64()
 
-        self.is_injected = False
-
         self.memory_thread = None
         self.player_struct_addr = None
         self.quest_struct_addr = None
         self.player_stat_addr = None
+        self.backpack_stat_addr = None
 
         self.hooks = []
+        self.active_hooks = defaultdict(lambda: False)
 
     def __repr__(self):
         return f"<MemoryHandler {self.player_struct_addr=} {self.quest_struct_addr=} {self.memory_thread=}>"
@@ -308,22 +364,36 @@ class MemoryHandler:
 
     @utils.executor_function
     def read_player_base(self):
-        if not self.is_injected:
-            return None
+        if not self.active_hooks["player_struct"]:
+            raise RuntimeError("player_struct not hooked")
 
         return self.process.read_int(self.player_struct_addr)
 
     @utils.executor_function
     def read_player_stat_base(self):
-        if not self.is_injected:
-            return None
+        if not self.active_hooks["player_stat_struct"]:
+            raise RuntimeError("player_stat_struct not hooked")
 
         return self.process.read_int(self.player_stat_addr)
 
     @utils.executor_function
+    def read_backpack_stat_base(self):
+        if not self.active_hooks["backpack_stat_struct"]:
+            raise RuntimeError("backpack_stat_struct not hooked")
+
+        return self.process.read_int(self.backpack_stat_addr)
+
+    @utils.executor_function
+    def read_quest_base(self):
+        if not self.active_hooks["quest_struct"]:
+            raise RuntimeError("quest_struct not hooked")
+
+        return self.process.read_int(self.quest_struct_addr)
+
+    @utils.executor_function
     def read_xyz(self):
-        if not self.is_injected:
-            return None
+        if not self.active_hooks["player_struct"]:
+            raise RuntimeError("player_struct not hooked")
 
         player_struct = self.process.read_int(self.player_struct_addr)
         x = self.process.read_float(player_struct + 0x2C)
@@ -334,8 +404,8 @@ class MemoryHandler:
 
     @utils.executor_function
     def set_xyz(self, *, x=None, y=None, z=None):
-        if not self.is_injected:
-            return False
+        if not self.active_hooks["player_struct"]:
+            raise RuntimeError("player_struct not hooked")
 
         player_struct = self.process.read_int(self.player_struct_addr)
         if x:
@@ -349,16 +419,16 @@ class MemoryHandler:
 
     @utils.executor_function
     def read_player_yaw(self):
-        if not self.is_injected:
-            return None
+        if not self.active_hooks["player_struct"]:
+            raise RuntimeError("player_struct not hooked")
 
         player_struct = self.process.read_int(self.player_struct_addr)
         return self.process.read_double(player_struct + 0x3C)
 
     @utils.executor_function
     def set_player_yaw(self, yaw):
-        if not self.is_injected:
-            return False
+        if not self.active_hooks["player_struct"]:
+            raise RuntimeError("player_struct not hooked")
 
         player_struct = self.process.read_int(self.player_struct_addr)
         self.process.write_double(player_struct + 0x3C, yaw)
@@ -367,8 +437,8 @@ class MemoryHandler:
 
     @utils.executor_function
     def read_quest_xyz(self):
-        if not self.is_injected:
-            return None
+        if not self.active_hooks["quest_struct"]:
+            raise RuntimeError("quest_struct not hooked")
 
         quest_struct = self.process.read_int(self.quest_struct_addr)
         x = self.process.read_float(quest_struct + 0x81C)
@@ -379,8 +449,8 @@ class MemoryHandler:
 
     @utils.executor_function
     def read_player_health(self):
-        if not self.is_injected:
-            return None
+        if not self.active_hooks["player_stat_struct"]:
+            raise RuntimeError("player_stat_struct not hooked")
 
         stat_addr = self.process.read_int(self.player_stat_addr)
         try:
@@ -390,8 +460,8 @@ class MemoryHandler:
 
     @utils.executor_function
     def read_player_mana(self):
-        if not self.is_injected:
-            return None
+        if not self.active_hooks["player_stat_struct"]:
+            raise RuntimeError("player_stat_struct not hooked")
 
         stat_addr = self.process.read_int(self.player_stat_addr)
         try:
@@ -401,8 +471,8 @@ class MemoryHandler:
 
     @utils.executor_function
     def read_player_potions(self):
-        if not self.is_injected:
-            return None
+        if not self.active_hooks["player_stat_struct"]:
+            raise RuntimeError("player_stat_struct not hooked")
 
         stat_addr = self.process.read_int(self.player_stat_addr)
         try:
@@ -413,8 +483,8 @@ class MemoryHandler:
 
     @utils.executor_function
     def read_player_gold(self):
-        if not self.is_injected:
-            return None
+        if not self.active_hooks["player_stat_struct"]:
+            raise RuntimeError("player_stat_struct not hooked")
 
         stat_addr = self.process.read_int(self.player_stat_addr)
         try:
@@ -423,18 +493,85 @@ class MemoryHandler:
             return None
 
     @utils.executor_function
-    def inject(self):
-        self.is_injected = True
+    def read_player_backpack_used(self):
+        if not self.active_hooks["backpack_stat_struct"]:
+            raise RuntimeError("backpack_stat_struct not hooked")
 
-        cord_hook = PlayerHook(self)
-        cord_hook.hook()
+        backpack_addr = self.process.read_int(self.backpack_stat_addr)
+        try:
+            return self.process.read_int(backpack_addr)
+        except pymem.exception.MemoryReadError:
+            return None
+
+    @utils.executor_function
+    def read_player_backpack_total(self):
+        if not self.active_hooks["backpack_stat_struct"]:
+            raise RuntimeError("backpack_stat_struct not hooked")
+
+        backpack_addr = self.process.read_int(self.backpack_stat_addr)
+        try:
+            return self.process.read_int(backpack_addr + 0x4)
+        except pymem.exception.MemoryReadError:
+            return None
+
+    async def hook_all(self):
+        hooks = [
+            self.hook_player_struct(),
+            self.hook_player_stat_struct(),
+            self.hook_backpack_stat_struct(),
+            self.hook_quest_struct(),
+            ]
+
+        await asyncio.gather(*hooks)
+
+    @utils.executor_function
+    def hook_player_struct(self):
+        if self.active_hooks["player_struct"]:
+            raise RuntimeError("player_struct already hooked")
+
+        player_hook = PlayerHook(self)
+        player_hook.hook()
+
+        self.hooks.append(player_hook)
+        self.player_struct_addr = player_hook.player_struct
+
+        self.active_hooks["player_struct"] = True
+
+    @utils.executor_function
+    def hook_quest_struct(self):
+        if self.active_hooks["quest_struct"]:
+            raise RuntimeError("quest_struct already hooked")
+
         quest_hook = QuestHook(self)
         quest_hook.hook()
-        stat_hook = PlayerStatHook(self)
-        stat_hook.hook()
-        self.hooks.append(cord_hook)
+
         self.hooks.append(quest_hook)
-        self.hooks.append(stat_hook)
-        self.player_struct_addr = cord_hook.player_struct
         self.quest_struct_addr = quest_hook.cord_struct
-        self.player_stat_addr = stat_hook.stat_addr
+
+        self.active_hooks["quest_struct"] = True
+
+    @utils.executor_function
+    def hook_player_stat_struct(self):
+        if self.active_hooks["player_stat_struct"]:
+            raise RuntimeError("player_stat_struct already hooked")
+
+        player_stat_hook = PlayerStatHook(self)
+        player_stat_hook.hook()
+
+        self.hooks.append(player_stat_hook)
+        self.player_stat_addr = player_stat_hook.stat_addr
+
+        self.active_hooks["player_stat_struct"] = True
+
+    @utils.executor_function
+    def hook_backpack_stat_struct(self):
+        if self.active_hooks["backpack_stat_struct"]:
+            raise RuntimeError("backpack_stat_struct already hooked")
+
+        backpack_stat_hook = BackpackStatHook(self)
+        backpack_stat_hook.hook()
+
+        self.hooks.append(backpack_stat_hook)
+        self.backpack_stat_addr = backpack_stat_hook.backpack_struct_addr
+
+        self.active_hooks["backpack_stat_struct"] = True

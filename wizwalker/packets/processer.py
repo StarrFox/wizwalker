@@ -5,7 +5,7 @@ from pathlib import Path
 
 from loguru import logger
 
-ROOT_DIR = Path(__file__).parent.parent
+ROOT_DIR = Path(__file__).parent.parent.parent
 
 
 TYPE_TABLE = {
@@ -29,9 +29,12 @@ class PacketProcesser:
 
     @staticmethod
     def load_message_structure():
-        json_data = ROOT_DIR / "data" / "packet_message_structure.json"
+        json_data = ROOT_DIR / "cache" / "wizard_messages.json"
 
-        return json.load(json_data.open())
+        try:
+            return json.load(json_data.open())
+        except FileNotFoundError:
+            raise Exception("Messages not yet cached.")
 
     # Todo: comment what this does
     def process_packet_data(self, data):
