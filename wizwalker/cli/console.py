@@ -106,16 +106,13 @@ class WizWalkerConsole(AsynchronousCli):
             else:
                 hook = md_dir[hook_index]
 
-        for client in self.walker.clients:
+        for idx, client in enumerate(self.walker.clients):
             if hook:
                 await getattr(client.memory, hook)()
+                writer.write(f"client-{idx}: hooked {target_hook}\n")
             else:
                 await client.memory.hook_all()
-
-        if target_hook:
-            writer.write(f"Hooked {target_hook}\n")
-        else:
-            writer.write("Hooked\n")
+                writer.write(f"client-{idx}: hooked all\n")
 
     async def player_command(self, _, writer):
         for idx, client in enumerate(self.walker.clients):

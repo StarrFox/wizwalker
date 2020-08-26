@@ -33,6 +33,9 @@ class Client:
         return pid.value
 
     def login(self, username: str, password: str):
+        """
+        Login to a client that is at the login screen
+        """
         utils.wiz_login(self.window_handle, username, password)
 
     def watch_packets(self):

@@ -675,6 +675,7 @@ class MemoryHandler:
             self.hook_player_stat_struct(),
             self.hook_backpack_stat_struct(),
             self.hook_quest_struct(),
+            self.hook_packet_recv(),
         ]
 
         await asyncio.gather(*hooks)

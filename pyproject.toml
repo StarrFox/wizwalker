@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "wizwalker"
-version = "0.9.0"
+version = "0.9.1"
 description = "Automation bot for wizard101"
 authors = ["StarrFox <starrfox6312@gmail.com>"]
 license = "GPL-3.0-or-later"
@@ -19,7 +19,7 @@ pefile = "^2019.4.18"
 
 [tool.poetry.scripts]
 wizwalker = "wizwalker.__main__:sync_main"
-wiz = "wizwalker.utils:quick_launch"
+wiz = "wizwalker.__main__:wiz_command"
 
 [build-system]
 requires = ["poetry>=0.12"]
