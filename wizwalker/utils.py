@@ -92,6 +92,19 @@ def quick_launch():
     start_wiz(location)
 
 
+def wiz_login(window_handle: int, username: str, password: str):
+    def send_chars(chars: str):
+        for char in chars:
+            user32.PostMessageW(window_handle, 0x102, ord(char), 0)
+
+    send_chars(username)
+    # tab
+    user32.PostMessageW(window_handle, 0x102, 9, 0)
+    send_chars(password)
+    # enter
+    user32.PostMessageW(window_handle, 0x102, 13, 0)
+
+
 def resolve_pointer(handle, base, offsets):
     last = base
     for offset in offsets:

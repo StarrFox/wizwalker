@@ -1,5 +1,6 @@
 import asyncio
 import struct
+import ctypes
 from collections import defaultdict
 from typing import Any, Optional, Tuple
 
@@ -148,7 +149,7 @@ class PlayerHook(MemoryHook):
         packed_relitive_return_jump = struct.pack("<i", relitive_return_jump)
 
         bytecode += (
-            b"\xE9" + packed_relitive_return_jump
+                b"\xE9" + packed_relitive_return_jump
         )  # jmp WizardGraphicalClient.exe+A4BAED
 
         return bytecode
@@ -266,7 +267,7 @@ class QuestHook(MemoryHook):
         packed_relitive_return_jump = struct.pack("<i", relitive_return_jump)
 
         bytecode += (
-            b"\xE9" + packed_relitive_return_jump
+                b"\xE9" + packed_relitive_return_jump
         )
 
         return bytecode
@@ -326,7 +327,7 @@ class BackpackStatHook(MemoryHook):
         packed_relitive_return_jump = struct.pack("<i", relitive_return_jump)
 
         bytecode += (
-            b"\xE9" + packed_relitive_return_jump
+                b"\xE9" + packed_relitive_return_jump
         )  # jmp WizardGraphicalClient.exe+43ECD5
 
         return bytecode
@@ -336,23 +337,155 @@ class BackpackStatHook(MemoryHook):
         self.free_backpack_struct()
 
 
+class PacketHook(MemoryHook):
+    def __init__(self, memory_handler):
+        super().__init__(memory_handler)
+        self.packet_buffer_addr = None
+        self.socket_discriptor = None
+        self.packet_buffer_len = None
+
+        self.old_protection = None
+
+    def set_packet_buffer_addr(self):
+        self.packet_buffer_addr = self.memory_handler.process.allocate(4)
+
+    def set_socket_discriptor(self):
+        self.socket_discriptor = self.memory_handler.process.allocate(4)
+
+    def set_packet_buffer_len(self):
+        self.packet_buffer_len = self.memory_handler.process.allocate(4)
+
+    def free_packet_buffer_addr(self):
+        self.memory_handler.process.free(self.packet_buffer_addr)
+
+    def free_socket_discriptor(self):
+        self.memory_handler.process.free(self.socket_discriptor)
+
+    def free_packet_buffer_len(self):
+        self.memory_handler.process.free(self.packet_buffer_len)
+
+    def get_jump_address(self, pattern: bytes, mask: str, *, module=None) -> int:
+        """
+        gets the address to write jump at
+        """
+        # exact location of wsock.recv + 2 which should never change
+        jump_address = module.lpBaseOfDll + 0x1E32
+        # I could read jump_address and compare to pattern but it's really unneeded
+        return jump_address
+
+    def get_pattern_and_mask(self) -> Tuple[bytes, Optional[str], Optional[MODULEINFO]]:
+        module = pymem.process.module_from_name(self.memory_handler.process.process_handle, "WSOCK32.dll")
+        return b"\x8B\xFF\x55\x8B\xEC\x83\xEC\x10\x8B\x45\x10\x89\x45\xF0", None, module
+
+    def get_jump_bytecode(self) -> bytes:
+        # distance = end - start
+        distance = self.hook_address - self.jump_address
+        relitive_jump = distance - 5  # size of this line
+        packed_relitive_jump = struct.pack("<i", relitive_jump)
+        return b"\xE9" + packed_relitive_jump + b"\x90"
+
+    def get_hook_bytecode(self) -> bytes:
+        self.set_packet_buffer_addr()
+        packed_buffer_addr = struct.pack("<i", self.packet_buffer_addr)
+
+        self.set_socket_discriptor()
+        packed_socket_discriptor = struct.pack("<i", self.socket_discriptor)
+
+        self.set_packet_buffer_len()
+        packed_buffer_len = struct.pack("<i", self.packet_buffer_len)
+
+        ecx_tmp = self.memory_handler.process.allocate(4)
+        packed_ecx_tmp = struct.pack("<i", ecx_tmp)
+
+        # stack is stored here so we can restore it
+        stack_buffer_tmp = self.memory_handler.process.allocate(16)
+        packed_stack_buffer_tmp = struct.pack("<i", stack_buffer_tmp)
+        packed_stack_buffer_tmp_4 = struct.pack("<i", stack_buffer_tmp + 0x4)
+        packed_stack_buffer_tmp_8 = struct.pack("<i", stack_buffer_tmp + 0x8)
+        packed_stack_buffer_tmp_12 = struct.pack("<i", stack_buffer_tmp + 0x12)
+
+        # this is the function I'm hooking
+        # int recv(
+        #  SOCKET s,
+        #  char * buf,
+        #  int len,
+        #  int flags);
+
+        bytecode_lines = [
+            b"\x89\x0D" + packed_ecx_tmp,  # mov [08F210DC],ecx { (-2147450880) }
+            # reading args backwards (__stdcall)
+            # int flags
+            b"\x59",  # pop ecx
+            b"\x89\x0D" + packed_stack_buffer_tmp,  # mov [08F210CC],ecx { (011230CA) }
+            # int len
+            b"\x59",  # pop ecx
+            b"\x89\x0D" + packed_stack_buffer_tmp_4,  # mov [08F210D0],ecx { (1568) }
+            b"\x89\x0D" + packed_buffer_len,  # mov [buffer_len],ecx
+            # char * buf
+            b"\x59",  # pop ecx
+            b"\x89\x0D" + packed_stack_buffer_tmp_8,  # mov [08F210D4],ecx { (2AFF601C) }
+            # move the buf pointer to our address
+            b"\x89\x0D" + packed_buffer_addr,  # mov [buffer_addr],ecx { (2AFF601C) }
+            # SOCKET s
+            b"\x59",  # pop ecx
+            b"\x89\x0D" + packed_stack_buffer_tmp_12,  # mov [08F210DE],ecx { (0) }
+            # move the socket discriptor to our addr
+            b"\x89\x0D" + packed_socket_discriptor,  # mov [socket_discripter],ecx { (32768) }
+            # fix the stack for the rest of the recv function
+            b"\x8B\x0D" + packed_stack_buffer_tmp_12,  # mov ecx,[08F210DE] { (0) }
+            b"\x51",  # push ecx
+            b"\x8B\x0D" + packed_stack_buffer_tmp_8,  # mov ecx,[08F210D4] { (2AFF601C) }
+            b"\x51",  # push ecx
+            b"\x8B\x0D" + packed_stack_buffer_tmp_4,  # see above
+            b"\x51",  # push ecx
+            b"\x8B\x0D" + packed_stack_buffer_tmp,  # ditto
+            b"\x51",  # push ecx
+            b"\x8B\x0D" + packed_ecx_tmp,  # move ecx,[ecx_tmp]
+            # original code
+            b"\x55",  # push ebp
+            b"\x8B\xEC",  # mov ebp,esp
+            b"\x83\xEC\x10",  # sub esp,10 { 16 }
+        ]
+
+        bytecode = b"".join(bytecode_lines)
+
+        # WSOCK.recv+8 (jump_address is +2)
+        return_addr = self.jump_address + 6
+
+        relitive_return_jump = return_addr - (self.hook_address + len(bytecode)) - 5
+        packed_relitive_return_jump = struct.pack("<i", relitive_return_jump)
+
+        bytecode += (
+                b"\xE9" + packed_relitive_return_jump
+        )
+
+        return bytecode
+
+    def unhook(self):
+        super().unhook()
+        self.free_packet_buffer_addr()
+        self.free_packet_buffer_len()
+        self.free_socket_discriptor()
+
 class MemoryHandler:
     def __init__(self, pid: int):
         self.process = pymem.Pymem()
         self.process.open_process_from_id(pid)
         self.process.check_wow64()
 
-        self.memory_thread = None
         self.player_struct_addr = None
         self.quest_struct_addr = None
         self.player_stat_addr = None
         self.backpack_stat_addr = None
+        self.packet_socket_discriptor_addr = None
+        self.packet_buffer_addr = None
+        self.packet_buffer_len = None
 
         self.hooks = []
         self.active_hooks = defaultdict(lambda: False)
 
     def __repr__(self):
-        return f"<MemoryHandler {self.player_struct_addr=} {self.quest_struct_addr=} {self.memory_thread=}>"
+        return f"<MemoryHandler {self.player_struct_addr=} {self.quest_struct_addr=}>"
 
     @utils.executor_function
     def close(self):
@@ -514,13 +647,35 @@ class MemoryHandler:
         except pymem.exception.MemoryReadError:
             return None
 
+    @utils.executor_function
+    def read_packet_socket_discriptor(self):
+        if not self.active_hooks["packet_recv"]:
+            raise RuntimeError("packet_recv not hooked")
+
+        try:
+            return self.process.read_bytes(self.packet_socket_discriptor_addr, 20)
+        except pymem.exception.MemoryReadError:
+            return None
+
+    @utils.executor_function
+    def read_packet_buffer(self):
+        if not self.active_hooks["packet_recv"]:
+            raise RuntimeError("packet_recv not hooked")
+
+        buffer_addr = self.process.read_int(self.packet_buffer_addr)
+        buffer_len = self.process.read_int(self.packet_buffer_len)
+        try:
+            return self.process.read_bytes(buffer_addr, buffer_len)
+        except pymem.exception.MemoryReadError:
+            return None
+
     async def hook_all(self):
         hooks = [
             self.hook_player_struct(),
             self.hook_player_stat_struct(),
             self.hook_backpack_stat_struct(),
             self.hook_quest_struct(),
-            ]
+        ]
 
         await asyncio.gather(*hooks)
 
@@ -575,3 +730,18 @@ class MemoryHandler:
         self.backpack_stat_addr = backpack_stat_hook.backpack_struct_addr
 
         self.active_hooks["backpack_stat_struct"] = True
+
+    @utils.executor_function
+    def hook_packet_recv(self):
+        if self.active_hooks["packet_recv"]:
+            raise RuntimeError("packet_recv already hooked")
+
+        packet_recv_hook = PacketHook(self)
+        packet_recv_hook.hook()
+
+        self.hooks.append(packet_recv_hook)
+        self.packet_socket_discriptor_addr = packet_recv_hook.socket_discriptor
+        self.packet_buffer_addr = packet_recv_hook.packet_buffer_addr
+        self.packet_buffer_len = packet_recv_hook.packet_buffer_len
+
+        self.active_hooks["packet_recv"] = True

@@ -2,7 +2,7 @@ import socket
 
 FOOD_START = b"\x0d\xf0"
 
-# Todo: move this to dll
+# Todo: delete
 class SocketListener:
     def __init__(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_IP)

@@ -4,6 +4,7 @@ from typing import Optional
 
 from . import utils
 from .windows import KeyboardHandler, MemoryHandler, user32
+from .packets import PacketHookWatcher
 
 
 class Client:
@@ -13,6 +14,9 @@ class Client:
         self.window_handle = window_handle
         self.keyboard = KeyboardHandler(window_handle)
         self.memory = MemoryHandler(self.process_id)
+        self.current_zone = None
+
+        self.packet_watcher = PacketHookWatcher(self)
 
     def __repr__(self):
         return f"<Client {self.window_handle=} {self.process_id=} {self.memory=}>"
@@ -27,6 +31,15 @@ class Client:
         pid_ref = ctypes.byref(pid)  # we need a pointer to the pid val's memory
         user32.GetWindowThreadProcessId(self.window_handle, pid_ref)
         return pid.value
+
+    def login(self, username: str, password: str):
+        utils.wiz_login(self.window_handle, username, password)
+
+    def watch_packets(self):
+        """
+        Start Watching packets for information
+        """
+        self.packet_watcher.start()
 
     async def teleport(self, *, x: float = None, y: float = None, z: float = None, yaw: float = None):
         """
