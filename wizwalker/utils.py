@@ -13,6 +13,7 @@ from xml.etree import ElementTree
 from ctypes import WinDLL
 from pathlib import Path
 
+import appdirs
 from pymem.ptypes import RemotePointer
 
 user32 = WinDLL("user32")
@@ -90,6 +91,17 @@ def start_wiz(location: Union[Path, str]):
 def quick_launch():
     location = get_wiz_install()
     start_wiz(location)
+
+
+def get_cache_folder() -> Path:
+    app_name = "WizWalker"
+    app_author = "StarrFox"
+    cache_dir = Path(appdirs.user_cache_dir(app_name, app_author))
+
+    if not cache_dir.exists():
+        cache_dir.mkdir(parents=True)
+
+    return cache_dir
 
 
 def wiz_login(window_handle: int, username: str, password: str):

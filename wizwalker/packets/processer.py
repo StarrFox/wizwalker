@@ -5,8 +5,7 @@ from pathlib import Path
 
 from loguru import logger
 
-ROOT_DIR = Path(__file__).parent.parent.parent
-
+from wizwalker import utils
 
 TYPE_TABLE = {
     "BYT": "b",
@@ -29,7 +28,7 @@ class PacketProcesser:
 
     @staticmethod
     def load_message_structure():
-        json_data = ROOT_DIR / "cache" / "wizard_messages.json"
+        json_data = utils.get_cache_folder() / "wizard_messages.json"
 
         try:
             return json.load(json_data.open())

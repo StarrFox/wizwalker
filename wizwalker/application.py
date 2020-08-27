@@ -33,12 +33,7 @@ class WizWalker:
 
     @cached_property
     def cache_dir(self):
-        if getattr(sys, "frozen", False):
-            root = Path(sys.executable).parent
-        else:
-            root = Path(__file__).parent.parent
-
-        return root / "cache"
+        return utils.get_cache_folder()
 
     @cached_property
     def install_location(self) -> Path:
