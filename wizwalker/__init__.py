@@ -8,15 +8,5 @@ from .application import WizWalker
 from .client import Client
 
 
-# logging.basicConfig(
-#     format="[%(asctime)s] [%(levelname)s:%(name)s] %(message)s",
-#     level=logging.DEBUG,
-#     # Todo: remove on release
-#     filename="wizwalker_debug.log",
-#     filemode="w+",
-# )
-
-logger.remove(0)
-logger.add("wizwalker_debug.log", level="DEBUG", rotation="20 MB")
-
+logger.disable("wizwalker")
 logging.getLogger("pymem").setLevel(logging.FATAL)

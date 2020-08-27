@@ -1,19 +1,14 @@
 import sys
 import asyncio
-from pathlib import Path
+
+from loguru import logger
 
 from wizwalker import WizWalker, utils
 from wizwalker.cli import WizWalkerConsole
 
-# https://pyinstaller.readthedocs.io/en/stable/runtime-information.html
-if getattr(sys, "frozen", False):
-    root = Path(sys.executable).parent
-else:
-    root = Path(__file__).parent.parent
-
-cache_dir = root / "cache"
-if not cache_dir.exists():
-    cache_dir.mkdir()
+logger.enable("wizwalker")
+logger.remove(0)
+logger.add("wizwalker_debug.log", level="DEBUG", rotation="10 MB")
 
 
 async def main():
