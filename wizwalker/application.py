@@ -258,26 +258,30 @@ class WizWalker:
         self.cache_data()
 
     @staticmethod
-    def listen_packets():
-        socket_listener = packets.SocketListener()
-        packet_processer = packets.PacketProcesser()
+    def start_wiz_client():
+        utils.quick_launch()
 
-        for packet in socket_listener.listen():
-            try:
-                name, description, params = packet_processer.process_packet_data(packet)
-                if name in [
-                    "MSG_CLIENTMOVE",
-                    "MSG_SENDINTERACTOPTIONS",
-                    "MSG_MOVECORRECTION",
-                ]:
-                    continue
-
-                print(f"{name}: {params}")
-            except TypeError:
-                print("Bad packet")
-            except:
-                # print_exc()
-                print("Ignoring exception")
+    # @staticmethod
+    # def listen_packets():
+    #     socket_listener = packets.SocketListener()
+    #     packet_processer = packets.PacketProcesser()
+    #
+    #     for packet in socket_listener.listen():
+    #         try:
+    #             name, description, params = packet_processer.process_packet_data(packet)
+    #             if name in [
+    #                 "MSG_CLIENTMOVE",
+    #                 "MSG_SENDINTERACTOPTIONS",
+    #                 "MSG_MOVECORRECTION",
+    #             ]:
+    #                 continue
+    #
+    #             print(f"{name}: {params}")
+    #         except TypeError:
+    #             print("Bad packet")
+    #         except:
+    #             # print_exc()
+    #             print("Ignoring exception")
 
     def get_handles(self):
         current_handles = utils.get_all_wizard_handles()

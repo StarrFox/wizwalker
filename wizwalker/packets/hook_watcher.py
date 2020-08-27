@@ -1,8 +1,6 @@
 import re
 import asyncio
 
-from .processer import PacketProcesser
-
 
 ZONE_REGEX = re.compile(rb"\r\xf0..\x00\x00\x00\x00\x05l....([a-zA-Z/_]+)")
 
@@ -14,7 +12,7 @@ class PacketHookWatcher:
         self.delay = delay
         self.watching = False
 
-        self.packet_processer = PacketProcesser()
+        # self.packet_processer = PacketProcesser()
 
     def start(self):
         self.watching = True
