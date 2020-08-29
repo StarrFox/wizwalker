@@ -2,6 +2,7 @@ import asyncio
 import ctypes
 import functools
 import io
+import math
 import struct
 import winreg
 import zlib
@@ -18,6 +19,13 @@ from pymem.ptypes import RemotePointer
 
 user32 = WinDLL("user32")
 XYZ = namedtuple("XYZ", "x, y, z")
+
+
+def _xyz_sub(self, other):
+    return math.dist((self.x, self.y), (other.x, other.y))
+
+
+XYZ.__sub__ = _xyz_sub
 
 
 # Modified from https://github.com/Gorialis/jishaku/blob/master/jishaku/functools.py#L19
@@ -91,6 +99,30 @@ def start_wiz(location: Union[Path, str]):
 def quick_launch():
     location = get_wiz_install()
     start_wiz(location)
+
+
+def calculate_perfect_yaw(current_xyz: XYZ, target_xyz: XYZ) -> float:
+    """
+    Calculates the perfect yaw to reach target_xyz from current_xyz in a stright line
+    """
+    target_line = math.dist((current_xyz.x, current_xyz.y), (target_xyz.x, target_xyz.y))
+    origin_line = math.dist((current_xyz.x, current_xyz.y), (current_xyz.x, current_xyz.y - 1))
+    target_to_origin_line = math.dist((target_xyz.x, target_xyz.y), (current_xyz.x, current_xyz.y - 1))
+    # target_angle = math.cos(origin_line / target_line)
+    target_angle = math.acos(
+        (pow(target_line, 2) + pow(origin_line, 2) - pow(target_to_origin_line, 2))
+        / (2 * origin_line * target_line)
+    )
+
+    if target_xyz.x > current_xyz.x:
+        # outside
+        target_angle_degres = math.degrees(target_angle)
+        perfect_yaw = math.radians(360 - target_angle_degres)
+    else:
+        # inside
+        perfect_yaw = target_angle
+
+    return perfect_yaw
 
 
 def get_cache_folder() -> Path:

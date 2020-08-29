@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "wizwalker"
-version = "0.9.5"
+version = "0.10.0"
 description = "Automation bot for wizard101"
 authors = ["StarrFox <starrfox6312@gmail.com>"]
 license = "GPL-3.0-or-later"
@@ -19,7 +19,7 @@ pywin32-ctypes = "^0.2.0"
 pefile = "^2019.4.18"
 
 [tool.poetry.scripts]
-wizwalker = "wizwalker.__main__:sync_main"
+wizwalker = "wizwalker.__main__:main"
 wiz = "wizwalker.__main__:wiz_command"
 
 [build-system]

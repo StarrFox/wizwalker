@@ -11,14 +11,17 @@ logger.remove(0)
 logger.add("wizwalker_debug.log", level="DEBUG", rotation="10 MB")
 
 
-async def main():
-    if sys.platform != "win32":
-        raise RuntimeError(f"This program is windows only, not {sys.platform}")
-
+async def run_console():
     walker = WizWalker()
     console = WizWalkerConsole(walker)
     await console.interact()
-    await walker.close()
+
+
+def main():
+    if sys.platform != "win32":
+        raise RuntimeError(f"This program is windows only, not {sys.platform}")
+
+    asyncio.run(run_console())
 
     # app = WizWalker()
     #
@@ -67,9 +70,5 @@ def wiz_command():
     utils.wiz_login(newest_handle, username, password)
 
 
-def sync_main():
-    asyncio.run(main())
-
-
 if __name__ == "__main__":
-    sync_main()
+    main()

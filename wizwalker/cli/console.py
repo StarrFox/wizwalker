@@ -1,4 +1,5 @@
 import asyncio
+import math
 
 import aiofiles
 from argparse import ArgumentParser
@@ -20,10 +21,17 @@ class WizWalkerConsole(AsynchronousCli):
         msg += "send list for the command list"
         return msg
 
+    async def exit_command(self, reader, writer):
+        writer.write("Closing wizwalker, hooks should be rewritten")
+        await self.walker.close()
+        await super().exit_command(reader, writer)
+
     def get_commands(self):
         commands = {}
 
-        attach_parser = ArgumentParser(description="Attach to currently running wiz instances")
+        attach_parser = ArgumentParser(
+            description="Attach to currently running wiz instances"
+        )
         commands["attach"] = (self.attach_command, attach_parser)
 
         login_parser = ArgumentParser("login to a client")
@@ -34,12 +42,15 @@ class WizWalkerConsole(AsynchronousCli):
 
         hook_parser = ArgumentParser(description="Hooks into all processes")
         hook_parser.add_argument("--target_hook", type=str)
+        hook_parser.add_argument("--list", action="store_true", dest="list_hooks")
         commands["hook"] = (self.hook_command, hook_parser)
 
         player_parser = ArgumentParser(description="Output various player information")
         commands["player"] = (self.player_command, player_parser)
 
-        backpack_parser = ArgumentParser(description="Output various backpack information")
+        backpack_parser = ArgumentParser(
+            description="Output various backpack information"
+        )
         commands["backpack"] = (self.backpack_command, backpack_parser)
 
         quest_parser = ArgumentParser(description="Output various quest information")
@@ -71,12 +82,20 @@ class WizWalkerConsole(AsynchronousCli):
         send_parser.add_argument("seconds", type=float)
         commands["send"] = (self.send_command, send_parser)
 
+        getspeed_parser = ArgumentParser(description="get number of units covered in 1 second")
+        commands["getspeed"] = (self.getspeed_command, getspeed_parser)
+
         teleport_parser = ArgumentParser(description="Teleport to a certain x,y,z")
         teleport_parser.add_argument("x", type=float)
         teleport_parser.add_argument("y", type=float)
         teleport_parser.add_argument("--z", type=float)
         teleport_parser.add_argument("--yaw", type=float)
         commands["teleport"] = (self.teleport_command, teleport_parser)
+
+        goto_parser = ArgumentParser(description="go to a specific x y")
+        goto_parser.add_argument("x", type=float)
+        goto_parser.add_argument("y", type=float)
+        commands["goto"] = (self.goto_command, goto_parser)
 
         return commands
 
@@ -94,7 +113,26 @@ class WizWalkerConsole(AsynchronousCli):
         else:
             writer.write(f"client-{client_index}: Logged in\n")
 
-    async def hook_command(self, _, writer, target_hook: str = None):
+    async def hook_command(
+        self, _, writer, target_hook: str = None, list_hooks: bool = False
+    ):
+        if list_hooks and target_hook:
+            writer.write("You cannot list and hook at the same time smh\n")
+            return
+
+        if list_hooks:
+            all_hooks = [
+                hook.replace("hook_", "")
+                for hook in dir(MemoryHandler)
+                if hook.startswith("hook_")
+            ]
+            writer.write("all hooks:\n" + "\n".join(all_hooks) + "\n")
+            return
+
+        if not self.walker.clients:
+            writer.write("There are no attached clients to hook to\n")
+            return
+
         hook = False
         if target_hook is not None:
             md_dir = dir(MemoryHandler)
@@ -186,13 +224,22 @@ class WizWalkerConsole(AsynchronousCli):
 
         writer.write("Started\n")
 
+    async def getspeed_command(self, _, writer):
+        client = self.walker.clients[0]
+        start = await client.xyz()
+        await client.keyboard.send_key("W", 1)
+        end = await client.xyz()
+        distance = math.dist((start.x, start.y), (end.x, end.y))
+        writer.write(f"from {start} to {end} covered {distance}\n")
+
     async def teleport_command(self, _, writer, x, y, z=None, yaw=None):
         for client in self.walker.clients:
-            await client.teleport(
-                x=x,
-                y=y,
-                z=z,
-                yaw=yaw
-            )
+            await client.teleport(x=x, y=y, z=z, yaw=yaw)
 
         writer.write("Teleported\n")
+
+    async def goto_command(self, _, writer, x, y):
+        for client in self.walker.clients:
+            asyncio.create_task(client.goto(x, y))
+
+        writer.write("Tasks started\n")

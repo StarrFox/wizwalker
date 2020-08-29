@@ -6,6 +6,8 @@ from . import utils
 from .windows import KeyboardHandler, MemoryHandler, user32
 from .packets import PacketHookWatcher
 
+WIZARD_SPEED = 580
+
 
 class Client:
     """Represents a connected wizard client"""
@@ -44,6 +46,28 @@ class Client:
         """
         self.packet_watcher.start()
 
+    async def goto(self, x: float, y: float, *, use_nodes: bool = False):
+        """
+        Moves the player to a specific x and y
+        """
+        if use_nodes is False:
+            await self._to_point(x, y)
+        else:
+            raise NotImplemented("WIP")
+
+    async def _to_point(self, x, y):
+        """
+        do not use
+        """
+        current_xyz = await self.xyz()
+        target_xyz = utils.XYZ(x, y, current_xyz.z)
+        distance = current_xyz - target_xyz
+        move_seconds = distance / WIZARD_SPEED
+        yaw = utils.calculate_perfect_yaw(current_xyz, target_xyz)
+
+        await self.set_yaw(yaw)
+        await self.keyboard.send_key("W", move_seconds)
+
     async def teleport(self, *, x: float = None, y: float = None, z: float = None, yaw: float = None):
         """
         Teleport the player to a set x, y, z
@@ -55,7 +79,7 @@ class Client:
             z=z,
         )
 
-        if yaw:
+        if yaw is not None:
             await self.memory.set_player_yaw(yaw)
 
         return res
@@ -78,6 +102,32 @@ class Client:
         returns True if injected and value was set, otherwise raises RuntimeError
         """
         return await self.memory.set_player_yaw(yaw)
+
+    async def roll(self) -> Optional[float]:
+        """
+        Player yaw if memory hooks are injected, otherwise raises RuntimeError
+        """
+        return await self.memory.read_player_roll()
+
+    async def set_roll(self, roll: float) -> bool:
+        """
+        Set the player roll to this value,
+        returns True if injected and value was set, otherwise raises RuntimeError
+        """
+        return await self.memory.set_player_roll(roll)
+
+    async def pitch(self) -> Optional[float]:
+        """
+        Player yaw if memory hooks are injected, otherwise raises RuntimeError
+        """
+        return await self.memory.read_player_pitch()
+
+    async def set_pitch(self, pitch: float) -> bool:
+        """
+        Set the player pitch to this value,
+        returns True if injected and value was set, otherwise raises RuntimeError
+        """
+        return await self.memory.set_player_roll(pitch)
 
     async def quest_xyz(self) -> Optional[utils.XYZ]:
         """
