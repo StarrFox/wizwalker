@@ -1,6 +1,5 @@
-import re
 import asyncio
-
+import re
 
 ZONE_REGEX = re.compile(rb"\r\xf0..\x00\x00\x00\x00\x05l....([a-zA-Z/_]+)")
 

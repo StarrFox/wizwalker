@@ -1,7 +1,6 @@
 import json
 import struct
 from io import BytesIO
-from pathlib import Path
 
 from loguru import logger
 

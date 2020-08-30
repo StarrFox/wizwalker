@@ -1,11 +1,10 @@
-import pathlib
 import struct
 import zlib
 from collections import namedtuple
 
 import aiofiles
 
-from .utils import get_wiz_install, executor_function
+from .utils import executor_function, get_wiz_install
 
 wad_file_info = namedtuple("wad_file_info", "offset, size, is_zip, crc, unzipped_size")
 

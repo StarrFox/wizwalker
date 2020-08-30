@@ -8,11 +8,11 @@ import winreg
 import zlib
 from collections import namedtuple
 from concurrent.futures.thread import ThreadPoolExecutor
+from ctypes import WinDLL
 from os import system as cmd
+from pathlib import Path
 from typing import Callable, Union
 from xml.etree import ElementTree
-from ctypes import WinDLL
-from pathlib import Path
 
 import appdirs
 from pymem.ptypes import RemotePointer

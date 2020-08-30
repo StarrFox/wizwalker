@@ -1,13 +1,12 @@
 import json
-import sys
 from collections import defaultdict
 from functools import cached_property
 from pathlib import Path
 
-from loguru import logger
 import aiofiles
+from loguru import logger
 
-from wizwalker import packets, utils
+from wizwalker import utils
 from .client import Client
 from .wad import Wad
 

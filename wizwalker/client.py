@@ -3,8 +3,8 @@ from functools import cached_property
 from typing import Optional
 
 from . import utils
-from .windows import KeyboardHandler, MemoryHandler, user32
 from .packets import PacketHookWatcher
+from .windows import KeyboardHandler, MemoryHandler, user32
 
 WIZARD_SPEED = 580
 

@@ -1,8 +1,8 @@
 import asyncio
 import math
+from argparse import ArgumentParser
 
 import aiofiles
-from argparse import ArgumentParser
 from aioconsole import AsynchronousCli
 
 from wizwalker import Wad, utils

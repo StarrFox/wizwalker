@@ -1,5 +1,5 @@
-import ctypes
 import asyncio
+import ctypes
 
 from .constants import keycodes
 
