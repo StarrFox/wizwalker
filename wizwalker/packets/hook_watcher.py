@@ -7,7 +7,8 @@ ZONE_REGEX = re.compile(rb"\r\xf0..\x00\x00\x00\x00\x05l....([a-zA-Z/_]+)")
 class PacketHookWatcher:
     def __init__(self, client, *, delay: float = 0.3):
         self.client = client
-        self.memory_handler = client.memory
+        # noinspection PyProtectedMember
+        self.memory_handler = client._memory
         self.delay = delay
         self.watching = False
 

@@ -78,6 +78,20 @@ class MemoryHandler:
     def set_hook_active(self, hook):
         self.active_hooks[hook] = True
 
+    @classmethod
+    def hook_functs(cls):
+        hooks = {}
+        # Couldn't get anything else working for this, other than manually setting
+        # some attr on each hook method
+        for thing in dir(cls):
+            if thing.startswith("hook_") and not any(thing.endswith(i) for i in ("all", "functs")):
+                hooks[thing.replace("hook_", "")] = getattr(cls, thing)
+
+        return hooks
+
+    def is_hook_active(self, hook):
+        return self.active_hooks[hook]
+
     @uses_hook("player_struct")
     @utils.executor_function
     def read_player_base(self):
@@ -247,13 +261,7 @@ class MemoryHandler:
             return None
 
     async def hook_all(self):
-        hooks = [
-            self.hook_player_struct(),
-            self.hook_player_stat_struct(),
-            self.hook_backpack_stat_struct(),
-            self.hook_quest_struct(),
-            self.hook_packet_recv(),
-        ]
+        hooks = self.hook_functs().values()
 
         # return_exceptions=True will make all exceptions return as results
         return await asyncio.gather(*hooks, return_exceptions=True)

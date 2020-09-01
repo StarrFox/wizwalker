@@ -121,11 +121,7 @@ class WizWalkerConsole(AsynchronousCli):
             return
 
         if list_hooks:
-            all_hooks = [
-                hook.replace("hook_", "")
-                for hook in dir(MemoryHandler)
-                if hook.startswith("hook_")
-            ]
+            all_hooks = MemoryHandler.hook_functs().keys()
             writer.write("all hooks:\n" + "\n".join(all_hooks) + "\n")
             return
 
@@ -133,20 +129,9 @@ class WizWalkerConsole(AsynchronousCli):
             writer.write("There are no attached clients to hook to\n")
             return
 
-        hook = False
-        if target_hook is not None:
-            md_dir = dir(MemoryHandler)
-            try:
-                hook_index = md_dir.index("hook_" + target_hook.replace(" ", "_"))
-            except ValueError:
-                writer.write(f"Hook {target_hook} not found\n")
-                return
-            else:
-                hook = md_dir[hook_index]
-
         for idx, client in enumerate(self.walker.clients):
-            if hook:
-                await getattr(client.memory, hook)()
+            if target_hook:
+                await client.activate_hook(target_hook.replace(" ", "_"))
                 writer.write(f"client-{idx}: hooked {target_hook}\n")
             else:
                 await client.memory.hook_all()

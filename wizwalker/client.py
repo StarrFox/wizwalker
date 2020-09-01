@@ -6,6 +6,7 @@ from . import utils
 from .packets import PacketHookWatcher
 from .windows import KeyboardHandler, MemoryHandler, user32
 
+
 WIZARD_SPEED = 580
 
 
@@ -14,17 +15,17 @@ class Client:
 
     def __init__(self, window_handle: int):
         self.window_handle = window_handle
-        self.keyboard = KeyboardHandler(window_handle)
-        self.memory = MemoryHandler(self.process_id)
+        self._keyboard = KeyboardHandler(window_handle)
+        self._memory = MemoryHandler(self.process_id)
         self.current_zone = None
 
         self.packet_watcher = PacketHookWatcher(self)
 
     def __repr__(self):
-        return f"<Client {self.window_handle=} {self.process_id=} {self.memory=}>"
+        return f"<Client {self.window_handle=} {self.process_id=} {self._memory=}>"
 
     async def close(self):
-        await self.memory.close()
+        await self._memory.close()
 
     @cached_property
     def process_id(self):
@@ -46,6 +47,27 @@ class Client:
         """
         self.packet_watcher.start()
 
+    def get_hooks(self) -> list:
+        """
+        return a list of hook_names from the underlying MemoryHandler
+        """
+        return self._memory.hook_functs().keys()
+
+    async def activate_hook(self, hook_name: Optional[str]):
+        """
+        Activate a hook, get names with get_hooks
+        passing None will activate all hooks
+        """
+        if hook_name is None:
+            await self._memory.hook_all()
+
+        else:
+            hook = getattr(self._memory, "hook_" + hook_name, None)
+            if not hook:
+                raise ValueError(f"{hook_name} is not a valid hook")
+
+            await hook()
+
     async def goto(self, x: float, y: float, *, use_nodes: bool = False):
         """
         Moves the player to a specific x and y
@@ -66,21 +88,21 @@ class Client:
         yaw = utils.calculate_perfect_yaw(current_xyz, target_xyz)
 
         await self.set_yaw(yaw)
-        await self.keyboard.send_key("W", move_seconds)
+        await self._keyboard.send_key("W", move_seconds)
 
     async def teleport(self, *, x: float = None, y: float = None, z: float = None, yaw: float = None):
         """
         Teleport the player to a set x, y, z
         returns raises RuntimeError if not injected, True otherwise
         """
-        res = await self.memory.set_xyz(
+        res = await self._memory.set_xyz(
             x=x,
             y=y,
             z=z,
         )
 
         if yaw is not None:
-            await self.memory.set_player_yaw(yaw)
+            await self._memory.set_player_yaw(yaw)
 
         return res
 
@@ -88,91 +110,91 @@ class Client:
         """
         Player xyz if memory hooks are injected, otherwise raises RuntimeError
         """
-        return await self.memory.read_xyz()
+        return await self._memory.read_xyz()
 
     async def yaw(self) -> Optional[float]:
         """
         Player yaw if memory hooks are injected, otherwise raises RuntimeError
         """
-        return await self.memory.read_player_yaw()
+        return await self._memory.read_player_yaw()
 
     async def set_yaw(self, yaw: float) -> bool:
         """
         Set the player yaw to this value,
         returns True if injected and value was set, otherwise raises RuntimeError
         """
-        return await self.memory.set_player_yaw(yaw)
+        return await self._memory.set_player_yaw(yaw)
 
     async def roll(self) -> Optional[float]:
         """
         Player yaw if memory hooks are injected, otherwise raises RuntimeError
         """
-        return await self.memory.read_player_roll()
+        return await self._memory.read_player_roll()
 
     async def set_roll(self, roll: float) -> bool:
         """
         Set the player roll to this value,
         returns True if injected and value was set, otherwise raises RuntimeError
         """
-        return await self.memory.set_player_roll(roll)
+        return await self._memory.set_player_roll(roll)
 
     async def pitch(self) -> Optional[float]:
         """
         Player yaw if memory hooks are injected, otherwise raises RuntimeError
         """
-        return await self.memory.read_player_pitch()
+        return await self._memory.read_player_pitch()
 
     async def set_pitch(self, pitch: float) -> bool:
         """
         Set the player pitch to this value,
         returns True if injected and value was set, otherwise raises RuntimeError
         """
-        return await self.memory.set_player_roll(pitch)
+        return await self._memory.set_player_roll(pitch)
 
     async def quest_xyz(self) -> Optional[utils.XYZ]:
         """
         Quest xyz if memory hooks are injected, otherwise raises RuntimeError
         """
-        return await self.memory.read_quest_xyz()
+        return await self._memory.read_quest_xyz()
 
     async def health(self) -> Optional[int]:
         """
         Player health if memory hooks are injected, otherwise raises RuntimeError
         Can also be None if the injected function hasn't been triggered yet
         """
-        return await self.memory.read_player_health()
+        return await self._memory.read_player_health()
 
     async def mana(self) -> Optional[int]:
         """
         Player mana if memory hooks are injected, otherwise raises RuntimeError
         Can also be None if the injected function hasn't been triggered yet
         """
-        return await self.memory.read_player_mana()
+        return await self._memory.read_player_mana()
 
     async def potions(self) -> Optional[int]:
         """
         Player full potions if memory hooks are injected, otherwise raises RuntimeError
         Can also be None if the injected function hasn't been triggered yet
         """
-        return await self.memory.read_player_potions()
+        return await self._memory.read_player_potions()
 
     async def gold(self) -> Optional[int]:
         """
         Player gold if memory hooks are injected, otherwise raises RuntimeError
         Can also be None if the injected function hasn't been triggered yet
         """
-        return await self.memory.read_player_gold()
+        return await self._memory.read_player_gold()
 
     async def backpack_space_used(self) -> Optional[int]:
         """
         Player backpack used space if memory hooks are injected, otherwise raises RuntimeError
         Can also be None if the injected function hasn't been triggered yet
         """
-        return await self.memory.read_player_backpack_used()
+        return await self._memory.read_player_backpack_used()
 
     async def backpack_space_total(self) -> Optional[int]:
         """
         Player backpack total space if memory hooks are injected, otherwise raises RuntimeError
         Can also be None if the injected function hasn't been triggered yet
         """
-        return await self.memory.read_player_backpack_total()
+        return await self._memory.read_player_backpack_total()
