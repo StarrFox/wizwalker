@@ -61,6 +61,7 @@ def wiz_command():
 
     # speed is the name :sunglasses:
     import time
+
     # this probably isn't enough time for some computers
     time.sleep(7)
 

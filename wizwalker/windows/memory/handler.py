@@ -61,9 +61,6 @@ class MemoryHandler:
         self.hooks = []
         self.active_hooks = defaultdict(lambda: False)
 
-    def __repr__(self):
-        return f"<MemoryHandler {self.player_struct_addr=} {self.quest_struct_addr=}>"
-
     @utils.executor_function
     def close(self):
         """
@@ -78,14 +75,15 @@ class MemoryHandler:
     def set_hook_active(self, hook):
         self.active_hooks[hook] = True
 
-    @classmethod
-    def hook_functs(cls):
+    def hook_functs(self):
         hooks = {}
         # Couldn't get anything else working for this, other than manually setting
         # some attr on each hook method
-        for thing in dir(cls):
-            if thing.startswith("hook_") and not any(thing.endswith(i) for i in ("all", "functs")):
-                hooks[thing.replace("hook_", "")] = getattr(cls, thing)
+        for thing in dir(self):
+            if thing.startswith("hook_") and not any(
+                thing.endswith(i) for i in ("all", "functs")
+            ):
+                hooks[thing.replace("hook_", "")] = getattr(self, thing)
 
         return hooks
 
@@ -192,7 +190,7 @@ class MemoryHandler:
     def read_player_health(self):
         stat_addr = self.process.read_int(self.player_stat_addr)
         try:
-            return self.process.read_int(stat_addr)
+            return self.process.read_int(stat_addr + 0x40)
         except pymem.exception.MemoryReadError:
             return None
 
@@ -201,7 +199,16 @@ class MemoryHandler:
     def read_player_mana(self):
         stat_addr = self.process.read_int(self.player_stat_addr)
         try:
-            return self.process.read_int(stat_addr + 0x10)
+            return self.process.read_int(stat_addr + 0x10 + 0x40)
+        except pymem.exception.MemoryReadError:
+            return None
+
+    @uses_hook("player_stat_struct")
+    @utils.executor_function
+    def read_player_energy(self):
+        stat_addr = self.process.read_int(self.player_stat_addr)
+        try:
+            return self.process.read_int(stat_addr + 0x3C)
         except pymem.exception.MemoryReadError:
             return None
 
@@ -211,7 +218,7 @@ class MemoryHandler:
         stat_addr = self.process.read_int(self.player_stat_addr)
         try:
             # this is a float for some reason
-            return int(self.process.read_float(stat_addr + 0x2C))
+            return int(self.process.read_float(stat_addr + 0x2C + 0x40))
         except pymem.exception.MemoryReadError:
             return None
 
@@ -220,7 +227,7 @@ class MemoryHandler:
     def read_player_gold(self):
         stat_addr = self.process.read_int(self.player_stat_addr)
         try:
-            return self.process.read_int(stat_addr + 0x4)
+            return self.process.read_int(stat_addr + 0x4 + 0x40)
         except pymem.exception.MemoryReadError:
             return None
 
@@ -261,7 +268,10 @@ class MemoryHandler:
             return None
 
     async def hook_all(self):
-        hooks = self.hook_functs().values()
+        hooks = []
+        for hook in self.hook_functs().values():
+            # Need the coroutine objects
+            hooks.append(hook())
 
         # return_exceptions=True will make all exceptions return as results
         return await asyncio.gather(*hooks, return_exceptions=True)

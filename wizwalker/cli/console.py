@@ -9,6 +9,7 @@ from wizwalker import Wad, utils
 from wizwalker.windows.memory import MemoryHandler
 
 
+# noinspection PyProtectedMember
 class WizWalkerConsole(AsynchronousCli):
     def __init__(self, walker, **kwargs):
         commands = self.get_commands()
@@ -82,7 +83,9 @@ class WizWalkerConsole(AsynchronousCli):
         send_parser.add_argument("seconds", type=float)
         commands["send"] = (self.send_command, send_parser)
 
-        getspeed_parser = ArgumentParser(description="get number of units covered in 1 second")
+        getspeed_parser = ArgumentParser(
+            description="get number of units covered in 1 second"
+        )
         commands["getspeed"] = (self.getspeed_command, getspeed_parser)
 
         teleport_parser = ArgumentParser(description="Teleport to a certain x,y,z")
@@ -120,34 +123,36 @@ class WizWalkerConsole(AsynchronousCli):
             writer.write("You cannot list and hook at the same time smh\n")
             return
 
-        if list_hooks:
-            all_hooks = MemoryHandler.hook_functs().keys()
-            writer.write("all hooks:\n" + "\n".join(all_hooks) + "\n")
-            return
-
         if not self.walker.clients:
             writer.write("There are no attached clients to hook to\n")
             return
 
+        if list_hooks:
+            all_hooks = self.walker.clients[0].get_hooks()
+            writer.write("all hooks:\n" + "\n".join(all_hooks) + "\n")
+            return
+
         for idx, client in enumerate(self.walker.clients):
             if target_hook:
-                await client.activate_hook(target_hook.replace(" ", "_"))
+                await client.activate_hooks(target_hook.replace(" ", "_"))
                 writer.write(f"client-{idx}: hooked {target_hook}\n")
             else:
-                await client.memory.hook_all()
+                await client.activate_hooks()
                 writer.write(f"client-{idx}: hooked all\n")
 
     async def player_command(self, _, writer):
         for idx, client in enumerate(self.walker.clients):
             writer.write(
-                f"client-{idx}: xyz={await client.xyz()} "
-                f"health={await client.health()} "
-                f"mana={await client.mana()} "
-                f"potions={await client.potions()} "
-                f"gold={await client.gold()} "
-                f"yaw={await client.yaw()} "
-                f"player_base={hex(await client.memory.read_player_base())} "
-                f"player_stat_base={hex(await client.memory.read_player_stat_base())}\n"
+                f"client-{idx}:\n"
+                f"\txyz={await client.xyz()}\n"
+                f"\thealth={await client.health()}\n"
+                f"\tmana={await client.mana()}\n"
+                f"\tpotions={await client.potions()}\n"
+                f"\tgold={await client.gold()}\n"
+                f"\tenergy={await client.energy()}\n"
+                f"\tyaw={await client.yaw()}\n"
+                f"\tplayer_base={hex(await client._memory.read_player_base())}\n"
+                f"\tplayer_stat_base={hex(await client._memory.read_player_stat_base())}\n"
             )
 
     async def backpack_command(self, _, writer):
@@ -155,7 +160,7 @@ class WizWalkerConsole(AsynchronousCli):
             writer.write(
                 f"client-{idx}: used_space={await client.backpack_space_used()} "
                 f"total_space={await client.backpack_space_total()} "
-                f"backpack_struct_addr={hex(await client.memory.read_backpack_stat_base())}\n"
+                f"backpack_struct_addr={hex(await client._memory.read_backpack_stat_base())}\n"
             )
 
     async def quest_command(self, _, writer):
@@ -165,8 +170,8 @@ class WizWalkerConsole(AsynchronousCli):
     async def packet_command(self, _, writer):
         for idx, client in enumerate(self.walker.clients):
             writer.write(
-                f"client-{idx}: socket={await client.memory.read_packet_socket_discriptor()} "
-                f"packet_buffer={await client.memory.read_packet_buffer()}\n"
+                f"client-{idx}: socket={await client._memory.read_packet_socket_discriptor()} "
+                f"packet_buffer={await client._memory.read_packet_buffer()}\n"
             )
 
     async def watch_command(self, _, writer):

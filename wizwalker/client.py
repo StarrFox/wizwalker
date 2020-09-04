@@ -22,7 +22,7 @@ class Client:
         self.packet_watcher = PacketHookWatcher(self)
 
     def __repr__(self):
-        return f"<Client {self.window_handle=} {self.process_id=} {self._memory=}>"
+        return f"<Client {self.window_handle=} {self.process_id=}>"
 
     async def close(self):
         await self._memory.close()
@@ -53,20 +53,21 @@ class Client:
         """
         return self._memory.hook_functs().keys()
 
-    async def activate_hook(self, hook_name: Optional[str]):
+    async def activate_hooks(self, *hook_names: Optional[str]):
         """
-        Activate a hook, get names with get_hooks
-        passing None will activate all hooks
+        Activate a number of hooks
+        or pass None to activate all
         """
-        if hook_name is None:
+        if not hook_names:
             await self._memory.hook_all()
 
         else:
-            hook = getattr(self._memory, "hook_" + hook_name, None)
-            if not hook:
-                raise ValueError(f"{hook_name} is not a valid hook")
+            for hook_name in hook_names:
+                hook = getattr(self._memory, "hook_" + hook_name, None)
+                if not hook:
+                    raise ValueError(f"{hook_name} is not a valid hook")
 
-            await hook()
+                await hook()
 
     async def goto(self, x: float, y: float, *, use_nodes: bool = False):
         """
@@ -90,16 +91,14 @@ class Client:
         await self.set_yaw(yaw)
         await self._keyboard.send_key("W", move_seconds)
 
-    async def teleport(self, *, x: float = None, y: float = None, z: float = None, yaw: float = None):
+    async def teleport(
+        self, *, x: float = None, y: float = None, z: float = None, yaw: float = None
+    ):
         """
         Teleport the player to a set x, y, z
         returns raises RuntimeError if not injected, True otherwise
         """
-        res = await self._memory.set_xyz(
-            x=x,
-            y=y,
-            z=z,
-        )
+        res = await self._memory.set_xyz(x=x, y=y, z=z,)
 
         if yaw is not None:
             await self._memory.set_player_yaw(yaw)
@@ -170,6 +169,13 @@ class Client:
         Can also be None if the injected function hasn't been triggered yet
         """
         return await self._memory.read_player_mana()
+
+    async def energy(self) -> Optional[int]:
+        """
+        Player energy if memory hooks are injected, otherwise raises RuntimeError
+        Can also be None if the injected function hasn't been triggered yet
+        """
+        return await self._memory.read_player_energy()
 
     async def potions(self) -> Optional[int]:
         """

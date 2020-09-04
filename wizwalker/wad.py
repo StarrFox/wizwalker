@@ -15,9 +15,7 @@ class Wad:
             name += ".wad"
 
         self.name = name
-        self.file_path = (
-            get_wiz_install() / "Data" / "GameData" / self.name
-        )
+        self.file_path = get_wiz_install() / "Data" / "GameData" / self.name
         if not self.file_path.exists():
             raise RuntimeError(f"{self.name} not found.")
 
@@ -49,8 +47,6 @@ class Wad:
             if version >= 2:
                 fp.read(1)
 
-            total_journal_size = (4 + 4 + 4 + 1 + 4)
-
             for _ in range(file_num):
                 offset = struct.unpack("<l", fp.read(4))[0]
                 size = struct.unpack("<l", fp.read(4))[0]
@@ -61,7 +57,11 @@ class Wad:
                 name = (fp.read(name_length)).decode("utf-8")[:-1]
 
                 self.journal[name] = wad_file_info(
-                    offset=offset, size=size, is_zip=is_zip, crc=crc, unzipped_size=zsize,
+                    offset=offset,
+                    size=size,
+                    is_zip=is_zip,
+                    crc=crc,
+                    unzipped_size=zsize,
                 )
 
     async def get_file(self, name: str) -> bytes:

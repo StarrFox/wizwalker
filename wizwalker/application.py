@@ -43,7 +43,9 @@ class WizWalker:
             async with aiofiles.open(self.cache_dir / "wizard_messages.json") as fp:
                 message_data = await fp.read()
         except OSError:
-            raise RuntimeError("Messages not yet cached, please run .run or .cache_data")
+            raise RuntimeError(
+                "Messages not yet cached, please run .run or .cache_data"
+            )
         else:
             return json.loads(message_data)
 
@@ -52,7 +54,9 @@ class WizWalker:
             async with aiofiles.open(self.cache_dir / "template_ids.json") as fp:
                 message_data = await fp.read()
         except OSError:
-            raise RuntimeError("template_ids not yet cached, please run .run or .cache_data")
+            raise RuntimeError(
+                "template_ids not yet cached, please run .run or .cache_data"
+            )
         else:
             return json.loads(message_data)
 
@@ -97,7 +101,7 @@ class WizWalker:
         return node_cache
 
     async def write_node_cache(self):
-        async with aiofiles.open(self.cache_dir / "node_cache.data", "w+")as fp:
+        async with aiofiles.open(self.cache_dir / "node_cache.data", "w+") as fp:
             json_data = json.dumps(self.node_cache)
             await fp.write(json_data)
 
@@ -154,7 +158,9 @@ class WizWalker:
                 pharsed_messages.update(utils.pharse_message_file(file_data))
                 del file_data
 
-            async with aiofiles.open(self.cache_dir / "wizard_messages.json", "w+") as fp:
+            async with aiofiles.open(
+                self.cache_dir / "wizard_messages.json", "w+"
+            ) as fp:
                 json_data = json.dumps(pharsed_messages)
                 await fp.write(json_data)
 

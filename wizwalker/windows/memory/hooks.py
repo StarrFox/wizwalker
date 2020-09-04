@@ -124,7 +124,6 @@ class PlayerHook(MemoryHook):
         self.set_player_struct()
         packed_addr = struct.pack("<i", self.player_struct)
 
-        # Todo: don't use a list here
         bytecode = (
             b"\x8B\xC8"  # mov ecx,eax
             b"\x81\xC1\x2C\x03\x00\x00"  # add ecx,0000032C { 812 }
@@ -188,15 +187,13 @@ class PlayerStatHook(MemoryHook):
         packed_tmp = struct.pack("<i", tmp)
 
         bytecode = (
+            # mov [tmp],edi
+            b"\x89\x3D" + packed_tmp + b"\x8B\xF8"  # mov edi,eax
             b"\x89\x3D"
+            + packed_addr  # mov [stat_addr],edi
+            + b"\x8B\x3D"
             + packed_tmp
-            + b"\x8B\xF8"  # mov [02661004],edi { (472) }  # mov edi,eax
-            b"\x83\xC7\x40"  # add edi,40 { 64 }
-            b"\x89\x3D"
-            + packed_addr
-            + b"\x8B\x3D"  # mov [packed_addr],edi { (180) }
-            + packed_tmp
-            +  # mov edi,[02661004] { (472) }
+            +  # mov edi,[tmp]
             # original code
             b"\x89\x48\x40"  # mov [eax+40],ecx
         )
@@ -309,7 +306,7 @@ class BackpackStatHook(MemoryHook):
         ecx_tmp = self.memory_handler.process.allocate(4)
         packed_ecx_tmp = struct.pack("<i", ecx_tmp)
 
-        bytecode_lines = (
+        bytecode = (
             b"\x89\x0D"
             + packed_ecx_tmp  # mov [02A91004],ecx { (0) }
             + b"\x8B\xCE"  # mov ecx,esi
@@ -322,8 +319,6 @@ class BackpackStatHook(MemoryHook):
             # original code
             b"\xC7\x86\x70\x03\x00\x00\x00\x00\x00\x00"  # mov [esi+00000370],00000000 { 0 }
         )
-
-        bytecode = b"".join(bytecode_lines)
 
         # len of code at jump_address
         return_addr = self.jump_address + 10
@@ -433,9 +428,7 @@ class PacketHook(MemoryHook):
             +
             # char * buf
             b"\x59"  # pop ecx
-            b"\x89\x0D"
-            + packed_stack_buffer_tmp_8  # mov [stack_buffer+8],ecx
-            +
+            b"\x89\x0D" + packed_stack_buffer_tmp_8 +  # mov [stack_buffer+8],ecx
             # move the buf pointer to our address
             b"\x89\x0D" + packed_buffer_addr +  # mov [buffer_addr],ecx
             # SOCKET s

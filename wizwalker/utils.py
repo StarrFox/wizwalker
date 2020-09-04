@@ -105,9 +105,15 @@ def calculate_perfect_yaw(current_xyz: XYZ, target_xyz: XYZ) -> float:
     """
     Calculates the perfect yaw to reach target_xyz from current_xyz in a stright line
     """
-    target_line = math.dist((current_xyz.x, current_xyz.y), (target_xyz.x, target_xyz.y))
-    origin_line = math.dist((current_xyz.x, current_xyz.y), (current_xyz.x, current_xyz.y - 1))
-    target_to_origin_line = math.dist((target_xyz.x, target_xyz.y), (current_xyz.x, current_xyz.y - 1))
+    target_line = math.dist(
+        (current_xyz.x, current_xyz.y), (target_xyz.x, target_xyz.y)
+    )
+    origin_line = math.dist(
+        (current_xyz.x, current_xyz.y), (current_xyz.x, current_xyz.y - 1)
+    )
+    target_to_origin_line = math.dist(
+        (target_xyz.x, target_xyz.y), (current_xyz.x, current_xyz.y - 1)
+    )
     # target_angle = math.cos(origin_line / target_line)
     target_angle = math.acos(
         (pow(target_line, 2) + pow(origin_line, 2) - pow(target_to_origin_line, 2))
@@ -171,8 +177,8 @@ def get_all_wizard_handles() -> list:
         if target_class == class_name.value:
             handles.append(handle)
 
-        # iterate all windows
-        return False
+        # iterate all windows, (True)
+        return 1
 
     # https://docs.python.org/3/library/ctypes.html#callback-functions
     enumwindows_func_type = ctypes.WINFUNCTYPE(
@@ -283,14 +289,14 @@ def pharse_node_data(file_data: bytes) -> dict:
         if start == -1:
             break
 
-        entry = file_data[start:start + 48 + 2]
+        entry = file_data[start : start + 48 + 2]
 
-        cords_data = entry[16:16 + (4 * 3)]
+        cords_data = entry[16 : 16 + (4 * 3)]
         x = struct.unpack("<f", cords_data[0:4])[0]
         y = struct.unpack("<f", cords_data[4:8])[0]
         z = struct.unpack("<f", cords_data[8:12])[0]
 
-        node_num = entry[48:48 + 2]
+        node_num = entry[48 : 48 + 2]
         unpacked_num = struct.unpack("<H", node_num)[0]
 
         node_data[unpacked_num] = (x, y, z)
