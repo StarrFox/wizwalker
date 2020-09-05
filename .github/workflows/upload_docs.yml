@@ -10,12 +10,12 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v1
     - name: Set up Python 3.8
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: 3.8
     - name: Install poetry
@@ -31,7 +31,7 @@ jobs:
     - name: Commit documentation changes
       run: |
         git clone https://github.com/StarrFox/wizwalker.git --branch gh-pages --single-branch gh-pages
-        cp -r docs/_build/html/* gh-pages/
+        xcopy /E /I "docs/_build/html" "gh-pages"
         cd gh-pages
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
