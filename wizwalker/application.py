@@ -13,8 +13,7 @@ from .wad import Wad
 
 class WizWalker:
     """
-    Represents the main program
-    and handles all windows
+    Represents the main program and handles all windows
     """
 
     def __init__(self):
@@ -32,13 +31,28 @@ class WizWalker:
 
     @cached_property
     def cache_dir(self):
+        """
+        The dir parsed data is stored in
+        """
         return utils.get_cache_folder()
 
     @cached_property
     def install_location(self) -> Path:
+        """
+        Wizard101 install location
+        """
         return utils.get_wiz_install()
 
-    async def get_wizard_messages(self):
+    async def get_wizard_messages(self) -> dict:
+        """
+        Loads wizard messages from cache
+
+        Raises:
+            RuntimeError: wizard messages haven't been cached yet
+
+        Returns:
+            the loaded wizard messages
+        """
         try:
             async with aiofiles.open(self.cache_dir / "wizard_messages.json") as fp:
                 message_data = await fp.read()
@@ -49,7 +63,16 @@ class WizWalker:
         else:
             return json.loads(message_data)
 
-    async def get_template_ids(self):
+    async def get_template_ids(self) -> dict:
+        """
+        Loads template ids from cache
+
+        Raises:
+            RuntimeError: template ids haven't been cached yet
+
+        Returns:
+            the loaded template ids
+        """
         try:
             async with aiofiles.open(self.cache_dir / "template_ids.json") as fp:
                 message_data = await fp.read()
@@ -60,7 +83,13 @@ class WizWalker:
         else:
             return json.loads(message_data)
 
-    async def get_wad_cache(self):
+    async def get_wad_cache(self) -> dict:
+        """
+        Gets the wad cache data
+
+        Returns:
+            a dict with the current cache data
+        """
         try:
             async with aiofiles.open(self.cache_dir / "wad_cache.data") as fp:
                 data = await fp.read()
@@ -81,11 +110,20 @@ class WizWalker:
         return wad_cache
 
     async def write_wad_cache(self):
+        """
+        Writes wad cache to disk
+        """
         async with aiofiles.open(self.cache_dir / "wad_cache.data", "w+") as fp:
             json_data = json.dumps(self.wad_cache)
             await fp.write(json_data)
 
-    async def get_node_cache(self):
+    async def get_node_cache(self) -> dict:
+        """
+        Loads the node cache from disk
+
+        Returns:
+            The current node cache data
+        """
         try:
             async with aiofiles.open(self.cache_dir / "node_cache.data") as fp:
                 data = await fp.read()
@@ -101,20 +139,33 @@ class WizWalker:
         return node_cache
 
     async def write_node_cache(self):
+        """
+        Writes node cache to disk
+        """
         async with aiofiles.open(self.cache_dir / "node_cache.data", "w+") as fp:
             json_data = json.dumps(self.node_cache)
             await fp.write(json_data)
 
     def get_clients(self):
+        """
+        Gets all clients currently running
+
+        These are stored in self.clients
+        """
         self.get_handles()
         self.clients = [Client(handle) for handle in self.window_handles]
 
     async def close(self):
+        """
+        Closes the application and all clients
+        """
         for client in self.clients:
             await client.close()
 
     async def cache_data(self):
-        """Caches various file data we will need later"""
+        """
+        Caches various file data
+        """
         root_wad = Wad("Root")
 
         logger.debug("Begining caching")
@@ -225,7 +276,9 @@ class WizWalker:
         await self.write_node_cache()
 
     async def check_updated(self, wad_file: Wad, files: dict):
-        """Checks if some wad files have changed since we last accessed them"""
+        """
+        Checks if some wad files have changed since we last accessed them
+        """
         if not self.wad_cache:
             self.wad_cache = await self.get_wad_cache()
             logger.debug(f"TEMP {self.wad_cache=} {type(self.wad_cache)}")
@@ -261,29 +314,12 @@ class WizWalker:
     def start_wiz_client():
         utils.quick_launch()
 
-    # @staticmethod
-    # def listen_packets():
-    #     socket_listener = packets.SocketListener()
-    #     packet_processer = packets.PacketProcesser()
-    #
-    #     for packet in socket_listener.listen():
-    #         try:
-    #             name, description, params = packet_processer.process_packet_data(packet)
-    #             if name in [
-    #                 "MSG_CLIENTMOVE",
-    #                 "MSG_SENDINTERACTOPTIONS",
-    #                 "MSG_MOVECORRECTION",
-    #             ]:
-    #                 continue
-    #
-    #             print(f"{name}: {params}")
-    #         except TypeError:
-    #             print("Bad packet")
-    #         except:
-    #             # print_exc()
-    #             print("Ignoring exception")
-
     def get_handles(self):
+        """
+        Gets all the wizard handles
+
+        get_clients should be called over this
+        """
         current_handles = utils.get_all_wizard_handles()
 
         if not current_handles:

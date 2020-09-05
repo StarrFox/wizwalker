@@ -114,66 +114,90 @@ class MemoryHandler:
     @utils.executor_function
     def read_xyz(self):
         player_struct = self.process.read_int(self.player_struct_addr)
-        x = self.process.read_float(player_struct + 0x2C)
-        y = self.process.read_float(player_struct + 0x30)
-        z = self.process.read_float(player_struct + 0x34)
-
-        return utils.XYZ(x, y, z)
+        try:
+            x = self.process.read_float(player_struct + 0x2C)
+            y = self.process.read_float(player_struct + 0x30)
+            z = self.process.read_float(player_struct + 0x34)
+        except pymem.exception.MemoryReadError:
+            return None
+        else:
+            return utils.XYZ(x, y, z)
 
     @uses_hook("player_struct")
     @utils.executor_function
     def set_xyz(self, *, x=None, y=None, z=None):
         player_struct = self.process.read_int(self.player_struct_addr)
-        if x is not None:
-            self.process.write_float(player_struct + 0x2C, x)
-        if y is not None:
-            self.process.write_float(player_struct + 0x30, y)
-        if z is not None:
-            self.process.write_float(player_struct + 0x34, z)
-
-        return True
+        try:
+            if x is not None:
+                self.process.write_float(player_struct + 0x2C, x)
+            if y is not None:
+                self.process.write_float(player_struct + 0x30, y)
+            if z is not None:
+                self.process.write_float(player_struct + 0x34, z)
+        except pymem.exception.MemoryWriteError:
+            return False
+        else:
+            return True
 
     @uses_hook("player_struct")
     @utils.executor_function
     def read_player_yaw(self):
         player_struct = self.process.read_int(self.player_struct_addr)
-        return self.process.read_float(player_struct + 0x40)
+        try:
+            return self.process.read_float(player_struct + 0x40)
+        except pymem.exception.MemoryReadError:
+            return None
 
     @uses_hook("player_struct")
     @utils.executor_function
     def set_player_yaw(self, yaw):
         player_struct = self.process.read_int(self.player_struct_addr)
-        self.process.write_float(player_struct + 0x40, yaw)
-
-        return True
+        try:
+            self.process.write_float(player_struct + 0x40, yaw)
+        except pymem.exception.MemoryWriteError:
+            return False
+        else:
+            return True
 
     @uses_hook("player_struct")
     @utils.executor_function
     def read_player_pitch(self):
         player_struct = self.process.read_int(self.player_struct_addr)
-        return self.process.read_float(player_struct + 0x38)
+        try:
+            return self.process.read_float(player_struct + 0x38)
+        except pymem.exception.MemoryReadError:
+            return None
 
     @uses_hook("player_struct")
     @utils.executor_function
     def set_player_pitch(self, pitch):
         player_struct = self.process.read_int(self.player_struct_addr)
-        self.process.write_float(player_struct + 0x38, pitch)
-
-        return True
+        try:
+            self.process.write_float(player_struct + 0x38, pitch)
+        except pymem.exception.MemoryWriteError:
+            return False
+        else:
+            return True
 
     @uses_hook("player_struct")
     @utils.executor_function
     def read_player_roll(self):
         player_struct = self.process.read_int(self.player_struct_addr)
-        return self.process.read_float(player_struct + 0x3C)
+        try:
+            return self.process.read_float(player_struct + 0x3C)
+        except pymem.exception.MemoryReadError:
+            return None
 
     @uses_hook("player_struct")
     @utils.executor_function
     def set_player_roll(self, roll):
         player_struct = self.process.read_int(self.player_struct_addr)
-        self.process.write_float(player_struct + 0x3C, roll)
-
-        return True
+        try:
+            self.process.write_float(player_struct + 0x3C, roll)
+        except pymem.exception.MemoryWriteError:
+            return False
+        else:
+            return True
 
     @uses_hook("quest_struct")
     @utils.executor_function

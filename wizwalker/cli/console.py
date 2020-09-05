@@ -6,7 +6,6 @@ import aiofiles
 from aioconsole import AsynchronousCli
 
 from wizwalker import Wad, utils
-from wizwalker.windows.memory import MemoryHandler
 
 
 # noinspection PyProtectedMember
@@ -210,14 +209,14 @@ class WizWalkerConsole(AsynchronousCli):
             key = key.upper()
 
         for client in self.walker.clients:
-            asyncio.create_task(client.keyboard.send_key(key, seconds))
+            asyncio.create_task(client._keyboard.send_key(key, seconds))
 
         writer.write("Started\n")
 
     async def getspeed_command(self, _, writer):
         client = self.walker.clients[0]
         start = await client.xyz()
-        await client.keyboard.send_key("W", 1)
+        await client._keyboard.send_key("W", 1)
         end = await client.xyz()
         distance = math.dist((start.x, start.y), (end.x, end.y))
         writer.write(f"from {start} to {end} covered {distance}\n")
