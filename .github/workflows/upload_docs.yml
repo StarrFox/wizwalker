@@ -22,7 +22,7 @@ jobs:
       run: python3.8 -m pip install poetry
     - name: Install deps
       run: poetry install
-    -name: Build docs
+    - name: Build docs
       run: |
         poetry shell
         cd docs
