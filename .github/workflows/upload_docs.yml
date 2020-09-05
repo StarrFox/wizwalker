@@ -23,11 +23,7 @@ jobs:
     - name: Install deps
       run: poetry install
     - name: Build docs
-      run: |
-        poetry shell
-        cd docs
-        make html
-        cd ..
+      run: poetry run sphinx-build docs docs/_build
     - uses: actions/upload-artifact@v1
       with:
         name: DocumentationHTML
