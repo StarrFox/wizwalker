@@ -24,3 +24,8 @@ Wad
 .. autoclass:: Wad
    :members:
 
+Errors
+======
+
+.. automodule:: wizwalker.errors
+   :members:
