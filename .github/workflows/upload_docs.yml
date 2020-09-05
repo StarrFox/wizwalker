@@ -24,10 +24,6 @@ jobs:
       run: poetry install
     - name: Build docs
       run: poetry run sphinx-build docs docs/_build
-    - uses: actions/upload-artifact@v1
-      with:
-        name: DocumentationHTML
-        path: docs/_build/html/
     - name: Commit documentation changes
       run: |
         git clone https://github.com/StarrFox/wizwalker.git --branch gh-pages --single-branch gh-pages
