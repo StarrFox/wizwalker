@@ -1,7 +1,7 @@
 API
 ===
 
-.. automodule:: wizwalker
+.. module:: wizwalker
 
 .. toctree::
    :maxdepth: 2
