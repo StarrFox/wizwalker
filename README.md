@@ -5,6 +5,9 @@
 
 Wizard101 quality of life adjuster; mainly focusing on quests
 
+## documentation
+you can find the documentation [here](https://starrfox.github.io/wizwalker/)
+
 ## install
 download latest release from [here](https://github.com/StarrFox/WizWalker/releases)
 or install from pypi `pip install -U wizwalker`
