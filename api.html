@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                0.12.1
+                0.12.2
               </div>
             
           
@@ -293,14 +293,18 @@
 <dl class="py method">
 <dt id="wizwalker.Client.activate_hooks">
 <em class="property">async </em><code class="sig-name descname">activate_hooks</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">hook_names</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.activate_hooks" title="Permalink to this definition">¶</a></dt>
-<dd><p>Activate a number of hooks or pass None to activate all</p>
+<dd><p>Activate a number of hooks or pass None/no args to activate all</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>hook_names</strong> – The hooks to activate</p>
 </dd>
 </dl>
 <p class="rubric">Examples</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">activate_hooks</span><span class="p">(</span><span class="s2">&quot;player_struct&quot;</span><span class="p">,</span> <span class="s2">&quot;player_stat_struct&quot;</span><span class="p">)</span>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="c1"># activates player_struct and player_stat_struct</span>
+<span class="n">activate_hooks</span><span class="p">(</span><span class="s2">&quot;player_struct&quot;</span><span class="p">,</span> <span class="s2">&quot;player_stat_struct&quot;</span><span class="p">)</span>
+
+<span class="c1"># activates all hooks</span>
+<span class="n">activate_hooks</span><span class="p">()</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -438,7 +442,7 @@
 <dl class="py method">
 <dt id="wizwalker.Client.pitch">
 <em class="property">async </em><code class="sig-name descname">pitch</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span>float<span class="p">]</span><a class="headerlink" href="#wizwalker.Client.pitch" title="Permalink to this definition">¶</a></dt>
-<dd><p>Player yaw</p>
+<dd><p>Player pitch</p>
 <dl class="field-list simple">
 <dt class="field-odd">Raises</dt>
 <dd class="field-odd"><p><strong>RuntimeError</strong> – player_struct hook not active</p>
