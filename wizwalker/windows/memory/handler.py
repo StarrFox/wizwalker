@@ -203,11 +203,15 @@ class MemoryHandler:
     @utils.executor_function
     def read_quest_xyz(self):
         quest_struct = self.process.read_int(self.quest_struct_addr)
-        x = self.process.read_float(quest_struct + 0x81C)
-        y = self.process.read_float(quest_struct + 0x81C + 0x4)
-        z = self.process.read_float(quest_struct + 0x81C + 0x8)
+        try:
+            x = self.process.read_float(quest_struct + 0x81C)
+            y = self.process.read_float(quest_struct + 0x81C + 0x4)
+            z = self.process.read_float(quest_struct + 0x81C + 0x8)
 
-        return utils.XYZ(x, y, z)
+            return utils.XYZ(x, y, z)
+
+        except pymem.exception.MemoryReadError:
+            return None
 
     @uses_hook("player_stat_struct")
     @utils.executor_function

@@ -1,3 +1,4 @@
+import re
 import struct
 from typing import Any, Tuple, Optional
 
@@ -6,7 +7,7 @@ import pymem.pattern
 from pymem.ressources.structure import MODULEINFO
 
 
-# Modified to not handle memory protections
+# Modified to not handle memory protections and use re for matching
 # This licence covers the below function
 # MIT License
 # Copyright (c) 2018 pymem
@@ -25,28 +26,54 @@ from pymem.ressources.structure import MODULEINFO
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-def scan_pattern_page(handle, address, pattern, mask):
+def scan_pattern_page(handle: int, address: int, pattern: re.Pattern):
     mbi = pymem.memory.virtual_query(handle, address)
     next_region = mbi.BaseAddress + mbi.RegionSize
     page_bytes = pymem.memory.read_bytes(handle, address, mbi.RegionSize)
 
     found = None
-    for offset in range(0, (mbi.RegionSize - len(pattern)), 1):
-        partial = page_bytes[offset : offset + len(pattern)]
-        for x in range(len(pattern)):
-            if mask[x] == "?":
-                continue
-            if mask[x] == "x" and not partial[x] == pattern[x]:
-                break
-        else:
-            found = address + offset
-            del page_bytes
-            return None, found
+
+    match = pattern.search(page_bytes)
+
+    if match:
+        found = address + match.span()[0]
+
     return next_region, found
 
 
-# monkey patch to ignore memory protections
-pymem.pattern.scan_pattern_page = scan_pattern_page
+# This licence covers the below function
+# MIT License
+# Copyright (c) 2018 pymem
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+def pattern_scan_module(handle: int, module: MODULEINFO, pattern: re.Pattern):
+    base_address = module.lpBaseOfDll
+    max_address = module.lpBaseOfDll + module.SizeOfImage
+    page_address = base_address
+
+    found = None
+    while page_address < max_address:
+        next_page, found = scan_pattern_page(handle, page_address, pattern)
+
+        if found:
+            break
+
+        page_address = next_page
+
+    return found
 
 
 class MemoryHook:
@@ -60,14 +87,14 @@ class MemoryHook:
         self.jump_bytecode = None
         self.hook_bytecode = None
 
-    def get_jump_address(self, pattern: bytes, mask: str, *, module=None) -> int:
+    def get_jump_address(self, pattern: re.Pattern, *, module=None) -> int:
         """
         gets the address to write jump at
         """
         if module:
             # noinspection PyTypeChecker
-            jump_address = pymem.pattern.pattern_scan_module(
-                self.memory_handler.process.process_handle, module, pattern, mask
+            jump_address = pattern_scan_module(
+                self.memory_handler.process.process_handle, module, pattern
             )
 
         else:
@@ -92,19 +119,16 @@ class MemoryHook:
         """
         raise NotImplemented()
 
-    def get_pattern_and_mask(self) -> Tuple[bytes, Optional[str], Optional[MODULEINFO]]:
+    def get_pattern(self) -> Tuple[re.Pattern, Optional[MODULEINFO]]:
         raise NotImplemented()
 
     def hook(self) -> Any:
         """
         Writes jump_bytecode to jump address and hook bytecode to hook address
         """
-        pattern, mask, module = self.get_pattern_and_mask()
+        pattern, module = self.get_pattern()
 
-        if mask is None:
-            mask = "x" * len(pattern)
-
-        self.jump_address = self.get_jump_address(pattern, mask, module=module)
+        self.jump_address = self.get_jump_address(pattern, module=module)
         self.hook_address = self.get_hook_address(200)
 
         self.jump_bytecode = self.get_jump_bytecode()
@@ -139,11 +163,11 @@ class PlayerHook(MemoryHook):
         super().__init__(memory_handler)
         self.player_struct = None
 
-    def get_pattern_and_mask(self) -> Tuple[bytes, Optional[str], Optional[MODULEINFO]]:
+    def get_pattern(self) -> Tuple[re.Pattern, Optional[MODULEINFO]]:
         module = pymem.process.module_from_name(
             self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
         )
-        return b"\x8B\x48\x2C\x8B\x50\x30\x8B\x40\x34\xEB\x2A", None, module
+        return re.compile(rb"\x8B\x48\x2C\x8B\x50\x30\x8B\x40\x34\xEB\x2A"), module
 
     def set_player_struct(self):
         self.player_struct = self.memory_handler.process.allocate(4)
@@ -201,11 +225,11 @@ class PlayerStatHook(MemoryHook):
         super().__init__(memory_handler)
         self.stat_addr = None
 
-    def get_pattern_and_mask(self) -> Tuple[bytes, Optional[str], Optional[MODULEINFO]]:
+    def get_pattern(self) -> Tuple[re.Pattern, Optional[MODULEINFO]]:
         module = pymem.process.module_from_name(
             self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
         )
-        return b"\x89\x48\x40\x74\x69", None, module
+        return re.compile(rb"\x89\x48\x40\x74\x69"), module
 
     def set_stat_addr(self):
         self.stat_addr = self.memory_handler.process.allocate(4)
@@ -273,11 +297,11 @@ class QuestHook(MemoryHook):
         super().__init__(memory_handler)
         self.cord_struct = None
 
-    def get_pattern_and_mask(self) -> Tuple[bytes, Optional[str], Optional[MODULEINFO]]:
+    def get_pattern(self) -> Tuple[re.Pattern, Optional[MODULEINFO]]:
         module = pymem.process.module_from_name(
             self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
         )
-        return b"\xD9\x86\x1C\x08\x00\x00", "xxxx??", module
+        return re.compile(rb"\xD9\x86\x1C\x08.."), module
 
     def set_cord_struct(self):
         self.cord_struct = self.memory_handler.process.allocate(4)
@@ -329,11 +353,11 @@ class BackpackStatHook(MemoryHook):
     def free_backpack_struct(self):
         self.memory_handler.process.free(self.backpack_struct_addr)
 
-    def get_pattern_and_mask(self) -> Tuple[bytes, Optional[str], Optional[MODULEINFO]]:
+    def get_pattern(self) -> Tuple[re.Pattern, Optional[MODULEINFO]]:
         module = pymem.process.module_from_name(
             self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
         )
-        return b"\xC7\x86\x70\x03\x00\x00\x00\x00\x00\x00\x74", None, module
+        return re.compile(rb"\xC7\x86\x70\x03\x00\x00\x00\x00\x00\x00\x74"), module
 
     def get_jump_bytecode(self) -> bytes:
         # distance = end - start
@@ -407,7 +431,7 @@ class PacketHook(MemoryHook):
     def free_packet_buffer_len(self):
         self.memory_handler.process.free(self.packet_buffer_len)
 
-    def get_jump_address(self, pattern: bytes, mask: str, *, module=None) -> int:
+    def get_jump_address(self, pattern: re.Pattern, *, module=None) -> int:
         """
         gets the address to write jump at
         """
@@ -416,11 +440,14 @@ class PacketHook(MemoryHook):
         # I could read jump_address and compare to pattern but it's really unneeded
         return jump_address
 
-    def get_pattern_and_mask(self) -> Tuple[bytes, Optional[str], Optional[MODULEINFO]]:
+    def get_pattern(self) -> Tuple[re.Pattern, Optional[MODULEINFO]]:
         module = pymem.process.module_from_name(
             self.memory_handler.process.process_handle, "WSOCK32.dll"
         )
-        return b"\x8B\xFF\x55\x8B\xEC\x83\xEC\x10\x8B\x45\x10\x89\x45\xF0", None, module
+        return (
+            re.compile(rb"\x8B\xFF\x55\x8B\xEC\x83\xEC\x10\x8B\x45\x10\x89\x45\xF0"),
+            module,
+        )
 
     def get_jump_bytecode(self) -> bytes:
         # distance = end - start
