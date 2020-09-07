@@ -75,7 +75,7 @@ class Client:
 
     async def activate_hooks(self, *hook_names: Optional[str]):
         """
-        Activate a number of hooks or pass None to activate all
+        Activate a number of hooks or pass None/no args to activate all
 
         Args:
             hook_names: The hooks to activate
@@ -83,7 +83,11 @@ class Client:
         Examples:
             .. code-block:: py
 
+                # activates player_struct and player_stat_struct
                 activate_hooks("player_struct", "player_stat_struct")
+
+                # activates all hooks
+                activate_hooks()
 
         """
         if not hook_names:
@@ -208,7 +212,7 @@ class Client:
 
     async def pitch(self) -> Optional[float]:
         """
-        Player yaw
+        Player pitch
 
         Raises:
             RuntimeError: player_struct hook not active

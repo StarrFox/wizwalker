@@ -3,10 +3,12 @@
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-Wizard101 quality of life adjuster; mainly focusing on quests
+Wizard101 quest bot scripting api and application
 
 ## documentation
 you can find the documentation [here](https://starrfox.github.io/wizwalker/)
+
+you can download these from the gh-pages branch if desired
 
 ## install
 download latest release from [here](https://github.com/StarrFox/WizWalker/releases)
@@ -30,11 +32,24 @@ $ py -m wizwalker
 
 ## building
 You'll need the dev install (see above) for this to work
+
+### exe
 ```shell script
 # Admin if needed
 $ pyinstaller -F --uac-admin --name WizWalker wizwalker/__main__.py
 # Normal
 $ pyinstaller -F --name WizWalker wizwalker/__main__.py
+```
+
+### wheel and source
+```shell script
+$ poetry build
+```
+
+### Docs
+```shell script
+$ cd docs
+$ make html
 ```
 
 ## console commands
@@ -45,9 +60,10 @@ wiz: Starts a Wizard101 instance
 ## project goals in order of importance
 0. ~~basic info by memory~~
 1. able to determine current quest
-2. teleportion mode
-3. info by memory
-4. info by packet
-5. able to combat
-6. ~~cli for end users~~
-7. gui for end users
+2. ~~teleportion mode~~
+3. ~~info by memory~~
+4. ~~info by packet~~
+5. ~~able to walk~~
+6. able to combat
+7. ~~cli for end users~~
+8. gui for end users
