@@ -1,3 +1,3 @@
 from .constants import *
-from .keyboard import *
+from .input import InputHandler
 from .memory import *

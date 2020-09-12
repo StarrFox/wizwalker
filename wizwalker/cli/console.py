@@ -99,6 +99,14 @@ class WizWalkerConsole(AsynchronousCli):
         goto_parser.add_argument("y", type=float)
         commands["goto"] = (self.goto_command, goto_parser)
 
+        movelocked_parser = ArgumentParser(description="check if move locked")
+        commands["movelocked"] = (self.movelocked_command, movelocked_parser)
+
+        click_parser = ArgumentParser(description="click x y on each client")
+        click_parser.add_argument("x", type=int)
+        click_parser.add_argument("y", type=int)
+        commands["click"] = (self.click_command, click_parser)
+
         return commands
 
     async def attach_command(self, _, writer):
@@ -232,3 +240,14 @@ class WizWalkerConsole(AsynchronousCli):
             asyncio.create_task(client.goto(x, y))
 
         writer.write("Tasks started\n")
+
+    async def movelocked_command(self, _, writer):
+        for idx, client in enumerate(self.walker.clients):
+            writer.write(f"client-{idx}: {await client.move_lock()}\n")
+
+    async def click_command(self, _, writer, x, y):
+        # for idx, client in enumerate(self.walker.clients):
+        #     await client.click(x, y)
+        #
+        #     writer.write(f"client-{idx}: clicked\n")
+        writer.write("WIP\n")

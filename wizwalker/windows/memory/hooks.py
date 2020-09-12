@@ -1,5 +1,7 @@
 import re
 import struct
+import ctypes
+import ctypes.wintypes
 from typing import Any, Tuple, Optional
 
 import pymem
@@ -7,7 +9,20 @@ import pymem.pattern
 from pymem.ressources.structure import MODULEINFO
 
 
-# Modified to not handle memory protections and use re for matching
+class MEMORY_BASIC_INFORMATION(ctypes.Structure):
+    _fields_ = [
+        ("BaseAddress", ctypes.c_void_p),
+        ("AllocationBase", ctypes.c_void_p),
+        ("AllocationProtect", ctypes.wintypes.DWORD),
+        ("PartitionId", ctypes.wintypes.WORD),
+        ("RegionSize", ctypes.c_size_t),
+        ("State", ctypes.wintypes.DWORD),
+        ("Protect", ctypes.wintypes.DWORD),
+        ("Type", ctypes.wintypes.DWORD),
+    ]
+
+
+# Modified to not handle memory protections, use re for matching
 # This licence covers the below function
 # MIT License
 # Copyright (c) 2018 pymem
@@ -27,7 +42,12 @@ from pymem.ressources.structure import MODULEINFO
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 def scan_pattern_page(handle: int, address: int, pattern: re.Pattern):
-    mbi = pymem.memory.virtual_query(handle, address)
+    mbi = MEMORY_BASIC_INFORMATION()
+
+    ctypes.windll.kernel32.VirtualQueryEx(
+        handle, address, ctypes.byref(mbi), ctypes.sizeof(mbi)
+    )
+
     next_region = mbi.BaseAddress + mbi.RegionSize
     page_bytes = pymem.memory.read_bytes(handle, address, mbi.RegionSize)
 
@@ -539,3 +559,101 @@ class PacketHook(MemoryHook):
         self.free_packet_buffer_addr()
         self.free_packet_buffer_len()
         self.free_socket_discriptor()
+
+
+class MoveLockHook(MemoryHook):
+    def __init__(self, memory_handler):
+        super().__init__(memory_handler)
+        self.move_lock_addr = None
+
+    def set_move_lock_addr(self):
+        self.move_lock_addr = self.memory_handler.process.allocate(4)
+
+    def free_move_lock_addr(self):
+        self.memory_handler.process.free(self.move_lock_addr)
+
+    def get_pattern(self) -> Tuple[re.Pattern, Optional[MODULEINFO]]:
+        module = pymem.process.module_from_name(
+            self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
+        )
+        return (
+            re.compile(rb"\xCC\x8A\x44\x24\x04\x8B\x11\x88\x81\x08\x02\x00\x00"),
+            module,
+        )
+
+    def get_jump_address(self, pattern: re.Pattern, *, module=None) -> int:
+        """
+        gets the address to write jump at
+        """
+        jump_address = pattern_scan_module(
+            self.memory_handler.process.process_handle, module, pattern
+        )
+
+        return jump_address + 0x7
+
+    def get_jump_bytecode(self) -> bytes:
+        # distance = end - start
+        distance = self.hook_address - self.jump_address
+        relitive_jump = distance - 5  # size of this line
+        packed_relitive_jump = struct.pack("<i", relitive_jump)
+        return b"\xE9" + packed_relitive_jump + b"\x90"
+
+    def get_hook_bytecode(self) -> bytes:
+        self.set_move_lock_addr()
+        packed_move_lock_addr = struct.pack("<i", self.move_lock_addr)
+
+        bytecode = (
+            b"\x52\x8D\x91\x08\x02\x00\x00\x89\x15"
+            + packed_move_lock_addr
+            + b"\x5A\x88\x81\x08\x02\x00\x00"
+        )
+
+        return_addr = self.jump_address + 6
+
+        relitive_return_jump = return_addr - (self.hook_address + len(bytecode)) - 5
+        packed_relitive_return_jump = struct.pack("<i", relitive_return_jump)
+
+        bytecode += b"\xE9" + packed_relitive_return_jump
+
+        return bytecode
+
+    def unhook(self):
+        super().unhook()
+        self.free_move_lock_addr()
+
+
+# class IgnoreMouseLeaveHook(MemoryHook):
+#     def get_pattern(self) -> Tuple[re.Pattern, Optional[MODULEINFO]]:
+#         module = pymem.process.module_from_name(
+#             self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
+#         )
+#         return re.compile(rb"\x8B\x2D\x08\x1B\xF5\x01"), module
+#
+#     def get_jump_bytecode(self) -> bytes:
+#         # distance = end - start
+#         distance = self.hook_address - self.jump_address
+#         relitive_jump = distance - 5  # size of this line
+#         packed_relitive_jump = struct.pack("<i", relitive_jump)
+#         return b"\xE9" + packed_relitive_jump + b"\x90"
+#
+#     def get_hook_bytecode(self) -> bytes:
+#         return_zero_addr = self.jump_address + 55
+#         bytecode = b"\x8B\x4C\x24\x40\x81\xF9\xA3\x02\x00\x00\x0F\x84"
+#
+#         relative_return_zero_addr = (
+#             return_zero_addr - (self.hook_address + len(bytecode)) - 4
+#         )
+#         packed_relative_return_zero_addr = struct.pack("<i", relative_return_zero_addr)
+#
+#         bytecode += packed_relative_return_zero_addr
+#
+#         bytecode += b"\x8B\x2D\x08\x1B\xF5\x01"
+#
+#         return_addr = self.jump_address + len(self.jump_bytecode)
+#
+#         relative_return_jump = return_addr - (self.hook_address + len(bytecode)) - 5
+#         packed_relative_return_jump = struct.pack("<i", relative_return_jump)
+#
+#         bytecode += b"\xE9" + packed_relative_return_jump
+#
+#         return bytecode

@@ -4,7 +4,7 @@ from typing import Optional
 
 from . import utils
 from .packets import PacketHookWatcher
-from .windows import KeyboardHandler, MemoryHandler, user32
+from .windows import InputHandler, MemoryHandler, user32
 
 
 WIZARD_SPEED = 580
@@ -20,7 +20,7 @@ class Client:
 
     def __init__(self, window_handle: int):
         self.window_handle = window_handle
-        self._keyboard = KeyboardHandler(window_handle)
+        self._input = InputHandler(window_handle)
         self._memory = MemoryHandler(self.process_id)
         self.current_zone = None
 
@@ -47,6 +47,12 @@ class Client:
         pid = ctypes.wintypes.DWORD()
         user32.GetWindowThreadProcessId(self.window_handle, ctypes.byref(pid))
         return pid.value
+
+    async def send_key(self, key: str, seconds: float):
+        await self._input.send_key(key, seconds)
+
+    # async def click(self, x: int, y: int):
+    #     await self._input.click(x, y)
 
     def login(self, username: str, password: str):
         """
@@ -123,7 +129,7 @@ class Client:
         yaw = utils.calculate_perfect_yaw(current_xyz, target_xyz)
 
         await self.set_yaw(yaw)
-        await self._keyboard.send_key("W", move_seconds)
+        await self._input.send_key("W", move_seconds)
 
     async def teleport(
         self, *, x: float = None, y: float = None, z: float = None, yaw: float = None
@@ -245,6 +251,19 @@ class Client:
             XYZ namedtuple or None if hooked function hasn't run yet
         """
         return await self._memory.read_quest_xyz()
+
+    async def move_lock(self) -> Optional[bool]:
+        """
+        Player move lock; weither or not the player is locked
+        in combat/dialog
+
+        Raises:
+            RuntimeError: move_lock hook not active
+
+        Return:
+            move look bool or None if the function has not run yet
+        """
+        return await self._memory.read_move_lock()
 
     async def health(self) -> Optional[int]:
         """

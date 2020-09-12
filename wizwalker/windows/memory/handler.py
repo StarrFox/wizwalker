@@ -1,11 +1,19 @@
 import asyncio
 import functools
+import struct
 from collections import defaultdict
 
 import pymem
 
 from wizwalker import HookAlreadyActivated, utils, HookNotActive
-from .hooks import PlayerHook, QuestHook, PlayerStatHook, BackpackStatHook, PacketHook
+from .hooks import (
+    PlayerHook,
+    QuestHook,
+    PlayerStatHook,
+    BackpackStatHook,
+    PacketHook,
+    MoveLockHook,
+)
 
 
 def uses_hook(hook: str):
@@ -57,6 +65,7 @@ class MemoryHandler:
         self.packet_socket_discriptor_addr = None
         self.packet_buffer_addr = None
         self.packet_buffer_len = None
+        self.move_lock_addr = None
 
         self.hooks = []
         self.active_hooks = defaultdict(lambda: False)
@@ -295,6 +304,16 @@ class MemoryHandler:
         except pymem.exception.MemoryReadError:
             return None
 
+    @uses_hook("move_lock")
+    @utils.executor_function
+    def read_move_lock(self):
+        move_lock = self.process.read_int(self.move_lock_addr)
+        try:
+            data = self.process.read_bytes(move_lock, 1)
+            return struct.unpack("?", data)[0]
+        except pymem.exception.MemoryReadError:
+            return None
+
     async def hook_all(self):
         hooks = []
         for hook in self.hook_functs().values():
@@ -350,3 +369,20 @@ class MemoryHandler:
         self.packet_socket_discriptor_addr = packet_recv_hook.socket_discriptor
         self.packet_buffer_addr = packet_recv_hook.packet_buffer_addr
         self.packet_buffer_len = packet_recv_hook.packet_buffer_len
+
+    @register_hook("move_lock")
+    @utils.executor_function
+    def hook_move_lock(self):
+        move_lock_hook = MoveLockHook(self)
+        move_lock_hook.hook()
+
+        self.hooks.append(move_lock_hook)
+        self.move_lock_addr = move_lock_hook.move_lock_addr
+
+    # @register_hook("ignore_mouse_leave")
+    # @utils.executor_function
+    # def hook_ignore_mouse_leave(self):
+    #     mouse_leave_hook = IgnoreMouseLeaveHook(self)
+    #     mouse_leave_hook.hook()
+    #
+    #     self.hooks.append(mouse_leave_hook)
