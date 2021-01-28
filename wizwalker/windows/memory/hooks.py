@@ -187,7 +187,7 @@ class PlayerHook(MemoryHook):
         module = pymem.process.module_from_name(
             self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
         )
-        return re.compile(rb"\x8B\x48\x2C\x8B\x50\x30\x8B\x40\x34\xEB\x2A"), module
+        return re.compile(rb"\x8B\x48.\x8B\x50.\x8B\x40.\xEB.\xD9\x87"), module
 
     def set_player_struct(self):
         self.player_struct = self.memory_handler.process.allocate(4)
@@ -249,7 +249,7 @@ class PlayerStatHook(MemoryHook):
         module = pymem.process.module_from_name(
             self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
         )
-        return re.compile(rb"\x89\x48\x40\x74\x69"), module
+        return re.compile(rb"\x89\x48.\x74.\xA1"), module
 
     def set_stat_addr(self):
         self.stat_addr = self.memory_handler.process.allocate(4)
@@ -321,7 +321,7 @@ class QuestHook(MemoryHook):
         module = pymem.process.module_from_name(
             self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
         )
-        return re.compile(rb"\xD9\x86\x1C\x08.."), module
+        return re.compile(rb"\xD9\x86....\x8D\xBE....\xD9\x9C"), module
 
     def set_cord_struct(self):
         self.cord_struct = self.memory_handler.process.allocate(4)
@@ -377,7 +377,7 @@ class BackpackStatHook(MemoryHook):
         module = pymem.process.module_from_name(
             self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
         )
-        return re.compile(rb"\xC7\x86\x70\x03\x00\x00\x00\x00\x00\x00\x74"), module
+        return re.compile(rb"\xC7\x86\x70\x03\x00\x00....\x74"), module
 
     def get_jump_bytecode(self) -> bytes:
         # distance = end - start
@@ -465,7 +465,7 @@ class PacketHook(MemoryHook):
             self.memory_handler.process.process_handle, "WSOCK32.dll"
         )
         return (
-            re.compile(rb"\x8B\xFF\x55\x8B\xEC\x83\xEC\x10\x8B\x45\x10\x89\x45\xF0"),
+            re.compile(rb"\x8B\xFF\x55\x8B\xEC\x83\xEC.\x8B\x45.\x89\x45"),
             module,
         )
 
@@ -577,7 +577,7 @@ class MoveLockHook(MemoryHook):
             self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
         )
         return (
-            re.compile(rb"\xCC\x8A\x44\x24\x04\x8B\x11\x88\x81\x08\x02\x00\x00"),
+            re.compile(rb"\xCC\x8A\x44..\x8B\x11\x88\x81"),
             module,
         )
 
