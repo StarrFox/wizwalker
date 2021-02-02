@@ -6,7 +6,6 @@ from . import utils
 from .packets import PacketHookWatcher
 from .windows import InputHandler, MemoryHandler, user32
 
-
 WIZARD_SPEED = 580
 
 
@@ -107,25 +106,33 @@ class Client:
 
                 await hook()
 
-    async def goto(self, x: float, y: float, *, use_nodes: bool = False):
+    async def goto(
+        self,
+        x: float,
+        y: float,
+        *,
+        speed_multiplier: float = 1.0,
+        use_nodes: bool = False,
+    ):
         """
         Moves the player to a specific x and y
 
         Args:
             x: X to move to
             y: Y to move to
+            speed_multiplier: Multiplier for speed (for mounts) i.e. 1.4 for 40%
             use_nodes: If node date should be used, currently WIP
         """
         if use_nodes is False:
-            await self._to_point(x, y)
+            await self._to_point(x, y, speed_multiplier)
         else:
-            raise NotImplemented("WIP")
+            raise NotImplemented("Node data not implemented")
 
-    async def _to_point(self, x, y):
+    async def _to_point(self, x, y, speed_multiplier=1.0):
         current_xyz = await self.xyz()
         target_xyz = utils.XYZ(x, y, current_xyz.z)
         distance = current_xyz - target_xyz
-        move_seconds = distance / WIZARD_SPEED
+        move_seconds = distance / (WIZARD_SPEED * speed_multiplier)
         yaw = utils.calculate_perfect_yaw(current_xyz, target_xyz)
 
         await self.set_yaw(yaw)
