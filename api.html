@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                0.13.0
+                0.13.2
               </div>
             
           
@@ -384,13 +384,14 @@
 
 <dl class="py method">
 <dt id="wizwalker.Client.goto">
-<em class="property">async </em><code class="sig-name descname">goto</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span><span class="p">:</span> <span class="n">float</span></em>, <em class="sig-param"><span class="n">y</span><span class="p">:</span> <span class="n">float</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">use_nodes</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.goto" title="Permalink to this definition">¶</a></dt>
+<em class="property">async </em><code class="sig-name descname">goto</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span><span class="p">:</span> <span class="n">float</span></em>, <em class="sig-param"><span class="n">y</span><span class="p">:</span> <span class="n">float</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">speed_multiplier</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">use_nodes</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.goto" title="Permalink to this definition">¶</a></dt>
 <dd><p>Moves the player to a specific x and y</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>x</strong> – X to move to</p></li>
 <li><p><strong>y</strong> – Y to move to</p></li>
+<li><p><strong>speed_multiplier</strong> – Multiplier for speed (for mounts) i.e. 1.4 for 40%</p></li>
 <li><p><strong>use_nodes</strong> – If node date should be used, currently WIP</p></li>
 </ul>
 </dd>
