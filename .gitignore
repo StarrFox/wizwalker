@@ -133,3 +133,6 @@ dmypy.json
 
 # cache
 cache/*
+
+# ide stuff
+/.vs

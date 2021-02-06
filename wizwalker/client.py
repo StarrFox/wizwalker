@@ -320,6 +320,18 @@ class Client:
         """
         return await self._memory.read_player_potions()
 
+    async def potions_alt(self) -> Optional[int]:
+        """
+        Player full potions (alternative)
+
+        Raises:
+            RuntimeError: potion hook not active
+
+        Return:
+            # of potions int or None if hooked function hasn't run yet
+        """
+        return await self._memory.read_player_potions_alt()
+
     async def gold(self) -> Optional[int]:
         """
         Player gold

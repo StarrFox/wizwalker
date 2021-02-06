@@ -13,6 +13,7 @@ from .hooks import (
     BackpackStatHook,
     PacketHook,
     MoveLockHook,
+    PotionsAltHook,
 )
 
 
@@ -66,6 +67,7 @@ class MemoryHandler:
         self.packet_buffer_addr = None
         self.packet_buffer_len = None
         self.move_lock_addr = None
+        self.potions_alt_addr = None
 
         self.hooks = []
         self.active_hooks = defaultdict(lambda: False)
@@ -255,6 +257,7 @@ class MemoryHandler:
         stat_addr = self.process.read_int(self.player_stat_addr)
         try:
             # this is a float for some reason
+            # it's because you can partially fill potions with minigames -Forrest
             return int(self.process.read_float(stat_addr + 0x2C + 0x40))
         except pymem.exception.MemoryReadError:
             return None
@@ -311,6 +314,19 @@ class MemoryHandler:
         try:
             data = self.process.read_bytes(move_lock, 1)
             return struct.unpack("?", data)[0]
+        except pymem.exception.MemoryReadError:
+            return None
+
+    @uses_hook("potions_alt")
+    @utils.executor_function
+    # This version of read potion uses a seperate hook but works correcly in mob zones
+    # Hit on clicking potions (even if empty), value not updated immedietly when hook is hit (sorry)
+    def read_player_potions_alt(self): 
+        try:
+            potions_alt = int(self.process.read_float(self.potions_alt_addr)) # we're going to cast this to an int so it makes more sense for end users
+            if potions_alt == -1:
+                return None
+            return potions_alt
         except pymem.exception.MemoryReadError:
             return None
 
@@ -378,6 +394,17 @@ class MemoryHandler:
 
         self.hooks.append(move_lock_hook)
         self.move_lock_addr = move_lock_hook.move_lock_addr
+
+    @register_hook("potions_alt")
+    @utils.executor_function
+    def hook_potions_alt(self):
+        potions_alt_hook = PotionsAltHook(self)
+        potions_alt_hook.hook()
+
+        self.hooks.append(potions_alt_hook)
+        self.potions_alt_addr = potions_alt_hook.potions_alt_addr
+        self.process.write_float(self.potions_alt_addr, -1.0)
+
 
     # @register_hook("ignore_mouse_leave")
     # @utils.executor_function

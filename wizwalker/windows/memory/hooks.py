@@ -622,6 +622,71 @@ class MoveLockHook(MemoryHook):
         self.free_move_lock_addr()
 
 
+class PotionsAltHook(MemoryHook):
+    def __init__(self, memory_handler):
+        super().__init__(memory_handler)
+        self.potions_alt_addr = None
+
+    def set_potions_alt_addr(self):
+        self.potions_alt_addr = self.memory_handler.process.allocate(4)
+
+    def free_potions_alt_addr(self):
+        self.memory_handler.process.free(self.potions_alt_addr)
+
+    def get_pattern(self) -> Tuple[re.Pattern, Optional[MODULEINFO]]:
+        module = pymem.process.module_from_name(
+            self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
+        )
+        return (
+            re.compile(rb"\xD9\x40.\xD9\x1E"),
+            module,
+        )
+
+    def get_jump_address(self, pattern: re.Pattern, *, module=None) -> int:
+        """
+        gets the address to write jump at
+        """
+        jump_address = pattern_scan_module(
+            self.memory_handler.process.process_handle, module, pattern
+        )
+
+        return jump_address
+
+    def get_jump_bytecode(self) -> bytes:
+        # distance = end - start
+        distance = self.hook_address - self.jump_address
+        relitive_jump = distance - 5  # size of this line
+        packed_relitive_jump = struct.pack("<i", relitive_jump)
+        return b"\xE9" + packed_relitive_jump
+
+    def get_hook_bytecode(self) -> bytes:
+        self.set_potions_alt_addr()
+        packed_potions_alt_addr = struct.pack("<i", self.potions_alt_addr)
+
+        bytecode = (
+            b"\x52" # push edx
+            + b"\x8B\x50\x6C" # lea edx,[eax+0x6C]
+            + b"\x89\x15" + packed_potions_alt_addr # mov dword ptr [packed_potion_addr],edx
+            + b"\x5A" # pop edx
+            # original code
+            + b"\xD9\x40\x6C" # fld ptr [eax+6C]
+            + b"\xD9\x1E" # fstp ptr [esi]
+        )
+
+        return_addr = self.jump_address + 5
+
+        relitive_return_jump = return_addr - (self.hook_address + len(bytecode)) - 5
+        packed_relitive_return_jump = struct.pack("<i", relitive_return_jump)
+
+        bytecode += b"\xE9" + packed_relitive_return_jump
+
+        return bytecode
+
+    def unhook(self):
+        super().unhook()
+        self.free_potions_alt_addr()
+
+
 # class IgnoreMouseLeaveHook(MemoryHook):
 #     def get_pattern(self) -> Tuple[re.Pattern, Optional[MODULEINFO]]:
 #         module = pymem.process.module_from_name(
