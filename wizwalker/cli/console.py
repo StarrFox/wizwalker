@@ -155,6 +155,7 @@ class WizWalkerConsole(AsynchronousCli):
                 f"\thealth={await client.health()}\n"
                 f"\tmana={await client.mana()}\n"
                 f"\tpotions={await client.potions()}\n"
+                f"\tpotions_alt={await client.potions_alt()}\n"
                 f"\tgold={await client.gold()}\n"
                 f"\tenergy={await client.energy()}\n"
                 f"\tyaw={await client.yaw()}\n"
