@@ -664,13 +664,14 @@ class PotionsAltHook(MemoryHook):
         packed_potions_alt_addr = struct.pack("<i", self.potions_alt_addr)
 
         bytecode = (
-            b"\x52" # push edx
-            + b"\x8B\x50\x6C" # lea edx,[eax+0x6C]
-            + b"\x89\x15" + packed_potions_alt_addr # mov dword ptr [packed_potion_addr],edx
-            + b"\x5A" # pop edx
+            b"\x52"  # push edx
+            + b"\x8B\x50\x6C"  # mov edx,[eax+0x6C]
+            + b"\x89\x15"
+            + packed_potions_alt_addr  # mov dword ptr [packed_potion_addr],edx
+            + b"\x5A"  # pop edx
             # original code
-            + b"\xD9\x40\x6C" # fld ptr [eax+6C]
-            + b"\xD9\x1E" # fstp ptr [esi]
+            + b"\xD9\x40\x6C"  # fld ptr [eax+6C]
+            + b"\xD9\x1E"  # fstp ptr [esi]
         )
 
         return_addr = self.jump_address + 5

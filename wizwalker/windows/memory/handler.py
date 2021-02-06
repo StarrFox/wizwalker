@@ -321,9 +321,11 @@ class MemoryHandler:
     @utils.executor_function
     # This version of read potion uses a seperate hook but works correcly in mob zones
     # Hit on clicking potions (even if empty), value not updated immedietly when hook is hit (sorry)
-    def read_player_potions_alt(self): 
+    def read_player_potions_alt(self):
         try:
-            potions_alt = int(self.process.read_float(self.potions_alt_addr)) # we're going to cast this to an int so it makes more sense for end users
+            potions_alt = int(
+                self.process.read_float(self.potions_alt_addr)
+            )  # we're going to cast this to an int so it makes more sense for end users
             if potions_alt == -1:
                 return None
             return potions_alt
@@ -404,7 +406,6 @@ class MemoryHandler:
         self.hooks.append(potions_alt_hook)
         self.potions_alt_addr = potions_alt_hook.potions_alt_addr
         self.process.write_float(self.potions_alt_addr, -1.0)
-
 
     # @register_hook("ignore_mouse_leave")
     # @utils.executor_function
