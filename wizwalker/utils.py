@@ -4,12 +4,12 @@ import functools
 import io
 import math
 import struct
+import subprocess
 import winreg
 import zlib
 from collections import namedtuple
 from concurrent.futures.thread import ThreadPoolExecutor
 from ctypes import WinDLL
-from os import system as cmd
 from pathlib import Path
 from typing import Callable, Union
 from xml.etree import ElementTree
@@ -90,9 +90,9 @@ def start_wiz(location: Union[Path, str]):
     """
     <location>Bin\WizardGraphicalClient.exe -L login.us.wizard101.com 12000
     """
-    # Todo: make a non shit way to do this
-    cmd(
-        f'start /D "{location}\\Bin" WizardGraphicalClient.exe -L login.us.wizard101.com 12000'
+    subprocess.Popen(
+        rf"{location}\Bin\WizardGraphicalClient.exe -L login.us.wizard101.com 12000",
+        cwd=rf"{location}\Bin"
     )
 
 
