@@ -61,7 +61,7 @@ class Client:
             username: The username to login with
             password: The password to login with
         """
-        utils.wiz_login(self.window_handle, username, password)
+        utils.instance_login(self.window_handle, username, password)
 
     def watch_packets(self):
         """

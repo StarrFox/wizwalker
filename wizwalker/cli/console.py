@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 import aiofiles
 from aioconsole import AsynchronousCli
 
-from wizwalker import Wad, utils
+from wizwalker import Wad
 
 
 # noinspection PyProtectedMember
@@ -26,6 +26,7 @@ class WizWalkerConsole(AsynchronousCli):
         await self.walker.close()
         await super().exit_command(reader, writer)
 
+    # TODO: remove this and add a meta command class
     def get_commands(self):
         commands = {}
 
@@ -33,12 +34,6 @@ class WizWalkerConsole(AsynchronousCli):
             description="Attach to currently running wiz instances"
         )
         commands["attach"] = (self.attach_command, attach_parser)
-
-        login_parser = ArgumentParser("login to a client")
-        login_parser.add_argument("client_index", type=int)
-        login_parser.add_argument("username", type=str)
-        login_parser.add_argument("password", type=str)
-        commands["login"] = (self.login_command, login_parser)
 
         hook_parser = ArgumentParser(description="Hooks into all processes")
         hook_parser.add_argument("--target_hook", type=str)
@@ -73,9 +68,6 @@ class WizWalkerConsole(AsynchronousCli):
 
         cache_parser = ArgumentParser(description="Cache Wad data")
         commands["cache"] = (self.cache_command, cache_parser)
-
-        wiz_parser = ArgumentParser(description="Start a Wizard101 instance")
-        commands["wiz"] = (self.wiz_command, wiz_parser)
 
         send_parser = ArgumentParser(description="Send a key to all clients")
         send_parser.add_argument("key", type=str)
@@ -112,16 +104,6 @@ class WizWalkerConsole(AsynchronousCli):
     async def attach_command(self, _, writer):
         self.walker.get_clients()
         writer.write(f"Attached to {len(self.walker.clients)} clients\n")
-
-    async def login_command(self, _, writer, client_index, username, password):
-        try:
-            self.walker.clients[client_index].login(username, password)
-        except KeyError:
-            writer.write(
-                f"No client with index {client_index}, you only have {len(self.walker.clients)} clients\n"
-            )
-        else:
-            writer.write(f"client-{client_index}: Logged in\n")
 
     async def hook_command(
         self, _, writer, target_hook: str = None, list_hooks: bool = False
@@ -207,11 +189,6 @@ class WizWalkerConsole(AsynchronousCli):
     async def cache_command(self, _, writer):
         await self.walker.cache_data()
         writer.write("Cached\n")
-
-    @staticmethod
-    async def wiz_command(_, writer):
-        utils.quick_launch()
-        writer.write("Launched wizard101 instance\n")
 
     async def send_command(self, _, writer, key, seconds):
         if len(key) == 1:

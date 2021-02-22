@@ -11,7 +11,7 @@ from collections import namedtuple
 from concurrent.futures.thread import ThreadPoolExecutor
 from ctypes import WinDLL
 from pathlib import Path
-from typing import Callable, Union
+from typing import Callable, Iterable
 from xml.etree import ElementTree
 
 import appdirs
@@ -89,19 +89,55 @@ def get_wiz_install() -> Path:
     return install_location
 
 
-def start_wiz(location: Union[Path, str]):
+def start_instance():
     """
-    Start a wiz instance given a game install location
+    Starts a wizard101 instance
     """
+    location = get_wiz_install()
     subprocess.Popen(
         rf"{location}\Bin\WizardGraphicalClient.exe -L login.us.wizard101.com 12000",
         cwd=rf"{location}\Bin",
     )
 
 
-def quick_launch():
-    location = get_wiz_install()
-    start_wiz(location)
+def instance_login(window_handle: int, username: str, password: str):
+    """
+    Login to an instance on the login screen
+    """
+
+    def send_chars(chars: str):
+        for char in chars:
+            user32.PostMessageW(window_handle, 0x102, ord(char), 0)
+
+    send_chars(username)
+    # tab
+    user32.PostMessageW(window_handle, 0x102, 9, 0)
+    send_chars(password)
+    # enter
+    user32.PostMessageW(window_handle, 0x102, 13, 0)
+
+
+async def start_instances_with_login(instance_number: int, logins: Iterable):
+    """
+    Start a number of instances and login to them with logins
+    :param instance_number: number of instances to start
+    :param logins: logins to use
+    :return:
+    """
+    start_handles = set(get_all_wizard_handles())
+
+    for _ in range(instance_number):
+        start_instance()
+
+    # TODO: have way to properly check if instances are on login screen
+    # waiting for instances to start
+    await asyncio.sleep(7)
+
+    new_handles = set(get_all_wizard_handles()).difference(start_handles)
+
+    for handle, username_password in zip(new_handles, logins):
+        username, password = username_password.split(":")
+        instance_login(handle, username, password)
 
 
 def calculate_perfect_yaw(current_xyz: XYZ, target_xyz: XYZ) -> float:
@@ -143,19 +179,6 @@ def get_cache_folder() -> Path:
         cache_dir.mkdir(parents=True)
 
     return cache_dir
-
-
-def wiz_login(window_handle: int, username: str, password: str):
-    def send_chars(chars: str):
-        for char in chars:
-            user32.PostMessageW(window_handle, 0x102, ord(char), 0)
-
-    send_chars(username)
-    # tab
-    user32.PostMessageW(window_handle, 0x102, 9, 0)
-    send_chars(password)
-    # enter
-    user32.PostMessageW(window_handle, 0x102, 13, 0)
 
 
 def resolve_pointer(handle, base, offsets):
