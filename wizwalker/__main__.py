@@ -78,7 +78,7 @@ def archive():
     click.echo("Not implimented")
 
 
-@wad.command()
+@wad.command(short_help="Unarchive a wad into a directory")
 @click.argument("input_wad", type=str)
 @click.argument(
     "output_dir", type=click.Path(exists=True, file_okay=False), default="."
@@ -126,7 +126,7 @@ def unarchive(input_wad, output_dir):
     asyncio.run(_unarchive_wad())
 
 
-@wad.command()
+@wad.command(short_help="Extract a single file from a wad")
 @click.argument("input_wad", type=str)
 @click.argument("file_name")
 def extract(input_wad, file_name):
