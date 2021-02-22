@@ -22,6 +22,9 @@ XYZ = namedtuple("XYZ", "x, y, z")
 
 
 def _xyz_sub(self, other):
+    if not isinstance(other, XYZ):
+        raise ValueError(f"XYZ can only be subtracted from XYZ not {type(other)}")
+
     return math.dist((self.x, self.y), (other.x, other.y))
 
 
@@ -88,11 +91,11 @@ def get_wiz_install() -> Path:
 
 def start_wiz(location: Union[Path, str]):
     """
-    <location>Bin\WizardGraphicalClient.exe -L login.us.wizard101.com 12000
+    Start a wiz instance given a game install location
     """
     subprocess.Popen(
         rf"{location}\Bin\WizardGraphicalClient.exe -L login.us.wizard101.com 12000",
-        cwd=rf"{location}\Bin"
+        cwd=rf"{location}\Bin",
     )
 
 
