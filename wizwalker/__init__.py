@@ -3,6 +3,7 @@ import logging
 from loguru import logger
 
 from .wad import Wad
+from .nif import NifMap
 from .errors import *
 from . import packets, utils, windows, cli
 from .application import WizWalker

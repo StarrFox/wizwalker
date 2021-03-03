@@ -2,7 +2,7 @@ import re
 import struct
 import ctypes
 import ctypes.wintypes
-from typing import Any, Tuple, Optional
+from typing import Any, Tuple, Optional, Callable, Union, Type, List
 
 import pymem
 import pymem.pattern
@@ -178,66 +178,122 @@ class MemoryHook:
         self.memory_handler.process.free(self.hook_address)
 
 
-class PlayerHook(MemoryHook):
-    def __init__(self, memory_handler):
-        super().__init__(memory_handler)
-        self.player_struct = None
+def simple_hook(
+    *,
+    pattern: bytes,
+    module: str = "WizardGraphicalClient.exe",
+    bytecode_generator: Callable,
+    instruction_length: int = None,
+    exports: List[Tuple],
+) -> Type[MemoryHook]:
+    """
+    Create a simple hook from base args
 
-    def get_pattern(self) -> Tuple[re.Pattern, Optional[MODULEINFO]]:
-        module = pymem.process.module_from_name(
-            self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
-        )
-        return re.compile(rb"\x8B\x48.\x8B\x50.\x8B\x40.\xEB.\xD9\x87"), module
+    Args:
+        pattern: The pattern to scan for
+        module: The module to scan within (None) for all; defaults to exe
+        bytecode_generator: A function that returns the bytecode to write
+        instruction_length: length of instructions at jump address
+        exports: list of tuples in the form (name, size)
+    """
 
-    def set_player_struct(self):
-        self.player_struct = self.memory_handler.process.allocate(4)
+    class _memory_hook(MemoryHook):
+        def __init__(self, memory_handler):
+            super().__init__(memory_handler)
 
-    def free_player_struct(self):
-        if self.player_struct:
-            self.memory_handler.process.free(self.player_struct)
+        def get_pattern(self):
+            res_module = pymem.process.module_from_name(
+                self.memory_handler.process.process_handle, module
+            )
+            return re.compile(pattern), res_module
 
-    def get_jump_bytecode(self) -> bytes:
-        """
-        INJECT                           - E9 14458E01           - jmp 02730000
-        WizardGraphicalClient.exe+A4BAEC - 90                    - nop
-        """
-        # distance = end - start
-        distance = self.hook_address - self.jump_address
-        relitive_jump = distance - 5  # size of this line
-        packed_relitive_jump = struct.pack("<i", relitive_jump)
-        return b"\xE9" + packed_relitive_jump + b"\x90"
+        def get_jump_bytecode(self) -> bytes:
+            distance = self.hook_address - self.jump_address
+            relitive_jump = distance - 5
+            packed_relitive_jump = struct.pack("<i", relitive_jump)
+            return b"\xE9" + packed_relitive_jump + b"\x90"
 
-    def get_hook_bytecode(self) -> bytes:
-        self.set_player_struct()
-        packed_addr = struct.pack("<i", self.player_struct)
+        def get_hook_bytecode(self) -> bytes:
+            packed_exports = []
+            for export in exports:
+                addr = self.memory_handler.process.allocate(export[1])
+                setattr(self, export[0], addr)
+                packed_addr = struct.pack("<i", addr)
+                packed_exports.append((export[0], packed_addr))
 
-        bytecode = (
-            b"\x8B\xC8"  # mov ecx,eax
-            b"\x81\xC1\x2C\x03\x00\x00"  # add ecx,0000032C { 812 }
-            b"\x8B\x11"  # mov edx,[ecx]
-            # check if player
-            b"\x83\xFA\x08"  # cmp edx,08 { 8 }
-            b"\x0F\x85\x05\x00\x00\x00"  # jne 314B0036 (relative jump 5 down)
-            b"\xA3" + packed_addr +
-            # original code
-            b"\x8B\x48\x2C"  # mov ecx,[eax+2C]
-            b"\x8B\x50\x30"  # mov edx,[eax+30]
-        )
+            bytecode = bytecode_generator(self, packed_exports)
 
-        return_addr = self.jump_address + len(self.jump_bytecode)
+            if not instruction_length:
+                return_addr = self.jump_address + len(self.jump_bytecode)
+            else:
+                return_addr = self.jump_address + instruction_length
 
-        relitive_return_jump = return_addr - (self.hook_address + len(bytecode)) - 5
-        packed_relitive_return_jump = struct.pack("<i", relitive_return_jump)
+            relitive_return_jump = return_addr - (self.hook_address + len(bytecode)) - 5
+            packed_relitive_return_jump = struct.pack("<i", relitive_return_jump)
 
-        bytecode += (
-            b"\xE9" + packed_relitive_return_jump
-        )  # jmp WizardGraphicalClient.exe+A4BAED
+            bytecode += b"\xE9" + packed_relitive_return_jump
 
-        return bytecode
+            return bytecode
 
-    def unhook(self):
-        super().unhook()
-        self.free_player_struct()
+        def unhook(self):
+            super().unhook()
+            for export in exports:
+                if getattr(self, export[0], None):
+                    self.memory_handler.process.free(getattr(self, export[0]))
+
+    return _memory_hook
+
+
+def player_hook_bytecode_gen(_, packed_exports):
+    bytecode = (
+        b"\x8B\xC8"  # mov ecx,eax
+        b"\x81\xC1\x2C\x03\x00\x00"  # add ecx,0000032C { 812 }
+        b"\x8B\x11"  # mov edx,[ecx]
+        # check if player
+        b"\x83\xFA\x08"  # cmp edx,08 { 8 }
+        b"\x0F\x85\x05\x00\x00\x00"  # jne 314B0036 (relative jump 5 down)
+        b"\xA3" + packed_exports[0][1] +
+        # original code
+        b"\x8B\x48\x2C"  # mov ecx,[eax+2C]
+        b"\x8B\x50\x30"  # mov edx,[eax+30]
+    )
+    return bytecode
+
+
+PlayerHook = simple_hook(
+    pattern=rb"\x8B\x48.\x8B\x50.\x8B\x40.\xEB.\xD9\x87",
+    bytecode_generator=player_hook_bytecode_gen,
+    exports=[("player_struct", 4)],
+)
+
+# TODO: make this one work
+#  issue is je_relitive_jump = (self.jump_address + 0x6E) - (
+#             self.hook_address + len(bytecode) + 6
+#         )
+# def player_stat_hook_bytecode_gen(hook, packed_exports):
+#     tmp = hook.memory_handler.process.allocate(4)
+#     packed_tmp = struct.pack("<i", tmp)
+#
+#     bytecode = (
+#         # mov [tmp],edi
+#         b"\x89\x3D" + packed_tmp + b"\x8B\xF8"  # mov edi,eax
+#         b"\x89\x3D"
+#         + packed_exports[0][1]  # mov [stat_addr],edi
+#         + b"\x8B\x3D"
+#         + packed_tmp
+#         +  # mov edi,[tmp]
+#         # original code
+#         b"\x89\x48\x40"  # mov [eax+40],ecx
+#     )
+#
+#     return bytecode
+#
+#
+# PlayerStatHook = simple_hook(
+#     pattern=rb"\x89\x48.\x74.\xA1",
+#     bytecode_generator=player_hook_bytecode_gen,
+#     exports=[("stat_addr", 4)],
+# )
 
 
 class PlayerStatHook(MemoryHook):
@@ -312,116 +368,51 @@ class PlayerStatHook(MemoryHook):
         self.free_stat_addr()
 
 
-class QuestHook(MemoryHook):
-    def __init__(self, memory_handler):
-        super().__init__(memory_handler)
-        self.cord_struct = None
-
-    def get_pattern(self) -> Tuple[re.Pattern, Optional[MODULEINFO]]:
-        module = pymem.process.module_from_name(
-            self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
-        )
-        return re.compile(rb"\xD9\x86....\x8D\xBE....\xD9\x9C"), module
-
-    def set_cord_struct(self):
-        self.cord_struct = self.memory_handler.process.allocate(4)
-
-    def free_cord_struct(self):
-        if self.cord_struct:
-            self.memory_handler.process.free(self.cord_struct)
-
-    def get_jump_bytecode(self) -> bytes:
-        # distance = end - start
-        distance = self.hook_address - self.jump_address
-        relitive_jump = distance - 5  # size of this line
-        packed_relitive_jump = struct.pack("<i", relitive_jump)
-        return b"\xE9" + packed_relitive_jump + b"\x90"
-
-    def get_hook_bytecode(self) -> bytes:
-        self.set_cord_struct()
-        packed_addr = struct.pack("<i", self.cord_struct)  # little-endian int
-
-        bytecode = (
-            # original code
-            b"\xD9\x86\x1C\x08\x00\00"  # original instruction one
-            b"\x8D\xBE\x1C\x08\x00\00"  # original instruction two
-            b"\x89\x35" + packed_addr
-        )
-
-        return_addr = self.jump_address + len(self.jump_bytecode)
-
-        relitive_return_jump = return_addr - (self.hook_address + len(bytecode)) - 5
-        packed_relitive_return_jump = struct.pack("<i", relitive_return_jump)
-
-        bytecode += b"\xE9" + packed_relitive_return_jump
-
-        return bytecode
-
-    def unhook(self):
-        super().unhook()
-        self.free_cord_struct()
+def quest_hook_bytecode_gen(_, packed_exports):
+    bytecode = (
+        # original code
+        b"\xD9\x86\x1C\x08\x00\00"  # original instruction one
+        b"\x8D\xBE\x1C\x08\x00\00"  # original instruction two
+        b"\x89\x35" + packed_exports[0][1]
+    )
+    return bytecode
 
 
-class BackpackStatHook(MemoryHook):
-    def __init__(self, memory_handler):
-        super().__init__(memory_handler)
-        self.backpack_struct_addr = None
+QuestHook = simple_hook(
+    pattern=rb"\xD9\x86....\x8D\xBE....\xD9\x9C",
+    bytecode_generator=quest_hook_bytecode_gen,
+    exports=[("cord_struct", 4)],
+)
 
-    def set_backpack_struct(self):
-        self.backpack_struct_addr = self.memory_handler.process.allocate(4)
 
-    def free_backpack_struct(self):
-        self.memory_handler.process.free(self.backpack_struct_addr)
+def backpack_stat_bytecode_gen(hook, packed_exports):
+    # TODO: rewrite to not use this
+    ecx_tmp = hook.memory_handler.process.allocate(4)
+    packed_ecx_tmp = struct.pack("<i", ecx_tmp)
 
-    def get_pattern(self) -> Tuple[re.Pattern, Optional[MODULEINFO]]:
-        module = pymem.process.module_from_name(
-            self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
-        )
-        return re.compile(rb"\xC7\x86\x70\x03\x00\x00....\x74"), module
+    bytecode = (
+        b"\x89\x0D"
+        + packed_ecx_tmp  # mov [02A91004],ecx { (0) }
+        + b"\x8B\xCE"  # mov ecx,esi
+        b"\x81\xC1\x70\x03\x00\x00"  # add ecx,00000370 { 880 }
+        b"\x89\x0D"
+        + packed_exports[0][1]  # mov [packed_addr],ecx { (0) }
+        + b"\x8B\x0D"
+        + packed_ecx_tmp  # mov ecx,[02A91004] { (0) }
+        +
+        # original code
+        b"\xC7\x86\x70\x03\x00\x00\x00\x00\x00\x00"  # mov [esi+00000370],00000000 { 0 }
+    )
 
-    def get_jump_bytecode(self) -> bytes:
-        # distance = end - start
-        distance = self.hook_address - self.jump_address
-        relitive_jump = distance - 5  # size of this line
-        packed_relitive_jump = struct.pack("<i", relitive_jump)
-        return b"\xE9" + packed_relitive_jump + b"\x0F\x1F\x44"
+    return bytecode
 
-    def get_hook_bytecode(self) -> bytes:
-        self.set_backpack_struct()
-        packed_addr = struct.pack("<i", self.backpack_struct_addr)  # little-endian int
 
-        ecx_tmp = self.memory_handler.process.allocate(4)
-        packed_ecx_tmp = struct.pack("<i", ecx_tmp)
-
-        bytecode = (
-            b"\x89\x0D"
-            + packed_ecx_tmp  # mov [02A91004],ecx { (0) }
-            + b"\x8B\xCE"  # mov ecx,esi
-            b"\x81\xC1\x70\x03\x00\x00"  # add ecx,00000370 { 880 }
-            b"\x89\x0D"
-            + packed_addr  # mov [packed_addr],ecx { (0) }
-            + b"\x8B\x0D"
-            + packed_ecx_tmp  # mov ecx,[02A91004] { (0) }
-            +
-            # original code
-            b"\xC7\x86\x70\x03\x00\x00\x00\x00\x00\x00"  # mov [esi+00000370],00000000 { 0 }
-        )
-
-        # len of code at jump_address
-        return_addr = self.jump_address + 10
-
-        relitive_return_jump = return_addr - (self.hook_address + len(bytecode)) - 5
-        packed_relitive_return_jump = struct.pack("<i", relitive_return_jump)
-
-        bytecode += (
-            b"\xE9" + packed_relitive_return_jump
-        )  # jmp WizardGraphicalClient.exe+43ECD5
-
-        return bytecode
-
-    def unhook(self):
-        super().unhook()
-        self.free_backpack_struct()
+BackpackStatHook = simple_hook(
+    pattern=rb"\xC7\x86\x70\x03\x00\x00....\x74",
+    bytecode_generator=backpack_stat_bytecode_gen,
+    instruction_length=10,
+    exports=[("backpack_struct_addr", 4)],
+)
 
 
 class PacketHook(MemoryHook):

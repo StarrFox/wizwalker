@@ -21,6 +21,7 @@ class WadFileInfo:
         self.unzipped_size = unzipped_size
 
 
+# TODO: allow specifying wads not in game dir
 class Wad:
     def __init__(self, name: str):
         if not name.endswith(".wad"):

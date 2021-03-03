@@ -145,10 +145,10 @@ class Client:
         Teleport the player to a set x, y, z
 
         Args:
-            x: X to teleport to
-            y: Y to teleport to
-            z: Z to teleport to
-            yaw: yaw to set
+            x: X to teleport to or None to not change
+            y: Y to teleport to or None to not change
+            z: Z to teleport to or None to not change
+            yaw: yaw to set or None to not change
 
         Raises:
             RuntimeError: player_struct hook not active
