@@ -139,7 +139,7 @@ class Client:
         await self._input.send_key("W", move_seconds)
 
     async def teleport(
-        self, *, x: float = None, y: float = None, z: float = None, yaw: float = None
+        self, x: float = None, y: float = None, z: float = None, yaw: float = None
     ) -> bool:
         """
         Teleport the player to a set x, y, z
