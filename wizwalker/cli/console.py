@@ -1,231 +1,183 @@
 import asyncio
-import math
-from argparse import ArgumentParser
+import threading
+import sys
+from typing import Any, Coroutine
 
-import aiofiles
-from aioconsole import AsynchronousCli
+import terminaltables
+import aioconsole
+from aiomonitor import Monitor, start_monitor, cli
+from aiomonitor.utils import close_server, console_proxy
 
-from wizwalker import Wad
+
+def init_console_server(host: str, port: int, _locals, loop):
+    def _factory(streams=None) -> aioconsole.AsynchronousConsole:
+        return NoBannerConsole(locals=_locals, streams=streams, loop=loop)
+
+    coro = aioconsole.start_interactive_server(
+        host=host, port=port, factory=_factory, loop=loop
+    )
+    console_future = asyncio.run_coroutine_threadsafe(coro, loop=loop)
+    return console_future
 
 
-# noinspection PyProtectedMember
-class WizWalkerConsole(AsynchronousCli):
-    def __init__(self, walker, **kwargs):
-        commands = self.get_commands()
-        super().__init__(commands, **kwargs)
+class NoBannerConsole(aioconsole.AsynchronousConsole):
+    @asyncio.coroutine
+    def _interact(self, banner=None):
+        # Get ps1 and ps2
+        try:
+            sys.ps1
+        except AttributeError:
+            sys.ps1 = ">>> "
+        try:
+            sys.ps2
+        except AttributeError:
+            sys.ps2 = "... "
+        # Run loop
+        more = 0
+        while 1:
+            try:
+                if more:
+                    prompt = sys.ps2
+                else:
+                    prompt = sys.ps1
+                try:
+                    line = yield from self.raw_input(prompt)
+                except EOFError:
+                    self.write("\n")
+                    yield from self.flush()
+                    break
+                else:
+                    more = yield from self.push(line)
+            except asyncio.CancelledError:
+                self.write("\nKeyboardInterrupt\n")
+                yield from self.flush()
+                self.resetbuffer()
+                more = 0
 
-        self.walker = walker
 
-    def get_default_banner(self):
-        msg = "WizWalker cli,\n"
-        msg += "send list for the command list"
-        return msg
+class WizWalkerConsole(Monitor):
+    intro = "WizWalkerCLI\n{tasknum} task{s} running. Use help (?) for commands.\n"
+    prompt = "WW > "
 
-    async def exit_command(self, reader, writer):
-        writer.write("Closing wizwalker, hooks should be rewritten")
-        await self.walker.close()
-        await super().exit_command(reader, writer)
+    def write(self, message: str):
+        self._sout.write(message + "\n")
+        self._sout.flush()
 
-    # TODO: remove this and add a meta command class
-    def get_commands(self):
-        commands = {}
+    def get_local(self, name: str) -> Any:
+        res = self._locals.get(name)
+        if res is None:
+            raise ValueError(f"{name} not in locals")
 
-        attach_parser = ArgumentParser(
-            description="Attach to currently running wiz instances"
-        )
-        commands["attach"] = (self.attach_command, attach_parser)
+        return res
 
-        hook_parser = ArgumentParser(description="Hooks into all processes")
-        hook_parser.add_argument("--target_hook", type=str)
-        hook_parser.add_argument("--list", action="store_true", dest="list_hooks")
-        commands["hook"] = (self.hook_command, hook_parser)
+    def run_coro(self, coro: Coroutine, timeout: int = 20):
+        future = asyncio.run_coroutine_threadsafe(coro, self._loop)
 
-        player_parser = ArgumentParser(description="Output various player information")
-        commands["player"] = (self.player_command, player_parser)
+        try:
+            result = future.result(timeout)
+        except asyncio.TimeoutError:
+            self.write(f"Timeout error with coro {coro.__name__}")
+            future.cancel()
+        except Exception as exc:
+            self.write(f"Error in coro {coro.__name__}: {exc}")
+        else:
+            return result
 
-        backpack_parser = ArgumentParser(
-            description="Output various backpack information"
-        )
-        commands["backpack"] = (self.backpack_command, backpack_parser)
-
-        quest_parser = ArgumentParser(description="Output various quest information")
-        commands["quest"] = (self.quest_command, quest_parser)
-
-        packet_parser = ArgumentParser(description="Output packet socket and buffer")
-        commands["packet"] = (self.packet_command, packet_parser)
-
-        watch_parser = ArgumentParser(description="Watch packets for information")
-        commands["watch"] = (self.watch_command, watch_parser)
-
-        zone_parser = ArgumentParser(description="Show current zone for each client")
-        commands["zone"] = (self.zone_command, zone_parser)
-
-        wad_parser = ArgumentParser(description="Extract a wad file")
-        wad_parser.add_argument("wad_name", type=str)
-        wad_parser.add_argument("file_name", type=str)
-        wad_parser.add_argument("--output_name", type=str)
-        commands["wad"] = (self.wad_command, wad_parser)
-
-        cache_parser = ArgumentParser(description="Cache Wad data")
-        commands["cache"] = (self.cache_command, cache_parser)
-
-        send_parser = ArgumentParser(description="Send a key to all clients")
-        send_parser.add_argument("key", type=str)
-        send_parser.add_argument("seconds", type=float)
-        commands["send"] = (self.send_command, send_parser)
-
-        getspeed_parser = ArgumentParser(
-            description="get number of units covered in 1 second"
-        )
-        commands["getspeed"] = (self.getspeed_command, getspeed_parser)
-
-        teleport_parser = ArgumentParser(description="Teleport to a certain x,y,z")
-        teleport_parser.add_argument("x", type=float)
-        teleport_parser.add_argument("y", type=float)
-        teleport_parser.add_argument("--z", type=float)
-        teleport_parser.add_argument("--yaw", type=float)
-        commands["teleport"] = (self.teleport_command, teleport_parser)
-
-        goto_parser = ArgumentParser(description="go to a specific x y")
-        goto_parser.add_argument("x", type=float)
-        goto_parser.add_argument("y", type=float)
-        commands["goto"] = (self.goto_command, goto_parser)
-
-        movelocked_parser = ArgumentParser(description="check if move locked")
-        commands["movelocked"] = (self.movelocked_command, movelocked_parser)
-
-        click_parser = ArgumentParser(description="click x y on each client")
-        click_parser.add_argument("x", type=int)
-        click_parser.add_argument("y", type=int)
-        commands["click"] = (self.click_command, click_parser)
-
-        return commands
-
-    async def attach_command(self, _, writer):
-        self.walker.get_clients()
-        writer.write(f"Attached to {len(self.walker.clients)} clients\n")
-
-    async def hook_command(
-        self, _, writer, target_hook: str = None, list_hooks: bool = False
-    ):
-        if list_hooks and target_hook:
-            writer.write("You cannot list and hook at the same time smh\n")
+    def do_console(self):
+        """Switch to async Python REPL"""
+        if not self._console_enabled:
+            self._sout.write("Python console disabled for this sessiong\n")
+            self._sout.flush()
             return
 
-        if not self.walker.clients:
-            writer.write("There are no attached clients to hook to\n")
-            return
+        fut = init_console_server(
+            self._host, self._console_port, self._locals, self._loop
+        )
+        server = fut.result(timeout=3)
+        try:
+            console_proxy(self._sin, self._sout, self._host, self._console_port)
+        finally:
+            coro = close_server(server)
+            close_fut = asyncio.run_coroutine_threadsafe(coro, loop=self._loop)
+            close_fut.result(timeout=15)
 
-        if list_hooks:
-            all_hooks = self.walker.clients[0].get_hooks()
-            writer.write("all hooks:\n" + "\n".join(all_hooks) + "\n")
-            return
+    def do_start(self):
+        walker = self.get_local("walker")
+        walker.get_clients()
+        self.write(f"Attached to {len(walker.clients)} clients")
+        for idx, client in enumerate(walker.clients):
+            self.run_coro(client.activate_hooks())
+            self.write(f"client-{idx}: hooked all")
 
-        for idx, client in enumerate(self.walker.clients):
-            if target_hook:
-                await client.activate_hooks(target_hook.replace(" ", "_"))
-                writer.write(f"client-{idx}: hooked {target_hook}\n")
-            else:
-                await client.activate_hooks()
-                writer.write(f"client-{idx}: hooked all\n")
+    def do_exit(self) -> None:
+        walker = self.get_local("walker")
+        self.write("Closing wizwalker, hooks should be rewritten")
+        self.run_coro(walker.close())
 
-    async def player_command(self, _, writer):
-        for idx, client in enumerate(self.walker.clients):
-            writer.write(
-                f"client-{idx}:\n"
-                f"\txyz={await client.xyz()}\n"
-                f"\thealth={await client.health()}\n"
-                f"\tmana={await client.mana()}\n"
-                f"\tpotions={await client.potions()}\n"
-                f"\tpotions_alt={await client.potions_alt()}\n"
-                f"\tgold={await client.gold()}\n"
-                f"\tenergy={await client.energy()}\n"
-                f"\tyaw={await client.yaw()}\n"
-                f"\tplayer_base={hex(await client._memory.read_player_base())}\n"
-                f"\tplayer_stat_base={hex(await client._memory.read_player_stat_base())}\n"
-            )
+    def do_info(self):
+        walker = self.get_local("walker")
 
-    async def backpack_command(self, _, writer):
-        for idx, client in enumerate(self.walker.clients):
-            writer.write(
-                f"client-{idx}: used_space={await client.backpack_space_used()} "
-                f"total_space={await client.backpack_space_total()} "
-                f"backpack_struct_addr={hex(await client._memory.read_backpack_stat_base())}\n"
-            )
+        for idx, client in enumerate(walker.clients):
+            table_data = [["attribute", "value"]]
 
-    async def quest_command(self, _, writer):
-        for idx, client in enumerate(self.walker.clients):
-            writer.write(f"client-{idx}: quest_xyz={await client.quest_xyz()}\n")
+            # TODO: add player_base and player_stat_base and all other base address (optional arg)
+            client_attrs = [
+                "xyz",
+                "yaw",
+                "quest_xyz",
+                "health",
+                "mana",
+                "potions",
+                "potions_alt",
+                "gold",
+                "energy",
+                "backpack_space_used",
+                "backpack_space_total",
+                "move_lock",
+            ]
+            for attr in client_attrs:
+                table_data.append([attr, self.run_coro(getattr(client, attr)())])
 
-    async def packet_command(self, _, writer):
-        for idx, client in enumerate(self.walker.clients):
-            writer.write(
-                f"client-{idx}: socket={await client._memory.read_packet_socket_discriptor()} "
-                f"packet_buffer={await client._memory.read_packet_buffer()}\n"
-            )
+            table = terminaltables.AsciiTable(table_data, f"client-{idx}")
+            self.write(table.table)
 
-    async def watch_command(self, _, writer):
-        for idx, client in enumerate(self.walker.clients):
-            client.watch_packets()
-            writer.write(f"client-{idx}: watching packets\n")
+    def do_cache(self):
+        walker = self.get_local("walker")
+        self.run_coro(walker.cache_data())
+        self.write("Cached data")
 
-    async def zone_command(self, _, writer):
-        for idx, client in enumerate(self.walker.clients):
-            writer.write(f"client-{idx}: current zone={client.current_zone}\n")
+    def do_teleport(self, x: float, y: float, z: float = None, yaw: float = None):
+        walker = self.get_local("walker")
+        for client in walker.clients:
+            self.run_coro(client.teleport(x=x, y=y, z=z, yaw=yaw))
 
-    @staticmethod
-    async def wad_command(_, writer, wad_name, file_name, output_name=None):
-        wad = Wad(wad_name)
-        file_data = await wad.get_file(file_name)
+        self.write("Teleported")
 
-        if output_name is None:
-            output_name = file_name
+    def do_goto(self, x: float, y: float):
+        walker = self.get_local("walker")
+        for client in walker.clients:
+            self.run_coro(client.goto(x, y))
 
-        async with aiofiles.open(output_name, "wb+") as fp:
-            await fp.write(file_data)
+        self.write("Completed goto")
 
-        writer.write(f"Extracted {wad_name=}, {file_name=}\n")
 
-    async def cache_command(self, _, writer):
-        await self.walker.cache_data()
-        writer.write("Cached\n")
+def start_console(loop=None, locals=None, app=None):
+    if loop is None:
+        loop = asyncio.get_event_loop()
 
-    async def send_command(self, _, writer, key, seconds):
-        if len(key) == 1:
-            key = key.upper()
+    if app is None:
 
-        for client in self.walker.clients:
-            asyncio.create_task(client._keyboard.send_key(key, seconds))
+        def app():
+            async def _app():
+                pass
 
-        writer.write("Started\n")
+            future = asyncio.ensure_future(_app(), loop=loop)
+            loop.run_forever()
 
-    async def getspeed_command(self, _, writer):
-        client = self.walker.clients[0]
-        start = await client.xyz()
-        await client._keyboard.send_key("W", 1)
-        end = await client.xyz()
-        distance = math.dist((start.x, start.y), (end.x, end.y))
-        writer.write(f"from {start} to {end} covered {distance}\n")
+    def app_runner():
+        with start_monitor(loop, monitor=WizWalkerConsole, locals=locals):
+            app()
 
-    async def teleport_command(self, _, writer, x, y, z=None, yaw=None):
-        for client in self.walker.clients:
-            await client.teleport(x=x, y=y, z=z, yaw=yaw)
-
-        writer.write("Teleported\n")
-
-    async def goto_command(self, _, writer, x, y):
-        for client in self.walker.clients:
-            asyncio.create_task(client.goto(x, y))
-
-        writer.write("Tasks started\n")
-
-    async def movelocked_command(self, _, writer):
-        for idx, client in enumerate(self.walker.clients):
-            writer.write(f"client-{idx}: {await client.move_lock()}\n")
-
-    async def click_command(self, _, writer, x, y):
-        # for idx, client in enumerate(self.walker.clients):
-        #     await client.click(x, y)
-        #
-        #     writer.write(f"client-{idx}: clicked\n")
-        writer.write("WIP\n")
+    app_thread = threading.Thread(target=app_runner)
+    app_thread.start()
+    cli.monitor_client(cli.MONITOR_HOST, cli.MONITOR_PORT)

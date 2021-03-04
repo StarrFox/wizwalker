@@ -15,6 +15,18 @@ python-versions = "*"
 version = "0.5.0"
 
 [[package]]
+category = "main"
+description = "aiomonitor adds monitor and python REPL capabilities for asyncio application"
+name = "aiomonitor"
+optional = false
+python-versions = "*"
+version = "0.4.5"
+
+[package.dependencies]
+aioconsole = "*"
+terminaltables = "*"
+
+[[package]]
 category = "dev"
 description = "A configurable sidebar-enabled Sphinx theme"
 name = "alabaster"
@@ -402,6 +414,14 @@ lint = ["flake8", "mypy", "docutils-stubs"]
 test = ["pytest"]
 
 [[package]]
+category = "main"
+description = "Generate simple tables in terminals from a nested list of strings."
+name = "terminaltables"
+optional = false
+python-versions = "*"
+version = "3.1.0"
+
+[[package]]
 category = "dev"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 name = "urllib3"
@@ -427,7 +447,7 @@ version = "1.0.1"
 dev = ["pytest (>=4.6.2)", "black (>=19.3b0)"]
 
 [metadata]
-content-hash = "148fcbb288e7efbdee3e2e8ba8b7128f174baf227410af6a807e49d06ff81092"
+content-hash = "146b9f10618798e351e0e5ebc840daf142a4ffe11383e794bdd76d889ddfbae0"
 lock-version = "1.0"
 python-versions = "^3.8"
 
@@ -438,6 +458,10 @@ aioconsole = [
 aiofiles = [
     {file = "aiofiles-0.5.0-py3-none-any.whl", hash = "sha256:377fdf7815cc611870c59cbd07b68b180841d2a2b79812d8c218be02448c2acb"},
     {file = "aiofiles-0.5.0.tar.gz", hash = "sha256:98e6bcfd1b50f97db4980e182ddd509b7cc35909e903a8fe50d8849e02d815af"},
+]
+aiomonitor = [
+    {file = "aiomonitor-0.4.5-py3-none-any.whl", hash = "sha256:5c7ac38b2ee59cbad87162ef5c45d72c7b57b94c8a93e7f462184bf10f9ebccd"},
+    {file = "aiomonitor-0.4.5.tar.gz", hash = "sha256:6232c1ab14bf06cd7217845801c27340032f74e283bdaf32d01cdd3b7c673d0e"},
 ]
 alabaster = [
     {file = "alabaster-0.7.12-py2.py3-none-any.whl", hash = "sha256:446438bdcca0e05bd45ea2de1668c1d9b032e1a9154c2c259092d77031ddd359"},
@@ -609,6 +633,9 @@ sphinxcontrib-qthelp = [
 sphinxcontrib-serializinghtml = [
     {file = "sphinxcontrib-serializinghtml-1.1.4.tar.gz", hash = "sha256:eaa0eccc86e982a9b939b2b82d12cc5d013385ba5eadcc7e4fed23f4405f77bc"},
     {file = "sphinxcontrib_serializinghtml-1.1.4-py2.py3-none-any.whl", hash = "sha256:f242a81d423f59617a8e5cf16f5d4d74e28ee9a66f9e5b637a18082991db5a9a"},
+]
+terminaltables = [
+    {file = "terminaltables-3.1.0.tar.gz", hash = "sha256:f3eb0eb92e3833972ac36796293ca0906e998dc3be91fbe1f8615b331b853b81"},
 ]
 urllib3 = [
     {file = "urllib3-1.25.10-py2.py3-none-any.whl", hash = "sha256:e7983572181f5e1522d9c98453462384ee92a0be7fac5f1413a1e35c56cc0461"},

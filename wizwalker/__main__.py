@@ -8,7 +8,7 @@ from click_default_group import DefaultGroup
 from loguru import logger
 
 from wizwalker import WizWalker, utils, Wad
-from wizwalker.cli import WizWalkerConsole
+from wizwalker.cli import start_console
 
 logger.enable("wizwalker")
 logger.remove(0)
@@ -37,12 +37,15 @@ def cli():
     if sys.platform != "win32":
         raise RuntimeError(f"This program is windows only, not {sys.platform}")
 
-    async def _run_console():
-        walker = WizWalker()
-        console = WizWalkerConsole(walker)
-        await console.interact()
+    # async def _run_console():
+    #     walker = WizWalker()
+    #     console = WizWalkerConsole(walker)
+    #     await console.interact()
+    #
+    # asyncio.run(_run_console())
 
-    asyncio.run(_run_console())
+    walker = WizWalker()
+    start_console(locals={"walker": walker})
 
 
 @main.command()

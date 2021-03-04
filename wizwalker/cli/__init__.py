@@ -1,1 +1,1 @@
-from .console import WizWalkerConsole
+from .console import WizWalkerConsole, start_console
