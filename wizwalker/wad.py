@@ -21,21 +21,29 @@ class WadFileInfo:
         self.unzipped_size = unzipped_size
 
 
-# TODO: allow specifying wads not in game dir
 class Wad:
-    def __init__(self, name: str):
-        if not name.endswith(".wad"):
-            name += ".wad"
+    def __init__(self, path: Union[Path, str]):
+        if isinstance(path, str):
+            path = Path(path)
 
-        self.name = name
-        self.file_path = get_wiz_install() / "Data" / "GameData" / self.name
+        self.name = path.with_suffix("").name
+
+        self.file_path = path
         if not self.file_path.exists():
-            raise ValueError(f"{self.name} not found.")
+            raise ValueError(f"{self.file_path} not found.")
 
         self._file_list = []
         self._refreshed_once = False
         self._open = False
         self._file_pointer = None
+
+    @classmethod
+    def from_game_data(cls, name: str):
+        if not name.endswith(".wad"):
+            name += ".wad"
+
+        file_path = get_wiz_install() / "Data" / "GameData" / name
+        return cls(file_path)
 
     def __repr__(self):
         return f"<Wad {self.name=}>"

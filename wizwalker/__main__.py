@@ -37,13 +37,6 @@ def cli():
     if sys.platform != "win32":
         raise RuntimeError(f"This program is windows only, not {sys.platform}")
 
-    # async def _run_console():
-    #     walker = WizWalker()
-    #     console = WizWalkerConsole(walker)
-    #     await console.interact()
-    #
-    # asyncio.run(_run_console())
-
     walker = WizWalker()
     start_console(locals={"walker": walker})
 
@@ -93,7 +86,7 @@ def unarchive(input_wad, output_dir):
     input_wad automatically fills in the rest of the path so you only need the name; i.e "root"
     output_dir defaults to the current directory
     """
-    wad_file = Wad(input_wad)
+    wad_file = Wad.from_game_data(input_wad)
     path = Path(output_dir)
 
     if not path.exists():
@@ -138,20 +131,19 @@ def extract(input_wad, file_name):
 
     input_wad automatically fills in the rest of the path so you only need the name; i.e "root"
     """
-    wad_file = Wad(input_wad)
+    wad_file = Wad.from_game_data(input_wad)
 
     async def _extract_file():
         try:
             file_data = await wad_file.get_file(file_name)
         except ValueError:
             click.echo(f"No file named {file_name} found.")
-            exit(0)
+        else:
+            relitive_file_name = file_name.split("/")[-1]
 
-        relitive_file_name = file_name.split("/")[-1]
-
-        async with aiofiles.open(relitive_file_name, "wb+") as fp:
-            click.echo("Writing...")
-            await fp.write(file_data)
+            async with aiofiles.open(relitive_file_name, "wb+") as fp:
+                click.echo("Writing...")
+                await fp.write(file_data)
 
     asyncio.run(_extract_file())
 

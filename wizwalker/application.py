@@ -167,7 +167,7 @@ class WizWalker:
         """
         Caches various file data
         """
-        root_wad = Wad("Root")
+        root_wad = Wad.from_game_data("Root")
 
         logger.debug("Begining caching")
 
@@ -237,7 +237,7 @@ class WizWalker:
             wad_name = wad_name.name
             if not self.node_cache[wad_name]:
                 logger.debug(f"Checking {wad_name} for node data")
-                wad = Wad(wad_name)
+                wad = Wad.from_game_data(wad_name)
                 self.node_cache[wad_name] = 1
 
                 try:
