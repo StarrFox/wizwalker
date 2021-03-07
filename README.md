@@ -53,17 +53,6 @@ $ make html
 ```
 
 ## console commands
-wizwalker: Runs the wizwalker bot
-
-wiz: Starts a Wizard101 instance
-
-## project goals in order of importance
-0. ~~basic info by memory~~
-1. able to determine current quest
-2. ~~teleportion mode~~
-3. ~~info by memory~~
-4. ~~info by packet~~
-5. ~~able to walk~~
-6. able to combat
-7. ~~cli for end users~~
-8. gui for end users
+wizwalker: Runs the wizwalker cli
+wizwalker start-wiz: start wizard101 instances
+wizwalker wad: edit and extract wizard101 wad files

@@ -1,7 +1,10 @@
 import asyncio
+import re
 import threading
 import sys
-from typing import Any, Coroutine
+from typing import Any, Coroutine, Union
+import multiprocessing
+
 
 import terminaltables
 import aioconsole
@@ -21,8 +24,7 @@ def init_console_server(host: str, port: int, _locals, loop):
 
 
 class NoBannerConsole(aioconsole.AsynchronousConsole):
-    @asyncio.coroutine
-    def _interact(self, banner=None):
+    async def _interact(self, banner=None):
         # Get ps1 and ps2
         try:
             sys.ps1
@@ -41,16 +43,16 @@ class NoBannerConsole(aioconsole.AsynchronousConsole):
                 else:
                     prompt = sys.ps1
                 try:
-                    line = yield from self.raw_input(prompt)
+                    line = await self.raw_input(prompt)
                 except EOFError:
                     self.write("\n")
-                    yield from self.flush()
+                    await self.flush()
                     break
                 else:
-                    more = yield from self.push(line)
+                    more = await self.push(line)
             except asyncio.CancelledError:
                 self.write("\nKeyboardInterrupt\n")
-                yield from self.flush()
+                await self.flush()
                 self.resetbuffer()
                 more = 0
 
@@ -70,7 +72,7 @@ class WizWalkerConsole(Monitor):
 
         return res
 
-    def run_coro(self, coro: Coroutine, timeout: int = 20):
+    def run_coro(self, coro: Coroutine, timeout: Union[int, None] = 10):
         future = asyncio.run_coroutine_threadsafe(coro, self._loop)
 
         try:
@@ -86,8 +88,7 @@ class WizWalkerConsole(Monitor):
     def do_console(self):
         """Switch to async Python REPL"""
         if not self._console_enabled:
-            self._sout.write("Python console disabled for this sessiong\n")
-            self._sout.flush()
+            self.write("Python console disabled for this session")
             return
 
         fut = init_console_server(
@@ -102,6 +103,7 @@ class WizWalkerConsole(Monitor):
             close_fut.result(timeout=15)
 
     def do_start(self):
+        """Attach and hook to all clients"""
         walker = self.get_local("walker")
         walker.get_clients()
         self.write(f"Attached to {len(walker.clients)} clients")
@@ -110,11 +112,13 @@ class WizWalkerConsole(Monitor):
             self.write(f"client-{idx}: hooked all")
 
     def do_exit(self) -> None:
+        """exit walker and re-write hooks"""
         walker = self.get_local("walker")
         self.write("Closing wizwalker, hooks should be rewritten")
         self.run_coro(walker.close())
 
     def do_info(self):
+        """Print out info from each client"""
         walker = self.get_local("walker")
 
         for idx, client in enumerate(walker.clients):
@@ -142,11 +146,16 @@ class WizWalkerConsole(Monitor):
             self.write(table.table)
 
     def do_cache(self):
+        """Cache data"""
         walker = self.get_local("walker")
         self.run_coro(walker.cache_data())
         self.write("Cached data")
 
     def do_teleport(self, x: float, y: float, z: float = None, yaw: float = None):
+        """Teleport to a location
+
+        x y z and yaw are all optional
+        """
         walker = self.get_local("walker")
         for client in walker.clients:
             self.run_coro(client.teleport(x=x, y=y, z=z, yaw=yaw))
@@ -154,30 +163,58 @@ class WizWalkerConsole(Monitor):
         self.write("Teleported")
 
     def do_goto(self, x: float, y: float):
+        """Go to a location in the world"""
         walker = self.get_local("walker")
         for client in walker.clients:
             self.run_coro(client.goto(x, y))
 
         self.write("Completed goto")
 
+    def do_getid(self, pattern: str):
+        """Get templateid items that match a pattern
 
-def start_console(loop=None, locals=None, app=None):
+        cache command must be run first
+        """
+        walker = self.get_local("walker")
+        template_ids = self.run_coro(walker.get_template_ids())
+
+        regex = re.compile(pattern, re.IGNORECASE)
+        for tid, name in template_ids.items():
+            if regex.match(name):
+                self.write(f"{tid=} {name=}")
+
+
+def test_monitor():
+    cli.monitor_client(cli.MONITOR_HOST, cli.MONITOR_PORT)
+
+
+# TODO: replace app with walker when WizWalker has run loop
+def start_console(loop=None, locals=None):
     if loop is None:
         loop = asyncio.get_event_loop()
 
-    if app is None:
-
-        def app():
-            async def _app():
-                pass
-
-            future = asyncio.ensure_future(_app(), loop=loop)
+    def app():
+        try:
             loop.run_forever()
+        except KeyboardInterrupt:
+            print("Closing wizwalker; hooks should be rewritten")
+            loop.run_until_complete(locals["walker"].close())
 
-    def app_runner():
-        with start_monitor(loop, monitor=WizWalkerConsole, locals=locals):
-            app()
+            tasks = asyncio.Task.all_tasks(loop)
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
 
-    app_thread = threading.Thread(target=app_runner)
-    app_thread.start()
-    cli.monitor_client(cli.MONITOR_HOST, cli.MONITOR_PORT)
+            loop.run_until_complete(asyncio.gather(*tasks, return_exceptions=True))
+
+    def run_monitor():
+        cli.monitor_client(cli.MONITOR_HOST, cli.MONITOR_PORT)
+
+    monitor_thread = threading.Thread(target=run_monitor, daemon=True)
+    monitor_thread.start()
+
+    monitor_proc = multiprocessing.Process(target=test_monitor, daemon=True)
+    loop.call_later(2, monitor_proc.start)
+
+    with start_monitor(loop, monitor=WizWalkerConsole, locals=locals):
+        app()

@@ -156,6 +156,7 @@ class WizWalker:
         self.get_handles()
         self.clients = [Client(handle) for handle in self.window_handles]
 
+    # TODO: why isn't this next to run
     async def close(self):
         """
         Closes the application and all clients
@@ -304,6 +305,7 @@ class WizWalker:
 
         logging.getLogger("wizwalker").setLevel(logging.DEBUG)
 
+        # TODO: why are there print statements here
         print("Starting wizwalker")
         print(f'Found install under "{self.install_location}"')
 
@@ -312,7 +314,7 @@ class WizWalker:
 
     @staticmethod
     def start_wiz_client():
-        utils.quick_launch()
+        utils.start_instance()
 
     def get_handles(self):
         """
