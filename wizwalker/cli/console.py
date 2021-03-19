@@ -3,7 +3,6 @@ import re
 import threading
 import sys
 from typing import Any, Coroutine, Union
-import multiprocessing
 
 
 import terminaltables
@@ -213,8 +212,8 @@ def start_console(loop=None, locals=None):
     monitor_thread = threading.Thread(target=run_monitor, daemon=True)
     monitor_thread.start()
 
-    monitor_proc = multiprocessing.Process(target=test_monitor, daemon=True)
-    loop.call_later(2, monitor_proc.start)
+    # monitor_proc = multiprocessing.Process(target=test_monitor, daemon=True)
+    # loop.call_later(2, monitor_proc.start)
 
     with start_monitor(loop, monitor=WizWalkerConsole, locals=locals):
         app()

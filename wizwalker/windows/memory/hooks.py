@@ -2,7 +2,7 @@ import re
 import struct
 import ctypes
 import ctypes.wintypes
-from typing import Any, Tuple, Optional, Callable, Union, Type, List
+from typing import Any, Tuple, Optional, Callable, Type, List
 
 import pymem
 import pymem.pattern

@@ -192,33 +192,30 @@ def resolve_pointer(handle, base, offsets):
 def get_all_wizard_handles() -> list:
     target_class = "Wizard Graphical Client"
 
-    handles = []
-
-    # callback takes a window handle and an lparam and returns true/false on if we should stop
-    # iterating
-    # https://docs.microsoft.com/en-us/previous-versions/windows/desktop/legacy/ms633498(v=vs.85)
-    def callback(handle, _):
+    def callback(handle):
         class_name = ctypes.create_unicode_buffer(len(target_class))
         user32.GetClassNameW(handle, class_name, len(target_class) + 1)
         if target_class == class_name.value:
+            return True
+
+    return get_windows_from_predicate(callback)
+
+
+def get_windows_from_predicate(predicate: Callable) -> list:
+    handles = []
+
+    def callback(handle, _):
+        if predicate(handle):
             handles.append(handle)
 
         # iterate all windows, (True)
         return 1
 
-    # https://docs.python.org/3/library/ctypes.html#callback-functions
     enumwindows_func_type = ctypes.WINFUNCTYPE(
-        ctypes.c_bool,  # return type
-        ctypes.c_int,  # arg1 type
-        ctypes.POINTER(ctypes.c_int),  # arg2 type
+        ctypes.c_bool, ctypes.c_int, ctypes.POINTER(ctypes.c_int),
     )
 
-    # Transform callback into a form we can pass to the dll
     callback = enumwindows_func_type(callback)
-
-    # EnumWindows takes a callback every iteration is passed to
-    # and an lparam
-    # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-enumwindows
     user32.EnumWindows(callback, 0)
 
     return handles
