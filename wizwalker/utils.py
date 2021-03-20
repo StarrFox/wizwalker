@@ -15,7 +15,8 @@ from typing import Callable, Iterable
 from xml.etree import ElementTree
 
 import appdirs
-from pymem.ptypes import RemotePointer
+
+from wizwalker.constants import Keycode
 
 user32 = WinDLL("user32")
 XYZ = namedtuple("XYZ", "x, y, z")
@@ -67,11 +68,8 @@ def executor_function(sync_function: Callable):
 
 
 def get_wiz_install() -> Path:
-    r"""
-    Computer\HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Uninstall\
-    {A9E27FF5-6294-46A8-B8FD-77B1DECA3021}
-
-    <InstallLocation> value
+    """
+    Get the game install root dir
     """
     reg = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
 
@@ -103,6 +101,11 @@ def start_instance():
 def instance_login(window_handle: int, username: str, password: str):
     """
     Login to an instance on the login screen
+
+    Args:
+        window_handle: Handle to window
+        username: Username to login with
+        password: Password to login with
     """
 
     def send_chars(chars: str):
@@ -120,9 +123,10 @@ def instance_login(window_handle: int, username: str, password: str):
 async def start_instances_with_login(instance_number: int, logins: Iterable):
     """
     Start a number of instances and login to them with logins
-    :param instance_number: number of instances to start
-    :param logins: logins to use
-    :return:
+
+    Args:
+        instance_number: number of instances to start
+        logins: logins to use
     """
     start_handles = set(get_all_wizard_handles())
 
@@ -142,7 +146,11 @@ async def start_instances_with_login(instance_number: int, logins: Iterable):
 
 def calculate_perfect_yaw(current_xyz: XYZ, target_xyz: XYZ) -> float:
     """
-    Calculates the perfect yaw to reach target_xyz from current_xyz in a stright line
+    Calculates the perfect yaw to reach an xyz in a stright line
+
+    Args:
+        current_xyz: Starting position xyz
+        target_xyz: Ending position xyz
     """
     target_line = math.dist(
         (current_xyz.x, current_xyz.y), (target_xyz.x, target_xyz.y)
@@ -171,6 +179,9 @@ def calculate_perfect_yaw(current_xyz: XYZ, target_xyz: XYZ) -> float:
 
 
 def get_cache_folder() -> Path:
+    """
+    Get the wizwalker cache folder
+    """
     app_name = "WizWalker"
     app_author = "StarrFox"
     cache_dir = Path(appdirs.user_cache_dir(app_name, app_author))
@@ -181,15 +192,10 @@ def get_cache_folder() -> Path:
     return cache_dir
 
 
-def resolve_pointer(handle, base, offsets):
-    last = base
-    for offset in offsets:
-        last = RemotePointer(handle, last.value + offset)
-
-    return last.v.value
-
-
 def get_all_wizard_handles() -> list:
+    """
+    Get handles to all currently open wizard clients
+    """
     target_class = "Wizard Graphical Client"
 
     def callback(handle):
@@ -202,6 +208,23 @@ def get_all_wizard_handles() -> list:
 
 
 def get_windows_from_predicate(predicate: Callable) -> list:
+    """
+    Get all windows that match a predicate
+
+    Args:
+        predicate: the predicate windows should pass
+
+    Examples:
+        .. code-block:: py
+
+            def predicate(window_handle):
+                if window_handle == 0:
+                    # handle will be returned
+                    return True
+                else:
+                    # handle will not be returned
+                    return False
+    """
     handles = []
 
     def callback(handle, _):
@@ -222,6 +245,9 @@ def get_windows_from_predicate(predicate: Callable) -> list:
 
 
 def pharse_template_id_file(file_data: bytes) -> dict:
+    """
+    Pharse a template id file's data
+    """
     if not file_data.startswith(b"BINd"):
         raise RuntimeError("No BINd id string")
 
@@ -250,6 +276,9 @@ def pharse_template_id_file(file_data: bytes) -> dict:
 
 
 def pharse_message_file(file_data: bytes):
+    """
+    Pharse a message file's data
+    """
     decoded = file_data.decode(errors="ignore")
     root = ElementTree.fromstring(decoded)
 
@@ -325,3 +354,24 @@ def pharse_node_data(file_data: bytes) -> dict:
         node_data[unpacked_num] = (x, y, z)
 
     return node_data
+
+
+async def timed_send_key(window_handle: int, key: Keycode, seconds: float):
+    """
+    Send a key for a number of seconds
+
+    Args:
+        window_handle: Handle to window to send key to
+        key: The key to send
+        seconds: Number of seconds to send the key
+    """
+    keydown_task = asyncio.create_task(_send_keydown_forever(window_handle, key))
+    await asyncio.sleep(seconds)
+    keydown_task.cancel()
+    user32.PostMessageW(window_handle, 0x101, key.value, 0)
+
+
+@executor_function
+def _send_keydown_forever(window_handle: int, key: Keycode):
+    while True:
+        user32.PostMessageW(window_handle, 0x100, key.value, 0)

@@ -145,6 +145,14 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
+name = "janus"
+version = "0.6.1"
+description = "Mixed sync-async queue to interoperate between asyncio tasks and classic threads"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[[package]]
 name = "jinja2"
 version = "2.11.2"
 description = "A very fast and expressive template engine."
@@ -445,7 +453,7 @@ dev = ["pytest (>=4.6.2)", "black (>=19.3b0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "146b9f10618798e351e0e5ebc840daf142a4ffe11383e794bdd76d889ddfbae0"
+content-hash = "78f317d3176b38118f6e9c9a1deb8f6f13aa85e1dd9a7c47c77d283c2ba121d3"
 
 [metadata.files]
 aioconsole = [
@@ -513,6 +521,10 @@ idna = [
 imagesize = [
     {file = "imagesize-1.2.0-py2.py3-none-any.whl", hash = "sha256:6965f19a6a2039c7d48bca7dba2473069ff854c36ae6f19d2cde309d998228a1"},
     {file = "imagesize-1.2.0.tar.gz", hash = "sha256:b1f6b5a4eab1f73479a50fb79fcf729514a900c341d8503d62a62dbc4127a2b1"},
+]
+janus = [
+    {file = "janus-0.6.1-py3-none-any.whl", hash = "sha256:6dae3f1fd68a92dab49c1b93d269f22d2232feddf3a3b8842a881a6e67500c16"},
+    {file = "janus-0.6.1.tar.gz", hash = "sha256:4712e0ef75711fe5947c2db855bc96221a9a03641b52e5ae8e25c2b705dd1d0c"},
 ]
 jinja2 = [
     {file = "Jinja2-2.11.2-py2.py3-none-any.whl", hash = "sha256:f0a4641d3cf955324a89c04f3d94663aa4d638abe8f733ecd3582848e1c37035"},

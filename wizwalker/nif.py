@@ -6,6 +6,7 @@ from io import BytesIO
 # Made using Niftools's nif reference: https://github.com/niftools/nifxml
 
 
+# TODO: finish
 class NifMap:
     def __init__(self, data):
         """

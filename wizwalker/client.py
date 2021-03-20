@@ -2,9 +2,12 @@ import ctypes.wintypes
 from functools import cached_property
 from typing import Optional
 
-from . import utils
+from . import Keycode, utils
 from .packets import PacketHookWatcher
-from .windows import InputHandler, MemoryHandler, user32
+from .windows import MemoryHandler
+
+from .constants import user32
+
 
 WIZARD_SPEED = 580
 
@@ -19,7 +22,6 @@ class Client:
 
     def __init__(self, window_handle: int):
         self.window_handle = window_handle
-        self._input = InputHandler(window_handle)
         self._memory = MemoryHandler(self.process_id)
         self.current_zone = None
 
@@ -47,11 +49,8 @@ class Client:
         user32.GetWindowThreadProcessId(self.window_handle, ctypes.byref(pid))
         return pid.value
 
-    async def send_key(self, key: str, seconds: float):
-        await self._input.send_key(key, seconds)
-
-    # async def click(self, x: int, y: int):
-    #     await self._input.click(x, y)
+    async def send_key(self, key: Keycode, seconds: float):
+        await utils.timed_send_key(self.window_handle, key, seconds)
 
     def login(self, username: str, password: str):
         """
@@ -136,7 +135,7 @@ class Client:
         yaw = utils.calculate_perfect_yaw(current_xyz, target_xyz)
 
         await self.set_yaw(yaw)
-        await self._input.send_key("W", move_seconds)
+        await utils.timed_send_key(self.window_handle, Keycode.W, move_seconds)
 
     async def teleport(
         self, x: float = None, y: float = None, z: float = None, yaw: float = None
