@@ -11,7 +11,6 @@ from .hooks import (
     QuestHook,
     PlayerStatHook,
     BackpackStatHook,
-    PacketHook,
     MoveLockHook,
     PotionsAltHook,
 )
@@ -376,17 +375,6 @@ class MemoryHandler:
 
         self.hooks.append(backpack_stat_hook)
         self.backpack_stat_addr = backpack_stat_hook.backpack_struct_addr
-
-    @register_hook("packet_recv")
-    @utils.executor_function
-    def hook_packet_recv(self):
-        packet_recv_hook = PacketHook(self)
-        packet_recv_hook.hook()
-
-        self.hooks.append(packet_recv_hook)
-        self.packet_socket_discriptor_addr = packet_recv_hook.socket_discriptor
-        self.packet_buffer_addr = packet_recv_hook.packet_buffer_addr
-        self.packet_buffer_len = packet_recv_hook.packet_buffer_len
 
     @register_hook("move_lock")
     @utils.executor_function
