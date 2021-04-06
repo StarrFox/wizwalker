@@ -24,6 +24,24 @@ Wad
 .. autoclass:: Wad
    :members:
 
+Constants
+=========
+
+.. automodule:: wizwalker.constants
+   :members:
+
+Hotkey
+======
+
+.. automodule:: wizwalker.hotkey
+   :members:
+
+Utils
+=====
+
+.. automodule:: wizwalker.utils
+   :members:
+
 Errors
 ======
 
