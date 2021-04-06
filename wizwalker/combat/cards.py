@@ -22,7 +22,6 @@ class Hand:
     async def size(self) -> int:
         pass
 
-    # TODO: generic with types str and int
     async def get_card(self, card_name_or_positon: Union[str, int]) -> "Card":
         """
         Get a card based on a name or position

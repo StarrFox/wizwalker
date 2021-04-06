@@ -1,28 +1,26 @@
 import asyncio
 import sys
+from pathlib import Path
 
+import click
+import aiofiles
+from click_default_group import DefaultGroup
 from loguru import logger
 
-from wizwalker import WizWalker, utils
-from wizwalker.cli import WizWalkerConsole
+from wizwalker import WizWalker, utils, Wad
+from wizwalker.cli import start_console
 
 logger.enable("wizwalker")
 logger.remove(0)
 logger.add("wizwalker_debug.log", level="DEBUG", rotation="10 MB")
 
 
-async def run_console():
-    walker = WizWalker()
-    console = WizWalkerConsole(walker)
-    await console.interact()
-
-
+@click.group(cls=DefaultGroup, default="cli", default_if_no_args=True)
 def main():
-    if sys.platform != "win32":
-        raise RuntimeError(f"This program is windows only, not {sys.platform}")
-
-    asyncio.run(run_console())
-
+    """
+    Wizwalker cli
+    """
+    pass
     # app = WizWalker()
     #
     # # close WizWalker when app is closed
@@ -31,44 +29,132 @@ def main():
     # app.run()
 
 
-def wiz_command():
+@main.command()
+def cli():
     """
-    called when someone uses the "wiz" console command
+    Start a cli instance
     """
-    try:
-        login_flag = sys.argv[1]
-    except IndexError:
-        utils.quick_launch()
-        return
+    if sys.platform != "win32":
+        raise RuntimeError(f"This program is windows only, not {sys.platform}")
 
-    if login_flag != "--login":
-        print(f"{login_flag} is not a valid flag")
-        return
+    walker = WizWalker()
+    start_console(locals={"walker": walker})
 
-    try:
-        username = sys.argv[2]
-    except IndexError:
-        print("Missing username")
-        return
 
-    try:
-        password = sys.argv[3]
-    except IndexError:
-        print("Missing password")
-        return
+@main.command()
+@click.option(
+    "--instances", default=1, show_default=True, help="Number of instances to start"
+)
+@click.argument("logins", nargs=-1)
+def start_wiz(instances, logins):
+    """
+    Start multiple wizard101 instances and optionally login to them
+    """
+    if instances != len(logins) and instances != 1:
+        click.echo("Not enough or too many logins for the number of instances")
+        exit(1)
 
-    utils.quick_launch()
+    asyncio.run(utils.start_instances_with_login(instances, logins))
 
-    # speed is the name :sunglasses:
-    import time
 
-    # this probably isn't enough time for some computers
-    time.sleep(7)
+@main.group()
+def wad():
+    """
+    Wad manipulation commands
+    """
+    pass
 
-    handles = utils.get_all_wizard_handles()
-    newest_handle = sorted(handles)[-1]
 
-    utils.wiz_login(newest_handle, username, password)
+# TODO: finish
+@wad.command()
+def archive():
+    """
+    Create a wad from a directory
+    """
+    click.echo("Not implimented")
+
+
+@wad.command(short_help="Unarchive a wad into a directory")
+@click.argument("input_wad", type=str)
+@click.argument(
+    "output_dir", type=click.Path(exists=True, file_okay=False), default="."
+)
+def unarchive(input_wad, output_dir):
+    """
+    Unarchive a wad into a directory
+
+    input_wad automatically fills in the rest of the path so you only need the name; i.e "root"
+    output_dir defaults to the current directory
+    """
+    wad_file = Wad.from_game_data(input_wad)
+    path = Path(output_dir)
+
+    if not path.exists():
+        if click.confirm(f"{path} does not exsist; create it?", default=True):
+            path.mkdir()
+        else:
+            exit(0)
+
+    async def _unarchive_wad():
+        # we don't use wad_file.unarchive so we can have this nice progress bar
+        with click.progressbar(
+            await wad_file.names(),
+            show_pos=True,
+            item_show_func=lambda i: i.split("/")[-1] if i else i,
+            show_eta=False,
+        ) as names:
+            for file_name in names:
+                dirs = file_name.split("/")
+                # not a base level file
+                if len(dirs) != 1:
+                    current = path
+                    for next_dir in dirs[:-1]:
+                        current = current / next_dir
+                        if not current.exists():
+                            current.mkdir()
+
+                file_path = path / file_name
+                file_data = await wad_file.get_file(file_name)
+
+                async with aiofiles.open(file_path, "wb") as fp:
+                    await fp.write(file_data)
+
+    asyncio.run(_unarchive_wad())
+
+
+@wad.command(short_help="Extract a single file from a wad")
+@click.argument("input_wad", type=str)
+@click.argument("file_name")
+def extract(input_wad, file_name):
+    """
+    Extract a single file from a wad
+
+    input_wad automatically fills in the rest of the path so you only need the name; i.e "root"
+    """
+    wad_file = Wad.from_game_data(input_wad)
+
+    async def _extract_file():
+        try:
+            file_data = await wad_file.get_file(file_name)
+        except ValueError:
+            click.echo(f"No file named {file_name} found.")
+        else:
+            relitive_file_name = file_name.split("/")[-1]
+
+            async with aiofiles.open(relitive_file_name, "wb+") as fp:
+                click.echo("Writing...")
+                await fp.write(file_data)
+
+    asyncio.run(_extract_file())
+
+
+# TODO: finish
+@wad.command()
+def insert():
+    """
+    Insert a single file into a wad
+    """
+    click.echo("Not implimented")
 
 
 if __name__ == "__main__":

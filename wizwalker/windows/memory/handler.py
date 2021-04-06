@@ -135,7 +135,7 @@ class MemoryHandler:
 
     @uses_hook("player_struct")
     @utils.executor_function
-    def set_xyz(self, *, x=None, y=None, z=None):
+    def set_xyz(self, x=None, y=None, z=None):
         player_struct = self.process.read_int(self.player_struct_addr)
         try:
             if x is not None:

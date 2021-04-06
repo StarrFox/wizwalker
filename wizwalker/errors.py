@@ -86,3 +86,8 @@ class CardAlreadyEnchanted(WizWalkerError):
 
     def __init__(self):
         super().__init__("That card is already enchanted.")
+
+
+class HotkeyAlreadyRegistered(WizWalkerError):
+    def __init__(self, key: str):
+        super().__init__(f"{key} already registered")

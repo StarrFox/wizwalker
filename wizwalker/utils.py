@@ -11,11 +11,12 @@ from collections import namedtuple
 from concurrent.futures.thread import ThreadPoolExecutor
 from ctypes import WinDLL
 from pathlib import Path
-from typing import Callable, Union
+from typing import Callable, Iterable
 from xml.etree import ElementTree
 
 import appdirs
-from pymem.ptypes import RemotePointer
+
+from wizwalker.constants import Keycode
 
 user32 = WinDLL("user32")
 XYZ = namedtuple("XYZ", "x, y, z")
@@ -67,11 +68,8 @@ def executor_function(sync_function: Callable):
 
 
 def get_wiz_install() -> Path:
-    r"""
-    Computer\HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Uninstall\
-    {A9E27FF5-6294-46A8-B8FD-77B1DECA3021}
-
-    <InstallLocation> value
+    """
+    Get the game install root dir
     """
     reg = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
 
@@ -89,24 +87,70 @@ def get_wiz_install() -> Path:
     return install_location
 
 
-def start_wiz(location: Union[Path, str]):
+def start_instance():
     """
-    Start a wiz instance given a game install location
+    Starts a wizard101 instance
     """
+    location = get_wiz_install()
     subprocess.Popen(
         rf"{location}\Bin\WizardGraphicalClient.exe -L login.us.wizard101.com 12000",
         cwd=rf"{location}\Bin",
     )
 
 
-def quick_launch():
-    location = get_wiz_install()
-    start_wiz(location)
+def instance_login(window_handle: int, username: str, password: str):
+    """
+    Login to an instance on the login screen
+
+    Args:
+        window_handle: Handle to window
+        username: Username to login with
+        password: Password to login with
+    """
+
+    def send_chars(chars: str):
+        for char in chars:
+            user32.PostMessageW(window_handle, 0x102, ord(char), 0)
+
+    send_chars(username)
+    # tab
+    user32.PostMessageW(window_handle, 0x102, 9, 0)
+    send_chars(password)
+    # enter
+    user32.PostMessageW(window_handle, 0x102, 13, 0)
+
+
+async def start_instances_with_login(instance_number: int, logins: Iterable):
+    """
+    Start a number of instances and login to them with logins
+
+    Args:
+        instance_number: number of instances to start
+        logins: logins to use
+    """
+    start_handles = set(get_all_wizard_handles())
+
+    for _ in range(instance_number):
+        start_instance()
+
+    # TODO: have way to properly check if instances are on login screen
+    # waiting for instances to start
+    await asyncio.sleep(7)
+
+    new_handles = set(get_all_wizard_handles()).difference(start_handles)
+
+    for handle, username_password in zip(new_handles, logins):
+        username, password = username_password.split(":")
+        instance_login(handle, username, password)
 
 
 def calculate_perfect_yaw(current_xyz: XYZ, target_xyz: XYZ) -> float:
     """
-    Calculates the perfect yaw to reach target_xyz from current_xyz in a stright line
+    Calculates the perfect yaw to reach an xyz in a stright line
+
+    Args:
+        current_xyz: Starting position xyz
+        target_xyz: Ending position xyz
     """
     target_line = math.dist(
         (current_xyz.x, current_xyz.y), (target_xyz.x, target_xyz.y)
@@ -135,6 +179,9 @@ def calculate_perfect_yaw(current_xyz: XYZ, target_xyz: XYZ) -> float:
 
 
 def get_cache_folder() -> Path:
+    """
+    Get the wizwalker cache folder
+    """
     app_name = "WizWalker"
     app_author = "StarrFox"
     cache_dir = Path(appdirs.user_cache_dir(app_name, app_author))
@@ -145,63 +192,62 @@ def get_cache_folder() -> Path:
     return cache_dir
 
 
-def wiz_login(window_handle: int, username: str, password: str):
-    def send_chars(chars: str):
-        for char in chars:
-            user32.PostMessageW(window_handle, 0x102, ord(char), 0)
-
-    send_chars(username)
-    # tab
-    user32.PostMessageW(window_handle, 0x102, 9, 0)
-    send_chars(password)
-    # enter
-    user32.PostMessageW(window_handle, 0x102, 13, 0)
-
-
-def resolve_pointer(handle, base, offsets):
-    last = base
-    for offset in offsets:
-        last = RemotePointer(handle, last.value + offset)
-
-    return last.v.value
-
-
 def get_all_wizard_handles() -> list:
+    """
+    Get handles to all currently open wizard clients
+    """
     target_class = "Wizard Graphical Client"
 
-    handles = []
-
-    # callback takes a window handle and an lparam and returns true/false on if we should stop
-    # iterating
-    # https://docs.microsoft.com/en-us/previous-versions/windows/desktop/legacy/ms633498(v=vs.85)
-    def callback(handle, _):
+    def callback(handle):
         class_name = ctypes.create_unicode_buffer(len(target_class))
         user32.GetClassNameW(handle, class_name, len(target_class) + 1)
         if target_class == class_name.value:
+            return True
+
+    return get_windows_from_predicate(callback)
+
+
+def get_windows_from_predicate(predicate: Callable) -> list:
+    """
+    Get all windows that match a predicate
+
+    Args:
+        predicate: the predicate windows should pass
+
+    Examples:
+        .. code-block:: py
+
+            def predicate(window_handle):
+                if window_handle == 0:
+                    # handle will be returned
+                    return True
+                else:
+                    # handle will not be returned
+                    return False
+    """
+    handles = []
+
+    def callback(handle, _):
+        if predicate(handle):
             handles.append(handle)
 
         # iterate all windows, (True)
         return 1
 
-    # https://docs.python.org/3/library/ctypes.html#callback-functions
     enumwindows_func_type = ctypes.WINFUNCTYPE(
-        ctypes.c_bool,  # return type
-        ctypes.c_int,  # arg1 type
-        ctypes.POINTER(ctypes.c_int),  # arg2 type
+        ctypes.c_bool, ctypes.c_int, ctypes.POINTER(ctypes.c_int),
     )
 
-    # Transform callback into a form we can pass to the dll
     callback = enumwindows_func_type(callback)
-
-    # EnumWindows takes a callback every iteration is passed to
-    # and an lparam
-    # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-enumwindows
     user32.EnumWindows(callback, 0)
 
     return handles
 
 
 def pharse_template_id_file(file_data: bytes) -> dict:
+    """
+    Pharse a template id file's data
+    """
     if not file_data.startswith(b"BINd"):
         raise RuntimeError("No BINd id string")
 
@@ -230,6 +276,9 @@ def pharse_template_id_file(file_data: bytes) -> dict:
 
 
 def pharse_message_file(file_data: bytes):
+    """
+    Pharse a message file's data
+    """
     decoded = file_data.decode(errors="ignore")
     root = ElementTree.fromstring(decoded)
 
@@ -305,3 +354,24 @@ def pharse_node_data(file_data: bytes) -> dict:
         node_data[unpacked_num] = (x, y, z)
 
     return node_data
+
+
+async def timed_send_key(window_handle: int, key: Keycode, seconds: float):
+    """
+    Send a key for a number of seconds
+
+    Args:
+        window_handle: Handle to window to send key to
+        key: The key to send
+        seconds: Number of seconds to send the key
+    """
+    keydown_task = asyncio.create_task(_send_keydown_forever(window_handle, key))
+    await asyncio.sleep(seconds)
+    keydown_task.cancel()
+    user32.PostMessageW(window_handle, 0x101, key.value, 0)
+
+
+@executor_function
+def _send_keydown_forever(window_handle: int, key: Keycode):
+    while True:
+        user32.PostMessageW(window_handle, 0x100, key.value, 0)

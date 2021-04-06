@@ -2,6 +2,7 @@ import json
 from collections import defaultdict
 from functools import cached_property
 from pathlib import Path
+from typing import Union, List
 
 import aiofiles
 from loguru import logger
@@ -155,6 +156,7 @@ class WizWalker:
         self.get_handles()
         self.clients = [Client(handle) for handle in self.window_handles]
 
+    # TODO: why isn't this next to run
     async def close(self):
         """
         Closes the application and all clients
@@ -166,7 +168,7 @@ class WizWalker:
         """
         Caches various file data
         """
-        root_wad = Wad("Root")
+        root_wad = Wad.from_game_data("Root")
 
         logger.debug("Begining caching")
 
@@ -174,19 +176,15 @@ class WizWalker:
         await self._cache_messages(root_wad)
         logger.debug("Caching template")
         await self._cache_template(root_wad)
-        logger.debug("Caching nodes")
-        await self._cache_nodes()
+        # logger.debug("Caching nodes")
+        # await self._cache_nodes()
 
         await self.write_wad_cache()
 
     async def _cache_messages(self, root_wad):
-        await root_wad.refresh_journal()
-
-        message_files = {
-            k: v
-            for k, v in root_wad.journal.items()
-            if "Messages" in k and k.endswith(".xml")
-        }
+        message_files = [
+            f for f in await root_wad.names() if "Messages" in f and f.endswith(".xml")
+        ]
 
         message_files = await self.check_updated(root_wad, message_files)
 
@@ -216,9 +214,7 @@ class WizWalker:
                 await fp.write(json_data)
 
     async def _cache_template(self, root_wad):
-        template_file = {
-            "TemplateManifest.xml": await root_wad.get_file_info("TemplateManifest.xml")
-        }
+        template_file = "TemplateManifest.xml"
 
         template_file = await self.check_updated(root_wad, template_file)
 
@@ -242,7 +238,7 @@ class WizWalker:
             wad_name = wad_name.name
             if not self.node_cache[wad_name]:
                 logger.debug(f"Checking {wad_name} for node data")
-                wad = Wad(wad_name)
+                wad = Wad.from_game_data(wad_name)
                 self.node_cache[wad_name] = 1
 
                 try:
@@ -275,17 +271,22 @@ class WizWalker:
 
         await self.write_node_cache()
 
-    async def check_updated(self, wad_file: Wad, files: dict):
+    async def check_updated(self, wad_file: Wad, files: Union[List[str], str]):
         """
         Checks if some wad files have changed since we last accessed them
         """
+        if isinstance(files, str):
+            files = [files]
+
         if not self.wad_cache:
             self.wad_cache = await self.get_wad_cache()
             logger.debug(f"TEMP {self.wad_cache=} {type(self.wad_cache)}")
 
         res = []
 
-        for file_name, file_info in files.items():
+        for file_name in files:
+            file_info = await wad_file.get_file_info(file_name)
+
             if self.wad_cache[wad_file.name][file_name] != file_info.size:
                 logger.debug(
                     f"{file_name} has updated. old: {self.wad_cache[wad_file.name][file_name]} new: {file_info.size}"
@@ -304,6 +305,7 @@ class WizWalker:
 
         logging.getLogger("wizwalker").setLevel(logging.DEBUG)
 
+        # TODO: why are there print statements here
         print("Starting wizwalker")
         print(f'Found install under "{self.install_location}"')
 
@@ -312,7 +314,7 @@ class WizWalker:
 
     @staticmethod
     def start_wiz_client():
-        utils.quick_launch()
+        utils.start_instance()
 
     def get_handles(self):
         """
