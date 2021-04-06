@@ -65,13 +65,13 @@ def wad():
     pass
 
 
-# TODO: finish
-@wad.command()
-def archive():
-    """
-    Create a wad from a directory
-    """
-    click.echo("Not implimented")
+# # TODO: finish
+# @wad.command()
+# def archive():
+#     """
+#     Create a wad from a directory
+#     """
+#     click.echo("Not implimented")
 
 
 @wad.command(short_help="Unarchive a wad into a directory")
@@ -148,13 +148,13 @@ def extract(input_wad, file_name):
     asyncio.run(_extract_file())
 
 
-# TODO: finish
-@wad.command()
-def insert():
-    """
-    Insert a single file into a wad
-    """
-    click.echo("Not implimented")
+# # TODO: finish
+# @wad.command()
+# def insert():
+#     """
+#     Insert a single file into a wad
+#     """
+#     click.echo("Not implimented")
 
 
 if __name__ == "__main__":
