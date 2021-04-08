@@ -544,6 +544,20 @@ in combat/dialog</p>
 </dd></dl>
 
 <dl class="py method">
+<dt id="wizwalker.Client.scale">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">scale</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.Client.scale" title="Permalink to this definition">¶</a></dt>
+<dd><p>Player scale</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>RuntimeError</strong> – player_struct hook not active</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>scale float or None if hooked function hasn’t run yet</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="wizwalker.Client.set_pitch">
 <em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">set_pitch</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pitch</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#wizwalker.Client.set_pitch" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the player pitch</p>
@@ -561,6 +575,20 @@ in combat/dialog</p>
 <dt id="wizwalker.Client.set_roll">
 <em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">set_roll</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">roll</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#wizwalker.Client.set_roll" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the player roll</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>RuntimeError</strong> – player_struct hook not active</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if value was set, False otherwise</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.Client.set_scale">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">set_scale</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#wizwalker.Client.set_scale" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the player scale</p>
 <dl class="field-list simple">
 <dt class="field-odd">Raises</dt>
 <dd class="field-odd"><p><strong>RuntimeError</strong> – player_struct hook not active</p>
