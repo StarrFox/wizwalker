@@ -246,6 +246,30 @@ class Client:
         """
         return await self._memory.set_player_roll(pitch)
 
+    async def scale(self) -> Optional[float]:
+        """
+        Player scale
+
+        Raises:
+            RuntimeError: player_struct hook not active
+
+        Returns:
+            scale float or None if hooked function hasn't run yet
+        """
+        return await self._memory.read_player_scale()
+
+    async def set_scale(self, scale: float) -> bool:
+        """
+        Set the player scale
+
+        Raises:
+            RuntimeError: player_struct hook not active
+
+        Return:
+            True if value was set, False otherwise
+        """
+        return await self._memory.set_player_scale(scale)
+
     async def quest_xyz(self) -> Optional[utils.XYZ]:
         """
         Quest xyz

@@ -209,6 +209,26 @@ class MemoryHandler:
         else:
             return True
 
+    @uses_hook("player_struct")
+    @utils.executor_function
+    def read_player_scale(self):
+        player_struct = self.process.read_int(self.player_struct_addr)
+        try:
+            return self.process.read_float(player_struct + 0x44)
+        except pymem.exception.MemoryReadError:
+            return None
+
+    @uses_hook("player_struct")
+    @utils.executor_function
+    def set_player_scale(self, roll):
+        player_struct = self.process.read_int(self.player_struct_addr)
+        try:
+            self.process.write_float(player_struct + 0x44, roll)
+        except pymem.exception.MemoryWriteError:
+            return False
+        else:
+            return True
+
     @uses_hook("quest_struct")
     @utils.executor_function
     def read_quest_xyz(self):

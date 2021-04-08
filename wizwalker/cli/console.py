@@ -127,6 +127,9 @@ class WizWalkerConsole(Monitor):
             client_attrs = [
                 "xyz",
                 "yaw",
+                "roll",
+                "pitch",
+                "scale",
                 "quest_xyz",
                 "health",
                 "mana",

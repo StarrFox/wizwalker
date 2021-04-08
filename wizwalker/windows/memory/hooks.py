@@ -296,6 +296,7 @@ PlayerHook = simple_hook(
 # )
 
 
+# TODO: switch to just lea stat_addr, eax
 class PlayerStatHook(MemoryHook):
     def __init__(self, memory_handler):
         super().__init__(memory_handler)
