@@ -541,3 +541,86 @@ class PotionsAltHook(MemoryHook):
     def unhook(self):
         super().unhook()
         self.free_potions_alt_addr()
+
+
+class MouselessCursorMoveHook(MemoryHook):
+    def __init__(self, memory_handler):
+        super().__init__(memory_handler)
+        self.x_addr = None
+        self.y_addr = None
+
+    def set_mouse_pos_addrs(self):
+        self.x_addr = self.memory_handler.process.allocate(4)
+        self.y_addr = self.memory_handler.process.allocate(4)
+
+    def free_mouse_pos_addrs(self):
+        self.memory_handler.process.free(self.x_addr)
+        self.memory_handler.process.free(self.y_addr)
+
+    def get_jump_bytecode(self) -> bytes:
+        # distance = end - start
+        distance = self.hook_address - self.jump_address
+        relitive_jump = distance - 5  # size of this line
+        packed_relitive_jump = struct.pack("<i", relitive_jump)
+        return b"\xE9" + packed_relitive_jump
+
+    def get_hook_bytecode(self) -> bytes:
+        self.set_mouse_pos_addrs()
+        packed_xpos_addr = struct.pack("<i", self.x_addr)
+        packed_ypos_addr = struct.pack("<i", self.y_addr)
+
+        bytecode = (
+            b"\x50" # push eax
+            b"\x8b\x44\x24\x08" # mov eax, dword ptr [esp+0x8]
+
+            b"\x51" # push ecx
+            b"\x8b\x0d" + packed_xpos_addr + # mov ecx, dword ptr x_addr
+            b"\x89\x08" # mov dword ptr [eax], ecx
+            b"\x8b\x0d" + packed_ypos_addr + # mov ecx, dword ptr y_addr
+            b"\x89\x48\x04" # mov dword ptr [eax+0x4], ecx
+            b"\x59" # pop ecx
+
+            b"\x58" # pop eax
+            b"\xc2\x04\x00" # ret 0x4
+        )
+
+        return bytecode
+
+    def get_pattern(self) -> Tuple[re.Pattern, Optional[MODULEINFO]]:
+        module = pymem.process.module_from_name(
+            self.memory_handler.process.process_handle, "user32.dll"
+        )
+        return (
+            re.compile(rb"\x8B\xFF\x55\x8B\xEC\x6A\x7F"),
+            module,
+        )
+
+    def hook(self) -> Any:
+        """
+        Writes jump_bytecode to jump address and hook bytecode to hook address
+        """
+        pattern, module = self.get_pattern()
+
+        self.jump_address = self.get_jump_address(pattern, module=module)
+        self.hook_address = self.get_hook_address(200)
+
+        self.jump_bytecode = self.get_jump_bytecode()
+        self.hook_bytecode = self.get_hook_bytecode()
+
+        self.jump_original_bytecode = self.memory_handler.process.read_bytes(
+            self.jump_address, len(self.jump_bytecode)
+        )
+
+        self.memory_handler.process.write_bytes(
+            self.hook_address, self.hook_bytecode, len(self.hook_bytecode),
+        )
+        self.memory_handler.process.write_bytes(
+            self.jump_address, self.jump_bytecode, len(self.jump_bytecode),
+        )
+
+        self.memory_handler.process.write_char(0x012E973C + 6, chr(1))
+
+    def unhook(self):
+        super().unhook()
+        self.free_mouse_pos_addrs()
+        self.memory_handler.process.write_char(0x012E973C + 6, chr(0))

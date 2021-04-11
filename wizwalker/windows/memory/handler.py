@@ -13,6 +13,7 @@ from .hooks import (
     BackpackStatHook,
     MoveLockHook,
     PotionsAltHook,
+    MouselessCursorMoveHook,
 )
 
 
@@ -68,6 +69,9 @@ class MemoryHandler:
         self.move_lock_addr = None
         self.potions_alt_addr = None
 
+        self.mouse_pos_x = None
+        self.mouse_pos_y = None
+
         self.hooks = []
         self.active_hooks = defaultdict(lambda: False)
 
@@ -99,6 +103,12 @@ class MemoryHandler:
 
     def is_hook_active(self, hook):
         return self.active_hooks[hook]
+
+    @uses_hook("mouseless_cursor_move")
+    @utils.executor_function
+    def write_mouse_position(self, x: int, y: int):
+        self.process.write_int(self.mouse_pos_x, x)
+        self.process.write_int(self.mouse_pos_y, y)
 
     @uses_hook("player_struct")
     @utils.executor_function
@@ -414,6 +424,19 @@ class MemoryHandler:
         self.hooks.append(potions_alt_hook)
         self.potions_alt_addr = potions_alt_hook.potions_alt_addr
         self.process.write_float(self.potions_alt_addr, -1.0)
+
+    @register_hook("mouseless_cursor_move")
+    @utils.executor_function
+    def hook_mouseless_cursor_move(self):
+        mouseless_cursor_hook = MouselessCursorMoveHook(self)
+        mouseless_cursor_hook.hook()
+
+        self.hooks.append(mouseless_cursor_hook)
+        self.mouse_pos_x = mouseless_cursor_hook.x_addr
+        self.mouse_pos_y = mouseless_cursor_hook.y_addr
+
+        self.process.write_int(self.mouse_pos_x, 0)
+        self.process.write_int(self.mouse_pos_y, 0)
 
     # @register_hook("ignore_mouse_leave")
     # @utils.executor_function
