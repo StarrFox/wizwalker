@@ -23,7 +23,8 @@ class Client:
     def __init__(self, window_handle: int):
         self.window_handle = window_handle
         self._memory = MemoryHandler(self.process_id)
-        self.current_zone = None
+
+        self.click_lock = None
 
     def __repr__(self):
         return f"<Client {self.window_handle=} {self.process_id=}>"
@@ -50,8 +51,9 @@ class Client:
     async def send_key(self, key: Keycode, seconds: float):
         await utils.timed_send_key(self.window_handle, key, seconds)
 
-    # TODO: and right click support
-    async def click(self, x: int, y: int):
+    async def click(
+        self, x: int, y: int, *, right_click: bool = False, sleep_duration: float = 0.1
+    ):
         """
         Send a click to a certain x and y
         x and y positions are relitive to the top left corner of the screen
@@ -59,25 +61,27 @@ class Client:
         Args:
             x: x to click at
             y: y to click at
+            right_click: If the click should be a right click
+            sleep_duration: how long to sleep between messages
         """
-        point = ctypes.wintypes.tagPOINT(x, y)
+        # prevent multiple clicks from happening at the same time
+        if right_click:
+            button_down_message = 0x204
+        else:
+            button_down_message = 0x201
 
-        # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-clienttoscreen
-        if user32.ClientToScreen(self.window_handle, ctypes.byref(point)) == 0:
-            raise RuntimeError("Client to screen conversion failed")
+        if self.click_lock is None:
+            self.click_lock = asyncio.Lock()
 
-        # same point structure is overwritten by ClientToScreen
-        x = point.x
-        y = point.y
-
-        await self._memory.write_mouse_position(x, y)
-        # position doesn't matter here; sending mouse move
-        user32.SendMessageW(self.window_handle, 0x200, 0, 0)
-        await asyncio.sleep(0.1)
-        # mouse left button down
-        user32.SendMessageW(self.window_handle, 0x201, 1, 0)
-        await asyncio.sleep(0.1)
-        user32.SendMessageW(self.window_handle, 0x202, 0, 0)
+        async with self.click_lock:
+            await self.set_mouse_position(x, y)
+            # position doesn't matter here; sending mouse move
+            user32.SendMessageW(self.window_handle, 0x200, 0, 0)
+            await asyncio.sleep(sleep_duration)
+            # mouse left button down
+            user32.SendMessageW(self.window_handle, button_down_message, 1, 0)
+            await asyncio.sleep(sleep_duration)
+            user32.SendMessageW(self.window_handle, button_down_message + 1, 0, 0)
 
     def login(self, username: str, password: str):
         """
@@ -158,6 +162,33 @@ class Client:
         await self.set_yaw(yaw)
         await utils.timed_send_key(self.window_handle, Keycode.W, move_seconds)
 
+    async def set_mouse_position(
+        self, x: int, y: int, *, convert_from_client: bool = True
+    ):
+        """
+        Set's the mouse position to a certain x y relitive to the
+        top left corner of the client
+
+        Args:
+            x: x to set
+            y: y to set
+            convert_from_client: If the position should be converted from client to screen
+        """
+        if convert_from_client:
+            point = ctypes.wintypes.tagPOINT(x, y)
+
+            # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-clienttoscreen
+            if user32.ClientToScreen(self.window_handle, ctypes.byref(point)) == 0:
+                raise RuntimeError("Client to screen conversion failed")
+
+            # same point structure is overwritten by ClientToScreen; these are also ints and not
+            # c_longs for some reason?
+            x = point.x
+            y = point.y
+
+        await self._memory.write_mouse_position(x, y)
+
+    # TODO: replace with set_xyz
     async def teleport(
         self, x: float = None, y: float = None, z: float = None, yaw: float = None
     ) -> bool:
