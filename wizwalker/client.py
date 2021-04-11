@@ -3,7 +3,6 @@ from functools import cached_property
 from typing import Optional
 
 from . import Keycode, utils
-from .packets import PacketHookWatcher
 from .windows import MemoryHandler
 
 from .constants import user32
@@ -24,8 +23,6 @@ class Client:
         self.window_handle = window_handle
         self._memory = MemoryHandler(self.process_id)
         self.current_zone = None
-
-        self.packet_watcher = PacketHookWatcher(self)
 
     def __repr__(self):
         return f"<Client {self.window_handle=} {self.process_id=}>"
@@ -61,12 +58,6 @@ class Client:
             password: The password to login with
         """
         utils.instance_login(self.window_handle, username, password)
-
-    def watch_packets(self):
-        """
-        Start Watching packets for information
-        """
-        self.packet_watcher.start()
 
     def get_hooks(self) -> list:
         """

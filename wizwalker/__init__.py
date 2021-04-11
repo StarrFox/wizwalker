@@ -7,7 +7,7 @@ from .constants import *
 from .wad import Wad
 from .nif import NifMap
 from .errors import *
-from . import packets, utils, windows, cli
+from . import utils, windows, cli
 from .application import WizWalker
 from .client import Client
 
