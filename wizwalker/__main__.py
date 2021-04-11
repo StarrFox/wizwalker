@@ -12,7 +12,9 @@ from wizwalker.cli import start_console
 
 logger.enable("wizwalker")
 logger.remove(0)
-logger.add("wizwalker_debug.log", level="DEBUG", rotation="10 MB")
+
+logfile = utils.get_logs_folder() / "debug.log"
+logger.add(logfile, level="DEBUG", rotation="10 MB")
 
 
 @click.group(cls=DefaultGroup, default="cli", default_if_no_args=True)

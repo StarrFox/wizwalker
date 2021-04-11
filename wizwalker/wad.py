@@ -1,7 +1,7 @@
 import struct
 import zlib
 from collections import namedtuple
-from typing import Union
+from typing import List, Union
 from pathlib import Path
 
 import aiofiles
@@ -39,6 +39,12 @@ class Wad:
 
     @classmethod
     def from_game_data(cls, name: str):
+        """
+        Get a Wad file from game installation dir
+
+        Args:
+            name: name of the wad
+        """
         if not name.endswith(".wad"):
             name += ".wad"
 
@@ -57,7 +63,7 @@ class Wad:
 
         return sum(file.size for file in self._file_list)
 
-    async def names(self):
+    async def names(self) -> List[str]:
         """
         List of all file names in this wad
         """
@@ -76,7 +82,6 @@ class Wad:
         self._file_pointer.close()
         self._open = False
 
-    # This method runs in a thread bc it is very slow
     @executor_function
     def _refresh_journal(self):
         if self._refreshed_once:
@@ -117,6 +122,9 @@ class Wad:
     async def get_file(self, name: str) -> bytes:
         """
         Get the data contents of the named file
+
+        Args:
+            name: name of the file to get
         """
         if not self._open:
             await self.open()
@@ -147,6 +155,9 @@ class Wad:
     async def get_file_info(self, name: str) -> wad_file_info:
         """
         Gets a WadFileInfo for a named file
+
+        Args:
+            name: name of the file to get info on
         """
         if not self._open:
             await self.open()
@@ -162,6 +173,15 @@ class Wad:
         return target_file
 
     async def unarchive(self, path: Union[Path, str]):
+        """
+        Unarchive a wad file into a directory
+
+        Args:
+            path: path to the directory to unpack the wad
+        """
+        if isinstance(path, str):
+            path = Path(path)
+
         if not path.exists():
             raise ValueError(f"{path} does not exist.")
 
@@ -185,10 +205,20 @@ class Wad:
                 await fp.write(file_data)
 
     @classmethod
-    async def from_directory(self, path):
+    async def from_directory(self, path: Union[Path, str]):
         """
         Create a Wad object from a directory
 
         Args:
             path: Path to directory to archive
         """
+        if isinstance(path, str):
+            path = Path(path)
+
+        if not path.exists():
+            raise ValueError(f"{path} does not exist.")
+
+        if not path.is_dir():
+            raise ValueError(f"{path} is not a directory.")
+
+        raise NotImplemented()

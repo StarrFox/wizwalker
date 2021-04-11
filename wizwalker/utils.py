@@ -192,6 +192,20 @@ def get_cache_folder() -> Path:
     return cache_dir
 
 
+def get_logs_folder() -> Path:
+    """
+    Get the wizwalker log folder
+    """
+    app_name = "WizWalker"
+    app_author = "StarrFox"
+    log_dir = Path(appdirs.user_log_dir(app_name, app_author))
+
+    if not log_dir.exists():
+        log_dir.mkdir(parents=True)
+
+    return log_dir
+
+
 def get_all_wizard_handles() -> list:
     """
     Get handles to all currently open wizard clients
