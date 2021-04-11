@@ -673,7 +673,7 @@ in combat/dialog</p>
 <em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">wizwalker.</span></code><code class="sig-name descname"><span class="pre">Wad</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Wad" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="py method">
 <dt id="wizwalker.Wad.from_directory">
-<em class="property"><span class="pre">async</span> <span class="pre">classmethod</span> </em><code class="sig-name descname"><span class="pre">from_directory</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Wad.from_directory" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">async</span> <span class="pre">classmethod</span> </em><code class="sig-name descname"><span class="pre">from_directory</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Wad.from_directory" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a Wad object from a directory</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -683,20 +683,41 @@ in combat/dialog</p>
 </dd></dl>
 
 <dl class="py method">
+<dt id="wizwalker.Wad.from_game_data">
+<em class="property"><span class="pre">classmethod</span> </em><code class="sig-name descname"><span class="pre">from_game_data</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Wad.from_game_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a Wad file from game installation dir</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> – name of the wad</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="wizwalker.Wad.get_file">
 <em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">get_file</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">bytes</span><a class="headerlink" href="#wizwalker.Wad.get_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the data contents of the named file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> – name of the file to get</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt id="wizwalker.Wad.get_file_info">
 <em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">get_file_info</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">wizwalker.wad.wad_file_info</span><a class="headerlink" href="#wizwalker.Wad.get_file_info" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets a WadFileInfo for a named file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> – name of the file to get info on</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt id="wizwalker.Wad.names">
-<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">names</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Wad.names" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">names</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.Wad.names" title="Permalink to this definition">¶</a></dt>
 <dd><p>List of all file names in this wad</p>
 </dd></dl>
 
@@ -704,6 +725,17 @@ in combat/dialog</p>
 <dt id="wizwalker.Wad.size">
 <em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">size</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">int</span><a class="headerlink" href="#wizwalker.Wad.size" title="Permalink to this definition">¶</a></dt>
 <dd><p>Total size of this wad</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.Wad.unarchive">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">unarchive</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Wad.unarchive" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unarchive a wad file into a directory</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> – path to the directory to unpack the wad</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -829,6 +861,12 @@ in combat/dialog</p>
 <dt id="wizwalker.utils.get_cache_folder">
 <code class="sig-prename descclassname"><span class="pre">wizwalker.utils.</span></code><code class="sig-name descname"><span class="pre">get_cache_folder</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">pathlib.Path</span><a class="headerlink" href="#wizwalker.utils.get_cache_folder" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the wizwalker cache folder</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="wizwalker.utils.get_logs_folder">
+<code class="sig-prename descclassname"><span class="pre">wizwalker.utils.</span></code><code class="sig-name descname"><span class="pre">get_logs_folder</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">pathlib.Path</span><a class="headerlink" href="#wizwalker.utils.get_logs_folder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the wizwalker log folder</p>
 </dd></dl>
 
 <dl class="py function">
