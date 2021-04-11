@@ -437,11 +437,3 @@ class MemoryHandler:
 
         self.process.write_int(self.mouse_pos_x, 0)
         self.process.write_int(self.mouse_pos_y, 0)
-
-    # @register_hook("ignore_mouse_leave")
-    # @utils.executor_function
-    # def hook_ignore_mouse_leave(self):
-    #     mouse_leave_hook = IgnoreMouseLeaveHook(self)
-    #     mouse_leave_hook.hook()
-    #
-    #     self.hooks.append(mouse_leave_hook)

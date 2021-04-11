@@ -185,6 +185,14 @@ class WizWalkerConsole(Monitor):
             if regex.match(name):
                 self.write(f"{tid=} {name=}")
 
+    def do_click(self, x: int, y: int):
+        """Click a certain x, y"""
+        walker = self.get_local("walker")
+        for client in walker.clients:
+            self.run_coro(client.click(x, y))
+
+        self.write("Completed click")
+
 
 def test_monitor():
     cli.monitor_client(cli.MONITOR_HOST, cli.MONITOR_PORT)

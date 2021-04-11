@@ -1,3 +1,4 @@
+import asyncio
 import ctypes.wintypes
 from functools import cached_property
 from typing import Optional
@@ -48,6 +49,35 @@ class Client:
 
     async def send_key(self, key: Keycode, seconds: float):
         await utils.timed_send_key(self.window_handle, key, seconds)
+
+    # TODO: and right click support
+    async def click(self, x: int, y: int):
+        """
+        Send a click to a certain x and y
+        x and y positions are relitive to the top left corner of the screen
+
+        Args:
+            x: x to click at
+            y: y to click at
+        """
+        point = ctypes.wintypes.tagPOINT(x, y)
+
+        # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-clienttoscreen
+        if user32.ClientToScreen(self.window_handle, ctypes.byref(point)) == 0:
+            raise RuntimeError("Client to screen conversion failed")
+
+        # same point structure is overwritten by ClientToScreen
+        x = point.x
+        y = point.y
+
+        await self._memory.write_mouse_position(x, y)
+        # position doesn't matter here; sending mouse move
+        user32.SendMessageW(self.window_handle, 0x200, 0, 0)
+        await asyncio.sleep(0.1)
+        # mouse left button down
+        user32.SendMessageW(self.window_handle, 0x201, 1, 0)
+        await asyncio.sleep(0.1)
+        user32.SendMessageW(self.window_handle, 0x202, 0, 0)
 
     def login(self, username: str, password: str):
         """

@@ -570,18 +570,18 @@ class MouselessCursorMoveHook(MemoryHook):
         packed_ypos_addr = struct.pack("<i", self.y_addr)
 
         bytecode = (
-            b"\x50" # push eax
-            b"\x8b\x44\x24\x08" # mov eax, dword ptr [esp+0x8]
-
-            b"\x51" # push ecx
-            b"\x8b\x0d" + packed_xpos_addr + # mov ecx, dword ptr x_addr
-            b"\x89\x08" # mov dword ptr [eax], ecx
-            b"\x8b\x0d" + packed_ypos_addr + # mov ecx, dword ptr y_addr
-            b"\x89\x48\x04" # mov dword ptr [eax+0x4], ecx
-            b"\x59" # pop ecx
-
-            b"\x58" # pop eax
-            b"\xc2\x04\x00" # ret 0x4
+            b"\x50"  # push eax
+            b"\x8b\x44\x24\x08"  # mov eax, dword ptr [esp+0x8]
+            b"\x51"  # push ecx
+            b"\x8b\x0d"
+            + packed_xpos_addr
+            + b"\x89\x08"  # mov ecx, dword ptr x_addr  # mov dword ptr [eax], ecx
+            b"\x8b\x0d"
+            + packed_ypos_addr
+            + b"\x89\x48\x04"  # mov ecx, dword ptr y_addr  # mov dword ptr [eax+0x4], ecx
+            b"\x59"  # pop ecx
+            b"\x58"  # pop eax
+            b"\xc2\x04\x00"  # ret 0x4
         )
 
         return bytecode
@@ -591,7 +591,7 @@ class MouselessCursorMoveHook(MemoryHook):
             self.memory_handler.process.process_handle, "user32.dll"
         )
         return (
-            re.compile(rb"\x8B\xFF\x55\x8B\xEC\x6A\x7F"),
+            re.compile(rb"((\x8B\xFF\x55\x8B\xEC)|(\xE9....))\x6A\x7F\x6A\x01"),
             module,
         )
 
@@ -618,6 +618,7 @@ class MouselessCursorMoveHook(MemoryHook):
             self.jump_address, self.jump_bytecode, len(self.jump_bytecode),
         )
 
+        # TODO: replace static address
         self.memory_handler.process.write_char(0x012E973C + 6, chr(1))
 
     def unhook(self):
