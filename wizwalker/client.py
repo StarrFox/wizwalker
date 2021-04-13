@@ -56,7 +56,7 @@ class Client:
     ):
         """
         Send a click to a certain x and y
-        x and y positions are relitive to the top left corner of the screen
+        x and y positions are relative to the top left corner of the screen
 
         Args:
             x: x to click at
@@ -75,12 +75,10 @@ class Client:
 
         async with self.click_lock:
             await self.set_mouse_position(x, y)
-            # position doesn't matter here; sending mouse move
-            user32.SendMessageW(self.window_handle, 0x200, 0, 0)
-            await asyncio.sleep(sleep_duration)
-            # mouse left button down
+            # mouse button down
             user32.SendMessageW(self.window_handle, button_down_message, 1, 0)
             await asyncio.sleep(sleep_duration)
+            # mouse button up
             user32.SendMessageW(self.window_handle, button_down_message + 1, 0, 0)
 
     def login(self, username: str, password: str):
@@ -157,7 +155,7 @@ class Client:
         target_xyz = utils.XYZ(x, y, current_xyz.z)
         distance = current_xyz - target_xyz
         move_seconds = distance / (WIZARD_SPEED * speed_multiplier)
-        yaw = utils.calculate_perfect_yaw(current_xyz, target_xyz)
+        yaw = current_xyz.yaw(target_xyz)
 
         await self.set_yaw(yaw)
         await utils.timed_send_key(self.window_handle, Keycode.W, move_seconds)
@@ -166,7 +164,7 @@ class Client:
         self, x: int, y: int, *, convert_from_client: bool = True
     ):
         """
-        Set's the mouse position to a certain x y relitive to the
+        Set's the mouse position to a certain x y relative to the
         top left corner of the client
 
         Args:
@@ -186,9 +184,12 @@ class Client:
             x = point.x
             y = point.y
 
-        await self._memory.write_mouse_position(x, y)
+        res = await self._memory.write_mouse_position(x, y)
+        # position doesn't matter here; sending mouse move
+        # mouse move is here so that items are highlighted
+        user32.SendMessageW(self.window_handle, 0x200, 0, 0)
+        return res
 
-    # TODO: replace with set_xyz
     async def teleport(
         self, x: float = None, y: float = None, z: float = None, yaw: float = None
     ) -> bool:
@@ -207,10 +208,10 @@ class Client:
         Returns:
             True if telelporting succseeded, False otherwise
         """
-        res = await self._memory.set_xyz(x=x, y=y, z=z)
+        res = await self.set_xyz(x=x, y=y, z=z)
 
         if yaw is not None:
-            await self._memory.set_player_yaw(yaw)
+            res = res and await self.set_yaw(yaw)
 
         return res
 
@@ -225,6 +226,18 @@ class Client:
             XYZ namedtuple or None if hooked function hasn't run yet
         """
         return await self._memory.read_xyz()
+
+    async def set_xyz(self, x: float, y: float, z: float):
+        """
+        Set the player xyz
+
+        Raises:
+            RuntimeError: player_struct hook not active
+
+        Returns:
+            XYZ namedtuple or None if hooked function hasn't run yet
+        """
+        return await self._memory.set_xyz(x=x, y=y, z=z)
 
     async def yaw(self) -> Optional[float]:
         """

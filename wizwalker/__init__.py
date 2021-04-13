@@ -2,7 +2,7 @@ import logging
 
 from loguru import logger
 
-# TODO: remove windows folder and expose memory
+# TODO: 1.0 remove windows folder and expose memory
 from .constants import *
 from .wad import Wad
 from .nif import NifMap

@@ -185,6 +185,19 @@ class WizWalkerConsole(Monitor):
             if regex.match(name):
                 self.write(f"{tid=} {name=}")
 
+    def do_checkid(self, tid: str):
+        """Get the name mapped to a templateid
+
+        cache command must be run first
+        """
+        walker = self.get_local("walker")
+        template_ids: dict = self.run_coro(walker.get_template_ids())
+
+        try:
+            self.write(f"{tid} => {template_ids[tid]}")
+        except KeyError:
+            self.write(f"No item with id {tid}")
+
     def do_click(self, x: int, y: int):
         """Click a certain x, y"""
         walker = self.get_local("walker")

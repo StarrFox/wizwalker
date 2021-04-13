@@ -107,6 +107,18 @@ class MemoryHook:
         self.jump_bytecode = None
         self.hook_bytecode = None
 
+    def prehook(self):
+        """
+        Called after bytecode is prepared and before written
+        """
+        pass
+
+    def posthook(self):
+        """
+        Called after bytecode is written
+        """
+        pass
+
     def get_jump_address(self, pattern: re.Pattern, *, module=None) -> int:
         """
         gets the address to write jump at
@@ -158,12 +170,16 @@ class MemoryHook:
             self.jump_address, len(self.jump_bytecode)
         )
 
+        self.prehook()
+
         self.memory_handler.process.write_bytes(
             self.hook_address, self.hook_bytecode, len(self.hook_bytecode),
         )
         self.memory_handler.process.write_bytes(
             self.jump_address, self.jump_bytecode, len(self.jump_bytecode),
         )
+
+        self.posthook()
 
     def unhook(self):
         """
@@ -549,6 +565,24 @@ class MouselessCursorMoveHook(MemoryHook):
         self.x_addr = None
         self.y_addr = None
 
+        self.toggle_bool_addr = None
+
+    def posthook(self):
+        module = pymem.process.module_from_name(
+            self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
+        )
+        pattern = re.compile(rb"[\x00\x01]\xE8\x88\xFB\x1F\xFF\x8D\x44\x24\x18")
+
+        address = pattern_scan_module(
+            self.memory_handler.process.process_handle, module, pattern
+        )
+
+        if address is None:
+            raise RuntimeError("toogle bool addr pattern failed")
+
+        self.toggle_bool_addr = address
+        self.memory_handler.process.write_char(address, chr(1))
+
     def set_mouse_pos_addrs(self):
         self.x_addr = self.memory_handler.process.allocate(4)
         self.y_addr = self.memory_handler.process.allocate(4)
@@ -595,33 +629,7 @@ class MouselessCursorMoveHook(MemoryHook):
             module,
         )
 
-    def hook(self) -> Any:
-        """
-        Writes jump_bytecode to jump address and hook bytecode to hook address
-        """
-        pattern, module = self.get_pattern()
-
-        self.jump_address = self.get_jump_address(pattern, module=module)
-        self.hook_address = self.get_hook_address(200)
-
-        self.jump_bytecode = self.get_jump_bytecode()
-        self.hook_bytecode = self.get_hook_bytecode()
-
-        self.jump_original_bytecode = self.memory_handler.process.read_bytes(
-            self.jump_address, len(self.jump_bytecode)
-        )
-
-        self.memory_handler.process.write_bytes(
-            self.hook_address, self.hook_bytecode, len(self.hook_bytecode),
-        )
-        self.memory_handler.process.write_bytes(
-            self.jump_address, self.jump_bytecode, len(self.jump_bytecode),
-        )
-
-        # TODO: replace static address
-        self.memory_handler.process.write_char(0x012E973C + 6, chr(1))
-
     def unhook(self):
         super().unhook()
         self.free_mouse_pos_addrs()
-        self.memory_handler.process.write_char(0x012E973C + 6, chr(0))
+        self.memory_handler.process.write_char(self.toggle_bool_addr, chr(0))

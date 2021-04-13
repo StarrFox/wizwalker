@@ -7,7 +7,6 @@ import struct
 import subprocess
 import winreg
 import zlib
-from collections import namedtuple
 from concurrent.futures.thread import ThreadPoolExecutor
 from ctypes import WinDLL
 from pathlib import Path
@@ -19,17 +18,48 @@ import appdirs
 from wizwalker.constants import Keycode
 
 user32 = WinDLL("user32")
-XYZ = namedtuple("XYZ", "x, y, z")
 
 
-def _xyz_sub(self, other):
-    if not isinstance(other, XYZ):
-        raise ValueError(f"XYZ can only be subtracted from XYZ not {type(other)}")
+class XYZ:
+    def __init__(self, x: float, y: float, z: float):
+        self.x = x
+        self.y = y
+        self.z = z
 
-    return math.dist((self.x, self.y), (other.x, other.y))
+    def __sub__(self, other):
+        return self.distance(other)
 
+    def distance(self, other):
+        """
+        Calculate the distance between two points
 
-XYZ.__sub__ = _xyz_sub
+        this does not account for z axis
+        """
+        if not isinstance(other, type(self)):
+            raise ValueError(
+                f"Can only calculate distance between instances of {type(self)} not {type(other)}"
+            )
+
+        return math.dist((self.x, self.y), (other.x, other.y))
+
+    def yaw(self, other):
+        """Calculate perfect yaw to reach another xyz"""
+        if not isinstance(other, type(self)):
+            raise ValueError(
+                f"Can only calculate distance between instances of {type(self)} not {type(other)}"
+            )
+
+        return calculate_perfect_yaw(self, other)
+
+    def relative_yaw(self, *, x: float = None, y: float = None):
+        """Calculate relative yaw to reach another x and/or y relative to current"""
+        if x is None:
+            x = self.x
+        if y is None:
+            y = self.y
+
+        other = type(self)(x, y, self.z)
+        return self.yaw(other)
 
 
 # Modified from https://github.com/Gorialis/jishaku/blob/master/jishaku/functools.py#L19
@@ -385,7 +415,7 @@ async def timed_send_key(window_handle: int, key: Keycode, seconds: float):
     user32.PostMessageW(window_handle, 0x101, key.value, 0)
 
 
-@executor_function
-def _send_keydown_forever(window_handle: int, key: Keycode):
+async def _send_keydown_forever(window_handle: int, key: Keycode):
     while True:
         user32.PostMessageW(window_handle, 0x100, key.value, 0)
+        await asyncio.sleep(0.05)
