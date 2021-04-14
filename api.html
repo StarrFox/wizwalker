@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.16.3
+                0.16.4
               </div>
             
           
@@ -346,7 +346,7 @@
 
 <dl class="py method">
 <dt id="wizwalker.Client.click">
-<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">click</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">right_click</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sleep_duration</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.click" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">click</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">right_click</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sleep_duration</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_post</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.click" title="Permalink to this definition">¶</a></dt>
 <dd><p>Send a click to a certain x and y
 x and y positions are relative to the top left corner of the screen</p>
 <dl class="field-list simple">
@@ -355,7 +355,8 @@ x and y positions are relative to the top left corner of the screen</p>
 <li><p><strong>x</strong> – x to click at</p></li>
 <li><p><strong>y</strong> – y to click at</p></li>
 <li><p><strong>right_click</strong> – If the click should be a right click</p></li>
-<li><p><strong>sleep_duration</strong> – how long to sleep between messages</p></li>
+<li><p><strong>sleep_duration</strong> – How long to sleep between messages</p></li>
+<li><p><strong>use_post</strong> – If PostMessage should be used instead of SendMessage</p></li>
 </ul>
 </dd>
 </dl>
@@ -576,7 +577,7 @@ in combat/dialog</p>
 
 <dl class="py method">
 <dt id="wizwalker.Client.set_mouse_position">
-<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">set_mouse_position</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">convert_from_client</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.set_mouse_position" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">set_mouse_position</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">convert_from_client</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_post</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.set_mouse_position" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set’s the mouse position to a certain x y relative to the
 top left corner of the client</p>
 <dl class="field-list simple">
@@ -585,6 +586,7 @@ top left corner of the client</p>
 <li><p><strong>x</strong> – x to set</p></li>
 <li><p><strong>y</strong> – y to set</p></li>
 <li><p><strong>convert_from_client</strong> – If the position should be converted from client to screen</p></li>
+<li><p><strong>use_post</strong> – If PostMessage should be used instead of SendMessage</p></li>
 </ul>
 </dd>
 </dl>
