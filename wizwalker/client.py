@@ -52,7 +52,13 @@ class Client:
         await utils.timed_send_key(self.window_handle, key, seconds)
 
     async def click(
-        self, x: int, y: int, *, right_click: bool = False, sleep_duration: float = 0.0
+        self,
+        x: int,
+        y: int,
+        *,
+        right_click: bool = False,
+        sleep_duration: float = 0.0,
+        use_post: bool = False,
     ):
         """
         Send a click to a certain x and y
@@ -62,7 +68,8 @@ class Client:
             x: x to click at
             y: y to click at
             right_click: If the click should be a right click
-            sleep_duration: how long to sleep between messages
+            sleep_duration: How long to sleep between messages
+            use_post: If PostMessage should be used instead of SendMessage
         """
         # prevent multiple clicks from happening at the same time
         if right_click:
@@ -70,17 +77,22 @@ class Client:
         else:
             button_down_message = 0x201
 
+        if use_post:
+            send_method = user32.PostMessageW
+        else:
+            send_method = user32.SendMessageW
+
         if self.click_lock is None:
             self.click_lock = asyncio.Lock()
 
         async with self.click_lock:
             await self.set_mouse_position(x, y)
             # mouse button down
-            user32.SendMessageW(self.window_handle, button_down_message, 1, 0)
+            send_method(self.window_handle, button_down_message, 1, 0)
             if sleep_duration > 0:
                 await asyncio.sleep(sleep_duration)
             # mouse button up
-            user32.SendMessageW(self.window_handle, button_down_message + 1, 0, 0)
+            send_method(self.window_handle, button_down_message + 1, 0, 0)
 
     def login(self, username: str, password: str):
         """
@@ -162,7 +174,12 @@ class Client:
         await utils.timed_send_key(self.window_handle, Keycode.W, move_seconds)
 
     async def set_mouse_position(
-        self, x: int, y: int, *, convert_from_client: bool = True
+        self,
+        x: int,
+        y: int,
+        *,
+        convert_from_client: bool = True,
+        use_post: bool = False,
     ):
         """
         Set's the mouse position to a certain x y relative to the
@@ -172,7 +189,13 @@ class Client:
             x: x to set
             y: y to set
             convert_from_client: If the position should be converted from client to screen
+            use_post: If PostMessage should be used instead of SendMessage
         """
+        if use_post:
+            send_method = user32.PostMessageW
+        else:
+            send_method = user32.SendMessageW
+
         if convert_from_client:
             point = ctypes.wintypes.tagPOINT(x, y)
 
@@ -188,7 +211,7 @@ class Client:
         res = await self._memory.write_mouse_position(x, y)
         # position doesn't matter here; sending mouse move
         # mouse move is here so that items are highlighted
-        user32.SendMessageW(self.window_handle, 0x200, 0, 0)
+        send_method(self.window_handle, 0x200, 0, 0)
         return res
 
     async def teleport(
