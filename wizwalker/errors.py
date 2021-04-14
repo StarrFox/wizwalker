@@ -9,6 +9,17 @@ class WizWalkerError(Exception):
     pass
 
 
+class HookPatternFailed(WizWalkerError):
+    """
+    Raised when the pattern scan for a hook fails
+    """
+
+    def __init__(self):
+        super().__init__(
+            "A hook search pattern failed. You most likely need to restart the client"
+        )
+
+
 class HookNotActive(WizWalkerError):
     """
     Raised when doing something that requires a hook to be active

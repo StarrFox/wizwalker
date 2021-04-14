@@ -52,7 +52,7 @@ class Client:
         await utils.timed_send_key(self.window_handle, key, seconds)
 
     async def click(
-        self, x: int, y: int, *, right_click: bool = False, sleep_duration: float = 0.1
+        self, x: int, y: int, *, right_click: bool = False, sleep_duration: float = 0.0
     ):
         """
         Send a click to a certain x and y
@@ -77,7 +77,8 @@ class Client:
             await self.set_mouse_position(x, y)
             # mouse button down
             user32.SendMessageW(self.window_handle, button_down_message, 1, 0)
-            await asyncio.sleep(sleep_duration)
+            if sleep_duration > 0:
+                await asyncio.sleep(sleep_duration)
             # mouse button up
             user32.SendMessageW(self.window_handle, button_down_message + 1, 0, 0)
 

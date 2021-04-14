@@ -8,6 +8,8 @@ import pymem
 import pymem.pattern
 from pymem.ressources.structure import MODULEINFO
 
+from wizwalker import HookPatternFailed
+
 
 class MEMORY_BASIC_INFORMATION(ctypes.Structure):
     _fields_ = [
@@ -132,6 +134,9 @@ class MemoryHook:
         else:
             # Todo: find faster way than scanning entire memory
             raise NotImplemented()
+
+        if jump_address is None:
+            raise HookPatternFailed()
 
         return jump_address
 
