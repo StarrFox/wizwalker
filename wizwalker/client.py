@@ -86,6 +86,7 @@ class Client:
             self.click_lock = asyncio.Lock()
 
         async with self.click_lock:
+            # TODO: test passing use_post
             await self.set_mouse_position(x, y)
             # mouse button down
             send_method(self.window_handle, button_down_message, 1, 0)

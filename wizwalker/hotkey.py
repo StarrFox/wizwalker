@@ -21,9 +21,8 @@ class ModifierKeys(IntFlag):
     SHIFT = 0x4
 
 
+# TODO: add properties to set attrs after init?
 class Hotkey:
-    # TODO: add properties to set attrs after init
-    # ^this is why this is a class
     """
     A hotkey to be listened to
 
@@ -68,17 +67,17 @@ class Listener:
     def __init__(
         self, hotkeys: List[Hotkey], *, loop: asyncio.AbstractEventLoop = None
     ):
+        self.ready = False
+
         if loop is None:
             loop = asyncio.get_event_loop()
 
-        self.loop = loop
-
-        self.ready = False
+        self._loop = loop
         self._hotkeys = hotkeys
         self._callbacks = {}
-        self.queue = None
-        self.message_task = None
-        self.id_counter = 1
+        self._queue = None
+        self._message_task = None
+        self._id_counter = 1
 
     def listen_forever(self) -> asyncio.Task:
         """
@@ -94,11 +93,11 @@ class Listener:
         """
         Listen for one event
         """
-        self.queue = janus.Queue()
-        if self.message_task is None:
-            self.message_task = self.loop.run_in_executor(None, self._add_and_listen)
+        self._queue = janus.Queue()
+        if self._message_task is None:
+            self._message_task = self._loop.run_in_executor(None, self._add_and_listen)
 
-        message = await self.queue.async_q.get()
+        message = await self._queue.async_q.get()
         keycode, modifiers = message.split("|")
         keycode = int(keycode)
         if modifiers == "0":
@@ -107,7 +106,7 @@ class Listener:
             modifiers = ModifierKeys(modifiers)
 
         # TODO: add to self._tasks and cancel in self.close
-        self.loop.create_task(self._callbacks[keycode + modifiers]())
+        self._loop.create_task(self._callbacks[keycode + modifiers]())
 
     def _add_and_listen(self):
         if not self.ready:
@@ -123,7 +122,7 @@ class Listener:
             modifiers = message.lParam & 0b1111111111111111
             keycode = message.lParam >> 16
 
-            self.queue.sync_q.put(f"{keycode}|{modifiers}")
+            self._queue.sync_q.put(f"{keycode}|{modifiers}")
 
             user32.DispatchMessageW(ctypes.byref(message))
 
@@ -139,7 +138,7 @@ class Listener:
                 )
 
     def _register_hotkey(self, keycode: int, modifiers: ModifierKeys = 0) -> bool:
-        res = user32.RegisterHotKey(None, self.id_counter, modifiers, keycode)
-        self.id_counter += 1
+        res = user32.RegisterHotKey(None, self._id_counter, modifiers, keycode)
+        self._id_counter += 1
 
         return res != 0

@@ -74,6 +74,7 @@ class Wad:
 
     async def open(self):
         # noinspection PyTypeChecker
+        # TODO: why is this stored but not used in half the methods
         self._file_pointer = open(self.file_path, "rb")
         await self._refresh_journal()
         self._open = True

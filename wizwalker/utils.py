@@ -140,14 +140,14 @@ def instance_login(window_handle: int, username: str, password: str):
 
     def send_chars(chars: str):
         for char in chars:
-            user32.PostMessageW(window_handle, 0x102, ord(char), 0)
+            user32.SendMessageW(window_handle, 0x102, ord(char), 0)
 
     send_chars(username)
     # tab
-    user32.PostMessageW(window_handle, 0x102, 9, 0)
+    user32.SendMessageW(window_handle, 0x102, 9, 0)
     send_chars(password)
     # enter
-    user32.PostMessageW(window_handle, 0x102, 13, 0)
+    user32.SendMessageW(window_handle, 0x102, 13, 0)
 
 
 async def start_instances_with_login(instance_number: int, logins: Iterable):
@@ -412,10 +412,10 @@ async def timed_send_key(window_handle: int, key: Keycode, seconds: float):
     keydown_task = asyncio.create_task(_send_keydown_forever(window_handle, key))
     await asyncio.sleep(seconds)
     keydown_task.cancel()
-    user32.PostMessageW(window_handle, 0x101, key.value, 0)
+    user32.SendMessageW(window_handle, 0x101, key.value, 0)
 
 
 async def _send_keydown_forever(window_handle: int, key: Keycode):
     while True:
-        user32.PostMessageW(window_handle, 0x100, key.value, 0)
+        user32.SendMessageW(window_handle, 0x100, key.value, 0)
         await asyncio.sleep(0.05)
