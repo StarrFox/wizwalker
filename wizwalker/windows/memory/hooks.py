@@ -80,6 +80,7 @@ class MemoryHook:
         """
         pass
 
+    # TODO: make module just take a string
     def pattern_scan(self, pattern: bytes, *, module=None):
         if module:
             jump_address = pymem.pattern.pattern_scan_module(
@@ -235,8 +236,9 @@ def simple_hook(
     pattern: bytes,
     module: str = "WizardGraphicalClient.exe",
     bytecode_generator: Callable,
-    instruction_length: int = None,
+    instruction_length: int = 5,
     exports: List[Tuple],
+    noops: int = 0,
 ) -> Type[MemoryHook]:
     """
     Create a simple hook from base args
@@ -247,6 +249,7 @@ def simple_hook(
         bytecode_generator: A function that returns the bytecode to write
         instruction_length: length of instructions at jump address
         exports: list of tuples in the form (name, size)
+        noops: number of noops to put at jump
     """
 
     class _memory_hook(AutoBotBaseHook):
@@ -268,23 +271,21 @@ def simple_hook(
                 relitive_jump = distance - 5
 
             packed_relitive_jump = struct.pack("<i", relitive_jump)
-            return b"\xE9" + packed_relitive_jump  # + b"\x90"
+            return b"\xE9" + packed_relitive_jump + (b"\x90" * noops)
 
         def get_hook_bytecode(self) -> bytes:
             packed_exports = []
             for export in exports:
                 # addr = self.alloc(export[1])
                 addr = self.memory_handler.process.allocate(export[1])
+                print(f"{addr=}")
                 setattr(self, export[0], addr)
                 packed_addr = pack_to_int_or_longlong(addr)
                 packed_exports.append((export[0], packed_addr))
 
             bytecode = bytecode_generator(self, packed_exports)
 
-            if not instruction_length:
-                return_addr = self.jump_address + len(self.jump_bytecode)
-            else:
-                return_addr = self.jump_address + instruction_length
+            return_addr = self.jump_address + instruction_length
 
             relitive_return_jump = return_addr - (self.hook_address + len(bytecode)) - 5
             packed_relitive_return_jump = struct.pack("<i", relitive_return_jump)
@@ -322,127 +323,51 @@ def player_hook_bytecode_gen(_, packed_exports):
 PlayerHook = simple_hook(
     pattern=rb"\xF2\x0F\x10\x40\x58\xF2\x0F\x11\x02",
     bytecode_generator=player_hook_bytecode_gen,
-    instruction_length=6,
-    exports=[("player_struct", 4)],
+    exports=[("player_struct", 8)],
 )
 
-# TODO: make this one work
-#  issue is je_relitive_jump = (self.jump_address + 0x6E) - (
-#             self.hook_address + len(bytecode) + 6
-#         )
-# def player_stat_hook_bytecode_gen(hook, packed_exports):
-#     tmp = hook.memory_handler.process.allocate(4)
-#     packed_tmp = struct.pack("<i", tmp)
-#
-#     bytecode = (
-#         # mov [tmp],edi
-#         b"\x89\x3D" + packed_tmp + b"\x8B\xF8"  # mov edi,eax
-#         b"\x89\x3D"
-#         + packed_exports[0][1]  # mov [stat_addr],edi
-#         + b"\x8B\x3D"
-#         + packed_tmp
-#         +  # mov edi,[tmp]
-#         # original code
-#         b"\x89\x48\x40"  # mov [eax+40],ecx
-#     )
-#
-#     return bytecode
-#
-#
-# PlayerStatHook = simple_hook(
-#     pattern=rb"\x89\x48.\x74.\xA1",
-#     bytecode_generator=player_hook_bytecode_gen,
-#     exports=[("stat_addr", 4)],
-# )
+
+def player_stat_hook_bytecode_gen(_, packed_exports):
+    # fmt: off
+    bytecode = (
+        b"\x50"  # push rax
+        b"\x48\x89\xC8"  # mov rax, rcx
+        b"\x48\xA3" + packed_exports[0][1] +  # mov qword ptr [stat_export], rax
+        b"\x58"  # pop rax
+        # original code
+        b"\x03\x59\x54"  # add ebx, dword ptr [rcx+0x54]
+        b"\x0F\x29\x74\x24\x20"  # movaps [rsp+20],xmm6
+    )
+    # fmt: on
+    return bytecode
 
 
-# TODO: switch to just lea stat_addr, eax
-class PlayerStatHook(MemoryHook):
-    def __init__(self, memory_handler):
-        super().__init__(memory_handler)
-        self.stat_addr = None
-
-    def get_pattern(self) -> Tuple[re.Pattern, Optional[MODULEINFO]]:
-        module = pymem.process.module_from_name(
-            self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
-        )
-        return re.compile(rb"\x89\x48.\x74.\xA1"), module
-
-    def set_stat_addr(self):
-        self.stat_addr = self.memory_handler.process.allocate(4)
-
-    def free_stat_addr(self):
-        if self.stat_addr:
-            self.memory_handler.process.free(self.stat_addr)
-
-    def get_jump_bytecode(self) -> bytes:
-        # distance = end - start
-        distance = self.hook_address - self.jump_address
-        relitive_jump = distance - 5  # size of this line
-        packed_relitive_jump = struct.pack("<i", relitive_jump)
-        return b"\xE9" + packed_relitive_jump
-
-    def get_hook_bytecode(self) -> bytes:
-        self.set_stat_addr()
-        packed_addr = struct.pack("<i", self.stat_addr)
-
-        # registers gay
-        tmp = self.memory_handler.process.allocate(4)
-        packed_tmp = struct.pack("<i", tmp)
-
-        bytecode = (
-            # mov [tmp],edi
-            b"\x89\x3D" + packed_tmp + b"\x8B\xF8"  # mov edi,eax
-            b"\x89\x3D"
-            + packed_addr  # mov [stat_addr],edi
-            + b"\x8B\x3D"
-            + packed_tmp
-            +  # mov edi,[tmp]
-            # original code
-            b"\x89\x48\x40"  # mov [eax+40],ecx
-        )
-
-        # WizardGraphicalClient.exe+10060C3 + LEN(BYTECODE_LINES) - 6 (Length of this line)
-        # 4 (length of target line) 1 (no idea)
-        je_relitive_jump = (self.jump_address + 0x6E) - (
-            self.hook_address + len(bytecode) + 6
-        )
-        packed_je_relitive_jump = struct.pack("<i", je_relitive_jump)
-
-        bytecode += (
-            b"\x0F\x84" + packed_je_relitive_jump
-        )  # je WizardGraphicalClient.exe+10060C3
-
-        jmp_relitive_jump = (self.jump_address + 0x5) - (
-            self.hook_address + len(bytecode) + 5
-        )
-        packed_jmp_relitive_jump = struct.pack("<i", jmp_relitive_jump)
-
-        bytecode += (
-            b"\xE9" + packed_jmp_relitive_jump
-        )  # jmp WizardGraphicalClient.exe+100605A"
-
-        return bytecode
-
-    def unhook(self):
-        super().unhook()
-        self.free_stat_addr()
+PlayerStatHook = simple_hook(
+    pattern=rb"\x03\x59\x54",
+    bytecode_generator=player_stat_hook_bytecode_gen,
+    instruction_length=8,
+    exports=[("player_stat_struct", 8)],
+)
 
 
 def quest_hook_bytecode_gen(_, packed_exports):
+    # fmt: off
     bytecode = (
-        # original code
-        b"\xD9\x86\x1C\x08\x00\00"  # original instruction one
-        b"\x8D\xBE\x1C\x08\x00\00"  # original instruction two
-        b"\x89\x35" + packed_exports[0][1]
+        b"\x50"  # push rcx
+        b"\x49\x8D\x86\xAC\x0C\x00\x00"  # lea rcx,[r14+CAC]
+        b"\x48\xA3" + packed_exports[0][1] +  # mov [export],rcx
+        b"\x58"  # pop rcx
+        b"\xF3\x41\x0F\x10\x86\xAC\x0C\x00\x00"  # original code
     )
+    # fmt: on
     return bytecode
 
 
 QuestHook = simple_hook(
-    pattern=rb"\xD9\x86....\x8D\xBE....\xD9\x9C",
+    pattern=rb"\xF3\x41\x0F\x10\x86\xAC\x0C\x00\x00",
     bytecode_generator=quest_hook_bytecode_gen,
-    exports=[("cord_struct", 4)],
+    exports=[("stat_addr", 4)],
+    noops=4,
 )
 
 

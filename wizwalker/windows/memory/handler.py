@@ -131,7 +131,7 @@ class MemoryHandler:
     @uses_hook("quest_struct")
     @utils.executor_function
     def read_quest_base(self):
-        return self.process.read_int(self.quest_struct_addr)
+        return self.process.read_longlong(self.quest_struct_addr)
 
     @uses_hook("player_struct")
     @utils.executor_function
@@ -245,11 +245,11 @@ class MemoryHandler:
     @uses_hook("quest_struct")
     @utils.executor_function
     def read_quest_xyz(self):
-        quest_struct = self.process.read_int(self.quest_struct_addr)
+        quest_struct = self.process.read_longlong(self.quest_struct_addr)
         try:
-            x = self.process.read_float(quest_struct + 0x81C)
-            y = self.process.read_float(quest_struct + 0x81C + 0x4)
-            z = self.process.read_float(quest_struct + 0x81C + 0x8)
+            x = self.process.read_float(quest_struct)
+            y = self.process.read_float(quest_struct + 0x4)
+            z = self.process.read_float(quest_struct + 0x8)
 
             return utils.XYZ(x, y, z)
 
