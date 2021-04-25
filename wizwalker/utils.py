@@ -29,6 +29,9 @@ class XYZ:
     def __sub__(self, other):
         return self.distance(other)
 
+    def __str__(self):
+        return f"({self.x}, {self.y}, {self.z})"
+
     def distance(self, other):
         """
         Calculate the distance between two points

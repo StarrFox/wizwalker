@@ -206,6 +206,17 @@ class WizWalkerConsole(Monitor):
 
         self.write("Completed click")
 
+    def do_onehook(self, name: str):
+        """Get clients and activate one hook"""
+        walker = self.get_local("walker")
+        walker.get_clients()
+        self.write(f"Attached to {len(walker.clients)} clients")
+
+        for client in walker.clients:
+            self.run_coro(client.activate_hooks(name))
+
+        self.write(f"Hooked {name} on all clients")
+
 
 def test_monitor():
     cli.monitor_client(cli.MONITOR_HOST, cli.MONITOR_PORT)

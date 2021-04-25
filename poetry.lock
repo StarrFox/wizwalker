@@ -233,7 +233,7 @@ dis3 = "*"
 
 [[package]]
 name = "pymem"
-version = "1.3"
+version = "1.8"
 description = "pymem: python memory access made easy"
 category = "main"
 optional = false
@@ -295,7 +295,7 @@ python-versions = "*"
 
 [[package]]
 name = "sphinx"
-version = "3.5.3"
+version = "3.5.4"
 description = "Python documentation generator"
 category = "dev"
 optional = false
@@ -305,7 +305,7 @@ python-versions = ">=3.5"
 alabaster = ">=0.7,<0.8"
 babel = ">=1.3"
 colorama = {version = ">=0.3.5", markers = "sys_platform == \"win32\""}
-docutils = ">=0.12"
+docutils = ">=0.12,<0.17"
 imagesize = "*"
 Jinja2 = ">=2.3"
 packaging = "*"
@@ -445,7 +445,7 @@ dev = ["pytest (>=4.6.2)", "black (>=19.3b0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "78f317d3176b38118f6e9c9a1deb8f6f13aa85e1dd9a7c47c77d283c2ba121d3"
+content-hash = "d78240149326c25f817ba301572d4510c841ab3e8de1ec1bfb384f9b20efd5ec"
 
 [metadata.files]
 aioconsole = [
@@ -576,7 +576,8 @@ pyinstaller = [
     {file = "PyInstaller-3.6.tar.gz", hash = "sha256:3730fa80d088f8bb7084d32480eb87cbb4ddb64123363763cf8f2a1378c1c4b7"},
 ]
 pymem = [
-    {file = "Pymem-1.3.tar.gz", hash = "sha256:5f972fb9edbd80a6de97084c1197dc44783189698d1fecad0788b6558764cea5"},
+    {file = "Pymem-1.8-py3-none-any.whl", hash = "sha256:6e2f010adae753dfbaa188c0c5214687540e0dd6b9626def86673ac4f124e73a"},
+    {file = "Pymem-1.8.tar.gz", hash = "sha256:dd319e0896c470325d194431c29009dc0a6ee614f11faad07fb6d649ec1436c6"},
 ]
 pyparsing = [
     {file = "pyparsing-2.4.7-py2.py3-none-any.whl", hash = "sha256:ef9d7589ef3c200abe66653d3f1ab1033c3c419ae9b9bdb1240a85b024efc88b"},
@@ -599,8 +600,8 @@ snowballstemmer = [
     {file = "snowballstemmer-2.1.0.tar.gz", hash = "sha256:e997baa4f2e9139951b6f4c631bad912dfd3c792467e2f03d7239464af90e914"},
 ]
 sphinx = [
-    {file = "Sphinx-3.5.3-py3-none-any.whl", hash = "sha256:3f01732296465648da43dec8fb40dc451ba79eb3e2cc5c6d79005fd98197107d"},
-    {file = "Sphinx-3.5.3.tar.gz", hash = "sha256:ce9c228456131bab09a3d7d10ae58474de562a6f79abb3dc811ae401cf8c1abc"},
+    {file = "Sphinx-3.5.4-py3-none-any.whl", hash = "sha256:2320d4e994a191f4b4be27da514e46b3d6b420f2ff895d064f52415d342461e8"},
+    {file = "Sphinx-3.5.4.tar.gz", hash = "sha256:19010b7b9fa0dc7756a6e105b2aacd3a80f798af3c25c273be64d7beeb482cb1"},
 ]
 sphinx-rtd-theme = [
     {file = "sphinx_rtd_theme-0.5.2-py2.py3-none-any.whl", hash = "sha256:4a05bdbe8b1446d77a01e20a23ebc6777c74f43237035e76be89699308987d6f"},

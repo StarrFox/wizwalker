@@ -84,7 +84,10 @@ class MemoryHandler:
             try:
                 hook.unhook()
             except pymem.exception.MemoryWriteError:
+                # TODO: error here
                 pass
+
+        self.active_hooks = defaultdict(lambda: False)
 
     def set_hook_active(self, hook):
         self.active_hooks[hook] = True
@@ -113,7 +116,7 @@ class MemoryHandler:
     @uses_hook("player_struct")
     @utils.executor_function
     def read_player_base(self):
-        return self.process.read_int(self.player_struct_addr)
+        return self.process.read_longlong(self.player_struct_addr)
 
     @uses_hook("player_stat_struct")
     @utils.executor_function
@@ -133,11 +136,11 @@ class MemoryHandler:
     @uses_hook("player_struct")
     @utils.executor_function
     def read_xyz(self):
-        player_struct = self.process.read_int(self.player_struct_addr)
+        player_struct = self.process.read_longlong(self.player_struct_addr)
         try:
-            x = self.process.read_float(player_struct + 0x2C)
-            y = self.process.read_float(player_struct + 0x30)
-            z = self.process.read_float(player_struct + 0x34)
+            x = self.process.read_float(player_struct + 0x58)  # was 2c
+            y = self.process.read_float(player_struct + 0x58 + 4)
+            z = self.process.read_float(player_struct + 0x58 + 4 + 4)
         except pymem.exception.MemoryReadError:
             return None
         else:
@@ -149,11 +152,11 @@ class MemoryHandler:
         player_struct = self.process.read_int(self.player_struct_addr)
         try:
             if x is not None:
-                self.process.write_float(player_struct + 0x2C, x)
+                self.process.write_float(player_struct + 0x58, x)
             if y is not None:
-                self.process.write_float(player_struct + 0x30, y)
+                self.process.write_float(player_struct + 0x58 + 4, y)
             if z is not None:
-                self.process.write_float(player_struct + 0x34, z)
+                self.process.write_float(player_struct + 0x58 + 4 + 4, z)
         except pymem.exception.MemoryWriteError:
             return False
         else:
@@ -164,7 +167,7 @@ class MemoryHandler:
     def read_player_yaw(self):
         player_struct = self.process.read_int(self.player_struct_addr)
         try:
-            return self.process.read_float(player_struct + 0x40)
+            return self.process.read_float(player_struct + 0x58 + 20)
         except pymem.exception.MemoryReadError:
             return None
 
@@ -173,7 +176,7 @@ class MemoryHandler:
     def set_player_yaw(self, yaw):
         player_struct = self.process.read_int(self.player_struct_addr)
         try:
-            self.process.write_float(player_struct + 0x40, yaw)
+            self.process.write_float(player_struct + 0x58 + 20, yaw)
         except pymem.exception.MemoryWriteError:
             return False
         else:
@@ -184,7 +187,7 @@ class MemoryHandler:
     def read_player_pitch(self):
         player_struct = self.process.read_int(self.player_struct_addr)
         try:
-            return self.process.read_float(player_struct + 0x38)
+            return self.process.read_float(player_struct + 0x58 + 12)
         except pymem.exception.MemoryReadError:
             return None
 
@@ -193,7 +196,7 @@ class MemoryHandler:
     def set_player_pitch(self, pitch):
         player_struct = self.process.read_int(self.player_struct_addr)
         try:
-            self.process.write_float(player_struct + 0x38, pitch)
+            self.process.write_float(player_struct + 0x58 + 12, pitch)
         except pymem.exception.MemoryWriteError:
             return False
         else:
@@ -204,7 +207,7 @@ class MemoryHandler:
     def read_player_roll(self):
         player_struct = self.process.read_int(self.player_struct_addr)
         try:
-            return self.process.read_float(player_struct + 0x3C)
+            return self.process.read_float(player_struct + 0x58 + 16)
         except pymem.exception.MemoryReadError:
             return None
 
@@ -213,7 +216,7 @@ class MemoryHandler:
     def set_player_roll(self, roll):
         player_struct = self.process.read_int(self.player_struct_addr)
         try:
-            self.process.write_float(player_struct + 0x3C, roll)
+            self.process.write_float(player_struct + 0x58 + 16, roll)
         except pymem.exception.MemoryWriteError:
             return False
         else:
@@ -224,16 +227,16 @@ class MemoryHandler:
     def read_player_scale(self):
         player_struct = self.process.read_int(self.player_struct_addr)
         try:
-            return self.process.read_float(player_struct + 0x44)
+            return self.process.read_float(player_struct + 0x58 + 24)
         except pymem.exception.MemoryReadError:
             return None
 
     @uses_hook("player_struct")
     @utils.executor_function
-    def set_player_scale(self, roll):
+    def set_player_scale(self, scale):
         player_struct = self.process.read_int(self.player_struct_addr)
         try:
-            self.process.write_float(player_struct + 0x44, roll)
+            self.process.write_float(player_struct + 0x58 + 24, scale)
         except pymem.exception.MemoryWriteError:
             return False
         else:

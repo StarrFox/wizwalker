@@ -6,9 +6,17 @@ from typing import Any, Tuple, Optional, Callable, Type, List
 
 import pymem
 import pymem.pattern
+import pymem.ressources.kernel32
 from pymem.ressources.structure import MODULEINFO
 
 from wizwalker import HookPatternFailed
+
+
+def pack_to_int_or_longlong(num: int) -> bytes:
+    try:
+        return struct.pack("<i", num)
+    except struct.error:
+        return struct.pack("<q", num)
 
 
 class MEMORY_BASIC_INFORMATION(ctypes.Structure):
@@ -24,76 +32,16 @@ class MEMORY_BASIC_INFORMATION(ctypes.Structure):
     ]
 
 
-# Modified to not handle memory protections, use re for matching
-# This licence covers the below function
-# MIT License
-# Copyright (c) 2018 pymem
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-def scan_pattern_page(handle: int, address: int, pattern: re.Pattern):
-    mbi = MEMORY_BASIC_INFORMATION()
-
-    ctypes.windll.kernel32.VirtualQueryEx(
-        handle, address, ctypes.byref(mbi), ctypes.sizeof(mbi)
-    )
-
-    next_region = mbi.BaseAddress + mbi.RegionSize
-    page_bytes = pymem.memory.read_bytes(handle, address, mbi.RegionSize)
-
+def scan_all_from(start_address: int, handle: int, pattern: bytes):
+    next_region = start_address
     found = None
 
-    match = pattern.search(page_bytes)
-
-    if match:
-        found = address + match.span()[0]
-
-    return next_region, found
-
-
-# This licence covers the below function
-# MIT License
-# Copyright (c) 2018 pymem
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-def pattern_scan_module(handle: int, module: MODULEINFO, pattern: re.Pattern):
-    base_address = module.lpBaseOfDll
-    max_address = module.lpBaseOfDll + module.SizeOfImage
-    page_address = base_address
-
-    found = None
-    while page_address < max_address:
-        next_page, found = scan_pattern_page(handle, page_address, pattern)
-
+    while next_region < 0x7FFFFFFF0000:
+        next_region, found = pymem.pattern.scan_pattern_page(
+            handle, next_region, pattern
+        )
         if found:
             break
-
-        page_address = next_page
 
     return found
 
@@ -109,6 +57,17 @@ class MemoryHook:
         self.jump_bytecode = None
         self.hook_bytecode = None
 
+        # so we can dealloc it on unhook
+        self._allocated_addresses = []
+
+    def alloc(self, size: int) -> int:
+        """
+        Allocate <size> bytes
+        """
+        addr = self.memory_handler.process.allocate(size)
+        self._allocated_addresses.append(addr)
+        return addr
+
     def prehook(self):
         """
         Called after bytecode is prepared and before written
@@ -121,19 +80,36 @@ class MemoryHook:
         """
         pass
 
-    def get_jump_address(self, pattern: re.Pattern, *, module=None) -> int:
-        """
-        gets the address to write jump at
-        """
+    def pattern_scan(self, pattern: bytes, *, module=None):
         if module:
-            # noinspection PyTypeChecker
-            jump_address = pattern_scan_module(
+            jump_address = pymem.pattern.pattern_scan_module(
                 self.memory_handler.process.process_handle, module, pattern
             )
 
         else:
-            # Todo: find faster way than scanning entire memory
-            raise NotImplemented()
+            jump_address = scan_all_from(
+                self.memory_handler.process.process_base.lpBaseOfDll,
+                self.memory_handler.process.process_handle,
+                pattern,
+            )
+
+        # TODO: maybe error if None?
+
+        return jump_address
+
+    def read_bytes(self, address: int, size: int) -> bytes:
+        return self.memory_handler.process.read_bytes(address, size)
+
+    def write_bytes(self, address: int, _bytes: bytes):
+        self.memory_handler.process.write_bytes(
+            address, _bytes, len(_bytes),
+        )
+
+    def get_jump_address(self, pattern: bytes, module=None) -> int:
+        """
+        gets the address to write jump at
+        """
+        jump_address = self.pattern_scan(pattern, module=module)
 
         if jump_address is None:
             raise HookPatternFailed()
@@ -141,8 +117,7 @@ class MemoryHook:
         return jump_address
 
     def get_hook_address(self, size: int) -> int:
-        hook_address = self.memory_handler.process.allocate(size)
-        return hook_address
+        return self.alloc(size)
 
     def get_jump_bytecode(self) -> bytes:
         """
@@ -156,7 +131,7 @@ class MemoryHook:
         """
         raise NotImplemented()
 
-    def get_pattern(self) -> Tuple[re.Pattern, Optional[MODULEINFO]]:
+    def get_pattern(self) -> Tuple[bytes, Optional[MODULEINFO]]:
         raise NotImplemented()
 
     def hook(self) -> Any:
@@ -166,23 +141,19 @@ class MemoryHook:
         pattern, module = self.get_pattern()
 
         self.jump_address = self.get_jump_address(pattern, module=module)
-        self.hook_address = self.get_hook_address(200)
+        self.hook_address = self.get_hook_address(50)
 
-        self.jump_bytecode = self.get_jump_bytecode()
         self.hook_bytecode = self.get_hook_bytecode()
+        self.jump_bytecode = self.get_jump_bytecode()
 
-        self.jump_original_bytecode = self.memory_handler.process.read_bytes(
+        self.jump_original_bytecode = self.read_bytes(
             self.jump_address, len(self.jump_bytecode)
         )
 
         self.prehook()
 
-        self.memory_handler.process.write_bytes(
-            self.hook_address, self.hook_bytecode, len(self.hook_bytecode),
-        )
-        self.memory_handler.process.write_bytes(
-            self.jump_address, self.jump_bytecode, len(self.jump_bytecode),
-        )
+        self.write_bytes(self.hook_address, self.hook_bytecode)
+        self.write_bytes(self.jump_address, self.jump_bytecode)
 
         self.posthook()
 
@@ -191,14 +162,74 @@ class MemoryHook:
         Deallocates hook memory and rewrites jump addr to it's origional code,
         also called when a client is closed
         """
-        self.memory_handler.process.write_bytes(
-            self.jump_address,
-            self.jump_original_bytecode,
-            len(self.jump_original_bytecode),
-        )
-        self.memory_handler.process.free(self.hook_address)
+        self.write_bytes(self.jump_address, self.jump_original_bytecode)
+        # TODO: replace for function usage hook
+        for addr in self._allocated_addresses:
+            self.memory_handler.process.free(addr)
 
 
+class AutoBotBaseHook(MemoryHook):
+    """
+    Subclass of MemoryHook that uses an autobot function for bytes so addresses arent huge
+    """
+
+    # Yes this does have to be this long
+    AUTOBOT_PATTERN = (
+        rb"\x48\x8B\xC4\x55\x41\x54\x41\x55\x41\x56\x41\x57"
+        rb"\x48\x8D\xA8\x18\xFE\xFF\xFF\x48\x81\xEC\xC0\x02\x00"
+        rb"\x00\x48\xC7\x45\xC8\xFE\xFF\xFF\xFF\x48\x89\x58\x10"
+        rb"\x48\x89\x70\x18\x48\x89\x78\x20\x48\x8B\x05\x63\xA0"
+        rb"\xBE\x01\x48\x33\xC4\x48\x89\x85\xB0\x01\x00\x00\x4C\x8B\xE9"
+    )
+    # rounded down
+    AUTOBOT_SIZE = 3900
+
+    _autobot_addr = None
+    # How far into the function we are
+    _autobot_bytes_offset = 0
+
+    _autobot_original_bytes = None
+
+    # this is really hacky
+    _hooked_instances = 0
+
+    def alloc(self, size: int) -> int:
+        if self._autobot_addr is None:
+            addr = self.pattern_scan(self.AUTOBOT_PATTERN)
+            # this is so all instances have the address
+            type(self)._autobot_addr = addr
+
+        if self._autobot_bytes_offset + size > self.AUTOBOT_SIZE:
+            raise RuntimeError("Somehow used the entirety of the autobot function")
+
+        if self._autobot_original_bytes is None:
+            type(self)._autobot_original_bytes = self.read_bytes(
+                self._autobot_addr, self.AUTOBOT_SIZE
+            )
+            # this is so instructions don't collide
+            self.write_bytes(self._autobot_addr, b"\x00" * self.AUTOBOT_SIZE)
+
+        addr = self._autobot_addr + self._autobot_bytes_offset
+        type(self)._autobot_bytes_offset += size
+
+        return addr
+
+    def hook(self) -> Any:
+        type(self)._hooked_instances += 1
+        return super().hook()
+
+    # TODO: make it so this "deallocates" autobot bytes
+    # This if overwritten bc we never call free
+    def unhook(self):
+        type(self)._hooked_instances -= 1
+        self.write_bytes(self.jump_address, self.jump_original_bytecode)
+
+        if self._hooked_instances == 0:
+            self.write_bytes(self._autobot_addr, self._autobot_original_bytes)
+            type(self)._autobot_bytes_offset = 0
+
+
+# This is a function and not a subclass so I don't have to change anything in handler
 def simple_hook(
     *,
     pattern: bytes,
@@ -218,7 +249,7 @@ def simple_hook(
         exports: list of tuples in the form (name, size)
     """
 
-    class _memory_hook(MemoryHook):
+    class _memory_hook(AutoBotBaseHook):
         def __init__(self, memory_handler):
             super().__init__(memory_handler)
 
@@ -226,20 +257,26 @@ def simple_hook(
             res_module = pymem.process.module_from_name(
                 self.memory_handler.process.process_handle, module
             )
-            return re.compile(pattern), res_module
+            return pattern, res_module
 
         def get_jump_bytecode(self) -> bytes:
-            distance = self.hook_address - self.jump_address
-            relitive_jump = distance - 5
+            if self.hook_address > self.jump_address:
+                distance = self.hook_address - self.jump_address
+                relitive_jump = distance - 5
+            else:
+                distance = self.jump_address - self.hook_address
+                relitive_jump = distance - 5
+
             packed_relitive_jump = struct.pack("<i", relitive_jump)
-            return b"\xE9" + packed_relitive_jump + b"\x90"
+            return b"\xE9" + packed_relitive_jump  # + b"\x90"
 
         def get_hook_bytecode(self) -> bytes:
             packed_exports = []
             for export in exports:
+                # addr = self.alloc(export[1])
                 addr = self.memory_handler.process.allocate(export[1])
                 setattr(self, export[0], addr)
-                packed_addr = struct.pack("<i", addr)
+                packed_addr = pack_to_int_or_longlong(addr)
                 packed_exports.append((export[0], packed_addr))
 
             bytecode = bytecode_generator(self, packed_exports)
@@ -266,24 +303,26 @@ def simple_hook(
 
 
 def player_hook_bytecode_gen(_, packed_exports):
+    # We use ecx bc we want 4 bytes only
     bytecode = (
-        b"\x8B\xC8"  # mov ecx,eax
-        b"\x81\xC1\x2C\x03\x00\x00"  # add ecx,0000032C { 812 }
-        b"\x8B\x11"  # mov edx,[ecx]
+        b"\x51"  # push rcx
+        b"\x8B\x88\x74\x04\x00\x00"  # mov ecx,[rax+474]
         # check if player
-        b"\x83\xFA\x08"  # cmp edx,08 { 8 }
-        b"\x0F\x85\x05\x00\x00\x00"  # jne 314B0036 (relative jump 5 down)
-        b"\xA3" + packed_exports[0][1] +
+        b"\x83\xF9\x08"  # cmp ecx,08
+        b"\x59"  # pop rcx
+        b"\x0F\x85\x0A\x00\x00\x00"  # jne 10 down
+        # mov(abs) [addr], rax
+        b"\x48\xA3" + packed_exports[0][1] +
         # original code
-        b"\x8B\x48\x2C"  # mov ecx,[eax+2C]
-        b"\x8B\x50\x30"  # mov edx,[eax+30]
+        b"\xF2\x0F\x10\x40\x58"  # movsd xxmo,[rax+58]
     )
     return bytecode
 
 
 PlayerHook = simple_hook(
-    pattern=rb"\x8B\x48.\x8B\x50.\x8B\x40.\xEB.\xD9\x87",
+    pattern=rb"\xF2\x0F\x10\x40\x58\xF2\x0F\x11\x02",
     bytecode_generator=player_hook_bytecode_gen,
+    instruction_length=6,
     exports=[("player_struct", 4)],
 )
 
@@ -432,7 +471,7 @@ def backpack_stat_bytecode_gen(hook, packed_exports):
 BackpackStatHook = simple_hook(
     pattern=rb"\xC7\x86\x70\x03\x00\x00....\x74",
     bytecode_generator=backpack_stat_bytecode_gen,
-    instruction_length=10,
+    # instruction_length=10,
     exports=[("backpack_struct_addr", 4)],
 )
 
@@ -448,20 +487,20 @@ class MoveLockHook(MemoryHook):
     def free_move_lock_addr(self):
         self.memory_handler.process.free(self.move_lock_addr)
 
-    def get_pattern(self) -> Tuple[re.Pattern, Optional[MODULEINFO]]:
+    def get_pattern(self) -> Tuple[bytes, Optional[MODULEINFO]]:
         module = pymem.process.module_from_name(
             self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
         )
         return (
-            re.compile(rb"\xCC\x8A\x44..\x8B\x11\x88\x81"),
+            rb"\xCC\x8A\x44..\x8B\x11\x88\x81",
             module,
         )
 
-    def get_jump_address(self, pattern: re.Pattern, *, module=None) -> int:
+    def get_jump_address(self, pattern: bytes, *, module=None) -> int:
         """
         gets the address to write jump at
         """
-        jump_address = pattern_scan_module(
+        jump_address = pymem.pattern.pattern_scan_module(
             self.memory_handler.process.process_handle, module, pattern
         )
 
@@ -509,20 +548,20 @@ class PotionsAltHook(MemoryHook):
     def free_potions_alt_addr(self):
         self.memory_handler.process.free(self.potions_alt_addr)
 
-    def get_pattern(self) -> Tuple[re.Pattern, Optional[MODULEINFO]]:
+    def get_pattern(self) -> Tuple[bytes, Optional[MODULEINFO]]:
         module = pymem.process.module_from_name(
             self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
         )
         return (
-            re.compile(rb"\xD9\x40.\xD9\x1E"),
+            rb"\xD9\x40.\xD9\x1E",
             module,
         )
 
-    def get_jump_address(self, pattern: re.Pattern, *, module=None) -> int:
+    def get_jump_address(self, pattern: bytes, *, module=None) -> int:
         """
         gets the address to write jump at
         """
-        jump_address = pattern_scan_module(
+        jump_address = pymem.pattern.pattern_scan_module(
             self.memory_handler.process.process_handle, module, pattern
         )
 
@@ -576,9 +615,9 @@ class MouselessCursorMoveHook(MemoryHook):
         module = pymem.process.module_from_name(
             self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
         )
-        pattern = re.compile(rb"[\x00\x01]\xE8\x88\xFB\x1F\xFF\x8D\x44\x24\x18")
+        pattern = rb"[\x00\x01]\xE8\x88\xFB\x1F\xFF\x8D\x44\x24\x18"
 
-        address = pattern_scan_module(
+        address = pymem.pattern.pattern_scan_module(
             self.memory_handler.process.process_handle, module, pattern
         )
 
