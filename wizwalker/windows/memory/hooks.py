@@ -513,18 +513,23 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
         super().__init__(memory_handler)
         self.mouse_pos_addr = None
 
-        self.toggle_bool_addr = None
+        self.toggle_bool_addrs = ()
 
     def posthook(self):
-        address = self.pattern_scan(
+        bool_one_address = self.pattern_scan(
             rb"[\x00\x01]\xFF\x50\x18\x66\xC7", module="WizardGraphicalClient.exe"
         )
+        bool_two_address = self.pattern_scan(
+            rb"[\x00\x01]\x33\xFF\x89\xBD\x80\x01\x00\x00\x8D",
+            module="WizardGraphicalClient.exe",
+        )
 
-        if address is None:
+        if bool_one_address is None or bool_two_address is None:
             raise RuntimeError("toogle bool address pattern failed")
 
-        self.toggle_bool_addr = address
-        self.memory_handler.process.write_uchar(address, 1)
+        self.toggle_bool_addrs = (bool_one_address, bool_two_address)
+        self.memory_handler.process.write_uchar(bool_one_address, 1)
+        self.memory_handler.process.write_uchar(bool_two_address, 1)
 
     def set_mouse_pos_addr(self):
         self.mouse_pos_addr = self.memory_handler.process.allocate(8)
@@ -547,7 +552,7 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
         # fmt: off
         bytecode = (
             b"\x50"  # push rax
-            b"\x48\xB8" + packed_mouse_pos_addr +  # mov rax, mouse_pos
+            b"\x48\xA1" + packed_mouse_pos_addr +  # mov rax, mouse_pos
             b"\x48\x89\x01"  # mov [rcx], rax
             b"\x58"  # pop rax
             b"\xC3"  # ret
@@ -565,4 +570,5 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
     def unhook(self):
         super().unhook()
         self.free_mouse_pos_addr()
-        self.memory_handler.process.write_uchar(self.toggle_bool_addr, 0)
+        for bool_addr in self.toggle_bool_addrs:
+            self.memory_handler.process.write_uchar(bool_addr, 0)
