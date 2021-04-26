@@ -5,6 +5,7 @@ from enum import Enum
 user32 = ctypes.windll.user32
 
 
+# noinspection PyPep8
 class Keycode(Enum):
     Left_mouse = 1
     Right_mouse = 2

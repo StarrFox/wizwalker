@@ -21,9 +21,7 @@ class WizWalker:
         self.window_handles = []
         self.clients = []
 
-        self.socket_listener = None
         self.wad_cache = None
-        self.wizard_messages = None
         self.template_ids = None
         self.node_cache = None
 
@@ -43,26 +41,6 @@ class WizWalker:
         Wizard101 install location
         """
         return utils.get_wiz_install()
-
-    async def get_wizard_messages(self) -> dict:
-        """
-        Loads wizard messages from cache
-
-        Raises:
-            RuntimeError: wizard messages haven't been cached yet
-
-        Returns:
-            the loaded wizard messages
-        """
-        try:
-            async with aiofiles.open(self.cache_dir / "wizard_messages.json") as fp:
-                message_data = await fp.read()
-        except OSError:
-            raise RuntimeError(
-                "Messages not yet cached, please run .run or .cache_data"
-            )
-        else:
-            return json.loads(message_data)
 
     async def get_template_ids(self) -> dict:
         """
@@ -169,48 +147,12 @@ class WizWalker:
         """
         root_wad = Wad.from_game_data("Root")
 
-        logger.debug("Begining caching")
-
-        logger.debug("Caching messages")
-        await self._cache_messages(root_wad)
         logger.debug("Caching template")
         await self._cache_template(root_wad)
         # logger.debug("Caching nodes")
         # await self._cache_nodes()
 
         await self.write_wad_cache()
-
-    async def _cache_messages(self, root_wad):
-        message_files = [
-            f for f in await root_wad.names() if "Messages" in f and f.endswith(".xml")
-        ]
-
-        message_files = await self.check_updated(root_wad, message_files)
-
-        if message_files:
-            pharsed_messages = {}
-            for message_file in message_files:
-                file_data = await root_wad.get_file(message_file)
-                logger.debug(f"pharsing {message_file}")
-
-                # They messed up one of their xml files so I have to fix it for them
-                if message_file == "WizardMessages2.xml":
-                    temp = file_data.decode()
-                    temp = temp.replace(
-                        '<LastMatchStatus TYPE="INT"><LastMatchStatus>',
-                        '<LastMatchStatus TYPE="INT"></LastMatchStatus>',
-                    )
-                    file_data = temp.encode()
-                    del temp
-
-                pharsed_messages.update(utils.pharse_message_file(file_data))
-                del file_data
-
-            async with aiofiles.open(
-                self.cache_dir / "wizard_messages.json", "w+"
-            ) as fp:
-                json_data = json.dumps(pharsed_messages)
-                await fp.write(json_data)
 
     async def _cache_template(self, root_wad):
         template_file = "TemplateManifest.xml"

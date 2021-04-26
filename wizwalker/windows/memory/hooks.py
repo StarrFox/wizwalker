@@ -1,13 +1,11 @@
 import re
 import struct
-import ctypes
 import ctypes.wintypes
-from typing import Any, Tuple, Optional, Callable, Type, List
+from typing import Any, Tuple, Callable, Type, List
 
 import pymem
 import pymem.pattern
 import pymem.ressources.kernel32
-from pymem.ressources.structure import MODULEINFO
 
 from wizwalker import HookPatternFailed
 
@@ -549,7 +547,7 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
         # fmt: off
         bytecode = (
             b"\x50"  # push rax
-            b"\x48\xA1" + packed_mouse_pos_addr +  # mov rax, mouse_pos
+            b"\x48\xB8" + packed_mouse_pos_addr +  # mov rax, mouse_pos
             b"\x48\x89\x01"  # mov [rcx], rax
             b"\x58"  # pop rax
             b"\xC3"  # ret

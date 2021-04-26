@@ -322,52 +322,6 @@ def pharse_template_id_file(file_data: bytes) -> dict:
     return out
 
 
-def pharse_message_file(file_data: bytes):
-    """
-    Pharse a message file's data
-    """
-    decoded = file_data.decode(errors="ignore")
-    root = ElementTree.fromstring(decoded)
-
-    service_data = root.find("_ProtocolInfo").find("RECORD")
-    service_id = int(service_data.find("ServiceID").text)
-    pharsed_service_data = {
-        "type": service_data.find("ProtocolType").text,
-        "description": service_data.find("ProtocolDescription").text,
-    }
-
-    messages = root[1:]
-
-    def msg_sorter(m):
-        # Function to sort messages by
-        return m[0].find("_MsgName").text
-
-    parsed_msgs = {}
-    for index, msg in enumerate(sorted(messages, key=msg_sorter), 1):
-        # msg[0] is the RECORD element
-        msg_data = msg[0]
-
-        msg_name = msg_data.find("_MsgName").text
-        msg_description = msg_data.find("_MsgDescription").text
-
-        params = []
-
-        for child in msg_data:
-            # Message meta info starts with _
-            if not child.tag.startswith("_"):
-                params.append({"name": child.tag, "type": child.get("TYPE")})
-
-        parsed_msgs[index] = {
-            "name": msg_name,
-            "description": msg_description,
-            "params": params,
-        }
-
-    pharsed_service_data["messages"] = parsed_msgs
-
-    return {service_id: pharsed_service_data}
-
-
 def pharse_node_data(file_data: bytes) -> dict:
     """
     Converts data into a dict of node nums to points
