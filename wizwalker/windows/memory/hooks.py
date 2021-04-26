@@ -364,33 +364,25 @@ QuestHook = simple_hook(
 )
 
 
-def backpack_stat_bytecode_gen(hook, packed_exports):
-    # TODO: rewrite to not use this
-    ecx_tmp = hook.memory_handler.process.allocate(4)
-    packed_ecx_tmp = struct.pack("<i", ecx_tmp)
-
+def backpack_stat_bytecode_gen(_, packed_exports):
+    # fmt: off
     bytecode = (
-        b"\x89\x0D"
-        + packed_ecx_tmp  # mov [02A91004],ecx { (0) }
-        + b"\x8B\xCE"  # mov ecx,esi
-        b"\x81\xC1\x70\x03\x00\x00"  # add ecx,00000370 { 880 }
-        b"\x89\x0D"
-        + packed_exports[0][1]  # mov [packed_addr],ecx { (0) }
-        + b"\x8B\x0D"
-        + packed_ecx_tmp  # mov ecx,[02A91004] { (0) }
-        +
-        # original code
-        b"\xC7\x86\x70\x03\x00\x00\x00\x00\x00\x00"  # mov [esi+00000370],00000000 { 0 }
+        b"\x50"  # push rax
+        b"\x48\x8D\x83\x38\x05\x00\x00"  # lea rax,[rbx+538]
+        b"\x48\xA3" + packed_exports[0][1] +  # mov [export],rax
+        b"\x58"  # pop rax
+        b"\x01\x83\x38\x05\x00\x00"  # original code
     )
-
+    # fmt: on
     return bytecode
 
 
 BackpackStatHook = simple_hook(
-    pattern=rb"\xC7\x86\x70\x03\x00\x00....\x74",
+    pattern=rb"\x01\x83\x38\x05\x00\x00\x48\x8B\x8B\x58\x02\x00\x00\x48\x85\xC9",
     bytecode_generator=backpack_stat_bytecode_gen,
-    # instruction_length=10,
-    exports=[("backpack_struct_addr", 4)],
+    instruction_length=6,
+    exports=[("backpack_struct_addr", 8)],
+    noops=1,
 )
 
 
