@@ -134,7 +134,6 @@ class WizWalkerConsole(Monitor):
                 "health",
                 "mana",
                 "potions",
-                "potions_alt",
                 "gold",
                 "energy",
                 "backpack_space_used",

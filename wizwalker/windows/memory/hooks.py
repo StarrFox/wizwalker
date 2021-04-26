@@ -80,9 +80,11 @@ class MemoryHook:
         """
         pass
 
-    # TODO: make module just take a string
-    def pattern_scan(self, pattern: bytes, *, module=None):
+    def pattern_scan(self, pattern: bytes, *, module: str = None):
         if module:
+            module = pymem.process.module_from_name(
+                self.memory_handler.process.process_handle, module
+            )
             jump_address = pymem.pattern.pattern_scan_module(
                 self.memory_handler.process.process_handle, module, pattern
             )
@@ -106,7 +108,7 @@ class MemoryHook:
             address, _bytes, len(_bytes),
         )
 
-    def get_jump_address(self, pattern: bytes, module=None) -> int:
+    def get_jump_address(self, pattern: bytes, module: str = None) -> int:
         """
         gets the address to write jump at
         """
@@ -132,7 +134,7 @@ class MemoryHook:
         """
         raise NotImplemented()
 
-    def get_pattern(self) -> Tuple[bytes, Optional[MODULEINFO]]:
+    def get_pattern(self) -> Tuple[bytes, str]:
         raise NotImplemented()
 
     def hook(self) -> Any:
@@ -198,36 +200,36 @@ class AutoBotBaseHook(MemoryHook):
         if self._autobot_addr is None:
             addr = self.pattern_scan(self.AUTOBOT_PATTERN)
             # this is so all instances have the address
-            type(self)._autobot_addr = addr
+            AutoBotBaseHook._autobot_addr = addr
 
         if self._autobot_bytes_offset + size > self.AUTOBOT_SIZE:
             raise RuntimeError("Somehow used the entirety of the autobot function")
 
         if self._autobot_original_bytes is None:
-            type(self)._autobot_original_bytes = self.read_bytes(
+            AutoBotBaseHook._autobot_original_bytes = self.read_bytes(
                 self._autobot_addr, self.AUTOBOT_SIZE
             )
             # this is so instructions don't collide
             self.write_bytes(self._autobot_addr, b"\x00" * self.AUTOBOT_SIZE)
 
         addr = self._autobot_addr + self._autobot_bytes_offset
-        type(self)._autobot_bytes_offset += size
+        AutoBotBaseHook._autobot_bytes_offset += size
 
         return addr
 
     def hook(self) -> Any:
-        type(self)._hooked_instances += 1
+        AutoBotBaseHook._hooked_instances += 1
         return super().hook()
 
     # TODO: make it so this "deallocates" autobot bytes
     # This if overwritten bc we never call free
     def unhook(self):
-        type(self)._hooked_instances -= 1
+        AutoBotBaseHook._hooked_instances -= 1
         self.write_bytes(self.jump_address, self.jump_original_bytecode)
 
         if self._hooked_instances == 0:
             self.write_bytes(self._autobot_addr, self._autobot_original_bytes)
-            type(self)._autobot_bytes_offset = 0
+            AutoBotBaseHook._autobot_bytes_offset = 0
 
 
 # This is a function and not a subclass so I don't have to change anything in handler
@@ -257,20 +259,14 @@ def simple_hook(
             super().__init__(memory_handler)
 
         def get_pattern(self):
-            res_module = pymem.process.module_from_name(
-                self.memory_handler.process.process_handle, module
-            )
-            return pattern, res_module
+            return pattern, module
 
         def get_jump_bytecode(self) -> bytes:
-            if self.hook_address > self.jump_address:
-                distance = self.hook_address - self.jump_address
-                relitive_jump = distance - 5
-            else:
-                distance = self.jump_address - self.hook_address
-                relitive_jump = distance - 5
+            distance = self.hook_address - self.jump_address
 
+            relitive_jump = distance - 5
             packed_relitive_jump = struct.pack("<i", relitive_jump)
+
             return b"\xE9" + packed_relitive_jump + (b"\x90" * noops)
 
         def get_hook_bytecode(self) -> bytes:
@@ -278,7 +274,6 @@ def simple_hook(
             for export in exports:
                 # addr = self.alloc(export[1])
                 addr = self.memory_handler.process.allocate(export[1])
-                print(f"{addr=}")
                 setattr(self, export[0], addr)
                 packed_addr = pack_to_int_or_longlong(addr)
                 packed_exports.append((export[0], packed_addr))
@@ -346,7 +341,7 @@ PlayerStatHook = simple_hook(
     pattern=rb"\x03\x59\x54",
     bytecode_generator=player_stat_hook_bytecode_gen,
     instruction_length=8,
-    exports=[("player_stat_struct", 8)],
+    exports=[("stat_addr", 8)],
 )
 
 
@@ -412,13 +407,10 @@ class MoveLockHook(MemoryHook):
     def free_move_lock_addr(self):
         self.memory_handler.process.free(self.move_lock_addr)
 
-    def get_pattern(self) -> Tuple[bytes, Optional[MODULEINFO]]:
-        module = pymem.process.module_from_name(
-            self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
-        )
+    def get_pattern(self) -> Tuple[bytes, str]:
         return (
             rb"\xCC\x8A\x44..\x8B\x11\x88\x81",
-            module,
+            "WizardGraphicalClient.exe",
         )
 
     def get_jump_address(self, pattern: bytes, *, module=None) -> int:
@@ -462,103 +454,86 @@ class MoveLockHook(MemoryHook):
         self.free_move_lock_addr()
 
 
-class PotionsAltHook(MemoryHook):
-    def __init__(self, memory_handler):
-        super().__init__(memory_handler)
-        self.potions_alt_addr = None
+class User32GetClassInfoBaseHook(AutoBotBaseHook):
+    """
+    Subclass of MemoryHook that uses the user32.GetClassInfoExA for bytes so addresses arent huge
+    """
 
-    def set_potions_alt_addr(self):
-        self.potions_alt_addr = self.memory_handler.process.allocate(4)
+    # Yes this does have to be this long
+    AUTOBOT_PATTERN = (
+        rb"\x48\x89\x5C\x24\x20\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D"
+        rb"\xAC\x24\x60\xFF\xFF\xFF\x48\x81\xEC\xA0\x01\x00\x00\x48\x8B\x05\x9A\xFD\x0A\x00"
+    )
+    # rounded down
+    AUTOBOT_SIZE = 1200
 
-    def free_potions_alt_addr(self):
-        self.memory_handler.process.free(self.potions_alt_addr)
+    _autobot_addr = None
+    # How far into the function we are
+    _autobot_bytes_offset = 0
 
-    def get_pattern(self) -> Tuple[bytes, Optional[MODULEINFO]]:
-        module = pymem.process.module_from_name(
-            self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
-        )
-        return (
-            rb"\xD9\x40.\xD9\x1E",
-            module,
-        )
+    _autobot_original_bytes = None
 
-    def get_jump_address(self, pattern: bytes, *, module=None) -> int:
-        """
-        gets the address to write jump at
-        """
-        jump_address = pymem.pattern.pattern_scan_module(
-            self.memory_handler.process.process_handle, module, pattern
-        )
+    # this is really hacky
+    _hooked_instances = 0
 
-        return jump_address
+    def alloc(self, size: int) -> int:
+        if self._autobot_addr is None:
+            addr = self.pattern_scan(self.AUTOBOT_PATTERN)
+            # this is so all instances have the address
+            User32GetClassInfoBaseHook._autobot_addr = addr
 
-    def get_jump_bytecode(self) -> bytes:
-        # distance = end - start
-        distance = self.hook_address - self.jump_address
-        relitive_jump = distance - 5  # size of this line
-        packed_relitive_jump = struct.pack("<i", relitive_jump)
-        return b"\xE9" + packed_relitive_jump
+        if self._autobot_bytes_offset + size > self.AUTOBOT_SIZE:
+            raise RuntimeError("Somehow used the entirety of the autobot function")
 
-    def get_hook_bytecode(self) -> bytes:
-        self.set_potions_alt_addr()
-        packed_potions_alt_addr = struct.pack("<i", self.potions_alt_addr)
+        if self._autobot_original_bytes is None:
+            User32GetClassInfoBaseHook._autobot_original_bytes = self.read_bytes(
+                self._autobot_addr, self.AUTOBOT_SIZE
+            )
+            # this is so instructions don't collide
+            self.write_bytes(self._autobot_addr, b"\x00" * self.AUTOBOT_SIZE)
 
-        bytecode = (
-            b"\x52"  # push edx
-            + b"\x8B\x50\x6C"  # mov edx,[eax+0x6C]
-            + b"\x89\x15"
-            + packed_potions_alt_addr  # mov dword ptr [packed_potion_addr],edx
-            + b"\x5A"  # pop edx
-            # original code
-            + b"\xD9\x40\x6C"  # fld ptr [eax+6C]
-            + b"\xD9\x1E"  # fstp ptr [esi]
-        )
+        addr = self._autobot_addr + self._autobot_bytes_offset
+        User32GetClassInfoBaseHook._autobot_bytes_offset += size
 
-        return_addr = self.jump_address + 5
+        return addr
 
-        relitive_return_jump = return_addr - (self.hook_address + len(bytecode)) - 5
-        packed_relitive_return_jump = struct.pack("<i", relitive_return_jump)
-
-        bytecode += b"\xE9" + packed_relitive_return_jump
-
-        return bytecode
+    def hook(self) -> Any:
+        User32GetClassInfoBaseHook._hooked_instances += 1
+        return super().hook()
 
     def unhook(self):
-        super().unhook()
-        self.free_potions_alt_addr()
+        User32GetClassInfoBaseHook._hooked_instances -= 1
+        self.write_bytes(self.jump_address, self.jump_original_bytecode)
+
+        if self._hooked_instances == 0:
+            self.write_bytes(self._autobot_addr, self._autobot_original_bytes)
+            User32GetClassInfoBaseHook._autobot_bytes_offset = 0
 
 
-class MouselessCursorMoveHook(MemoryHook):
+class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
     def __init__(self, memory_handler):
         super().__init__(memory_handler)
-        self.x_addr = None
-        self.y_addr = None
+        self.mouse_pos_addr = None
 
         self.toggle_bool_addr = None
 
     def posthook(self):
-        module = pymem.process.module_from_name(
-            self.memory_handler.process.process_handle, "WizardGraphicalClient.exe"
-        )
-        pattern = rb"[\x00\x01]\xE8\x88\xFB\x1F\xFF\x8D\x44\x24\x18"
-
-        address = pymem.pattern.pattern_scan_module(
-            self.memory_handler.process.process_handle, module, pattern
+        address = self.pattern_scan(
+            rb"[\x00\x01]\xFF\x50\x18\x66\xC7", module="WizardGraphicalClient.exe"
         )
 
         if address is None:
-            raise RuntimeError("toogle bool addr pattern failed")
+            raise RuntimeError("toogle bool address pattern failed")
 
         self.toggle_bool_addr = address
-        self.memory_handler.process.write_char(address, chr(1))
+        self.memory_handler.process.write_uchar(address, 1)
 
-    def set_mouse_pos_addrs(self):
-        self.x_addr = self.memory_handler.process.allocate(4)
-        self.y_addr = self.memory_handler.process.allocate(4)
+    def set_mouse_pos_addr(self):
+        self.mouse_pos_addr = self.memory_handler.process.allocate(8)
+        print(f"{self.mouse_pos_addr=}")
 
-    def free_mouse_pos_addrs(self):
-        self.memory_handler.process.free(self.x_addr)
-        self.memory_handler.process.free(self.y_addr)
+    def free_mouse_pos_addr(self):
+        self.memory_handler.process.free(self.mouse_pos_addr)
 
     def get_jump_bytecode(self) -> bytes:
         # distance = end - start
@@ -568,37 +543,28 @@ class MouselessCursorMoveHook(MemoryHook):
         return b"\xE9" + packed_relitive_jump
 
     def get_hook_bytecode(self) -> bytes:
-        self.set_mouse_pos_addrs()
-        packed_xpos_addr = struct.pack("<i", self.x_addr)
-        packed_ypos_addr = struct.pack("<i", self.y_addr)
+        self.set_mouse_pos_addr()
+        packed_mouse_pos_addr = pack_to_int_or_longlong(self.mouse_pos_addr)
 
+        # fmt: off
         bytecode = (
-            b"\x50"  # push eax
-            b"\x8b\x44\x24\x08"  # mov eax, dword ptr [esp+0x8]
-            b"\x51"  # push ecx
-            b"\x8b\x0d"
-            + packed_xpos_addr
-            + b"\x89\x08"  # mov ecx, dword ptr x_addr  # mov dword ptr [eax], ecx
-            b"\x8b\x0d"
-            + packed_ypos_addr
-            + b"\x89\x48\x04"  # mov ecx, dword ptr y_addr  # mov dword ptr [eax+0x4], ecx
-            b"\x59"  # pop ecx
-            b"\x58"  # pop eax
-            b"\xc2\x04\x00"  # ret 0x4
+            b"\x50"  # push rax
+            b"\x48\xA1" + packed_mouse_pos_addr +  # mov rax, mouse_pos
+            b"\x48\x89\x01"  # mov [rcx], rax
+            b"\x58"  # pop rax
+            b"\xC3"  # ret
         )
+        # fmt: on
 
         return bytecode
 
-    def get_pattern(self) -> Tuple[re.Pattern, Optional[MODULEINFO]]:
-        module = pymem.process.module_from_name(
-            self.memory_handler.process.process_handle, "user32.dll"
-        )
+    def get_pattern(self) -> Tuple[re.Pattern, str]:
         return (
-            re.compile(rb"((\x8B\xFF\x55\x8B\xEC)|(\xE9....))\x6A\x7F\x6A\x01"),
-            module,
+            re.compile(rb"[\xBA\xE9]....\x44\x8D\x42\x7E\x48\xFF\x25\xF8\xB0\x06\x00"),
+            "user32.dll",
         )
 
     def unhook(self):
         super().unhook()
-        self.free_mouse_pos_addrs()
-        self.memory_handler.process.write_char(self.toggle_bool_addr, chr(0))
+        self.free_mouse_pos_addr()
+        self.memory_handler.process.write_uchar(self.toggle_bool_addr, 0)

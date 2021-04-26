@@ -1,5 +1,6 @@
 import asyncio
 import ctypes.wintypes
+import warnings
 from functools import cached_property
 from typing import Optional
 
@@ -385,6 +386,66 @@ class Client:
         """
         return await self._memory.read_move_lock()
 
+    async def level(self) -> Optional[int]:
+        """
+        Player level
+
+        Raises:
+            RuntimeError: player_stat_struct hook not active
+
+        Return:
+            level int or None if hooked function hasn't run yet
+        """
+        return await self._memory.read_player_level()
+
+    async def gardening_level(self) -> Optional[int]:
+        """
+        Player gardening level
+
+        Raises:
+            RuntimeError: player_stat_struct hook not active
+
+        Return:
+            gardening level int or None if hooked function hasn't run yet
+        """
+        return await self._memory.read_player_gardening_level()
+
+    async def gardening_experience(self) -> Optional[int]:
+        """
+        Player gardening experience
+
+        Raises:
+            RuntimeError: player_stat_struct hook not active
+
+        Return:
+            gardening experience int or None if hooked function hasn't run yet
+        """
+        return await self._memory.read_player_gardening_experience()
+
+    async def fishing_level(self) -> Optional[int]:
+        """
+        Player fishing level
+
+        Raises:
+            RuntimeError: player_stat_struct hook not active
+
+        Return:
+            fishing level int or None if hooked function hasn't run yet
+        """
+        return await self._memory.read_player_fishing_level()
+
+    async def fishing_experience(self) -> Optional[int]:
+        """
+        Player fishing_experience
+
+        Raises:
+            RuntimeError: player_stat_struct hook not active
+
+        Return:
+            fishing experience int or None if hooked function hasn't run yet
+        """
+        return await self._memory.read_player_fishing_experience()
+
     async def health(self) -> Optional[int]:
         """
         Player health
@@ -396,6 +457,18 @@ class Client:
             health int or None if hooked function hasn't run yet
         """
         return await self._memory.read_player_health()
+
+    async def max_health(self) -> Optional[int]:
+        """
+        Player max health
+
+        Raises:
+            RuntimeError: player_stat_struct hook not active
+
+        Return:
+            max health int or None if hooked function hasn't run yet
+        """
+        return await self._memory.read_player_health_max()
 
     async def mana(self) -> Optional[int]:
         """
@@ -409,19 +482,31 @@ class Client:
         """
         return await self._memory.read_player_mana()
 
-    async def energy(self) -> Optional[int]:
+    async def max_mana(self) -> Optional[int]:
         """
-        Player energy
+        Player max mana
 
         Raises:
             RuntimeError: player_stat_struct hook not active
 
         Return:
-            energy int or None if hooked function hasn't run yet
+            max mana int or None if hooked function hasn't run yet
+        """
+        return await self._memory.read_player_mana_max()
+
+    async def energy(self) -> Optional[int]:
+        """
+        Player max energy
+
+        Raises:
+            RuntimeError: player_stat_struct hook not active
+
+        Return:
+            max energy int or None if hooked function hasn't run yet
         """
         return await self._memory.read_player_energy()
 
-    async def potions(self) -> Optional[int]:
+    async def potions(self) -> Optional[float]:
         """
         Player full potions
 
@@ -429,21 +514,32 @@ class Client:
             RuntimeError: player_stat_struct hook not active
 
         Return:
-            # of potions int or None if hooked function hasn't run yet
+            potions float or None if hooked function hasn't run yet
         """
         return await self._memory.read_player_potions()
 
-    async def potions_alt(self) -> Optional[int]:
+    async def max_potions(self) -> Optional[float]:
         """
-        Player full potions (alternative)
+                Player full potions
 
         Raises:
-            RuntimeError: potion hook not active
+            RuntimeError: player_stat_struct hook not active
 
         Return:
-            # of potions int or None if hooked function hasn't run yet
+            max potions float or None if hooked function hasn't run yet
         """
-        return await self._memory.read_player_potions_alt()
+        return await self._memory.read_player_potions_max()
+
+    # TODO: remove in 1.0
+    async def potions_alt(self) -> Optional[float]:
+        """
+        copatibility function for old scripts; removed in 1.0
+        """
+        warnings.warn(
+            "potions_alt is depreciated and will be removed in 1.0; please use potions instead",
+            DeprecationWarning,
+        )
+        return await self._memory.read_player_potions()
 
     async def gold(self) -> Optional[int]:
         """

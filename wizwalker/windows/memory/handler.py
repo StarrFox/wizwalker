@@ -12,7 +12,6 @@ from .hooks import (
     PlayerStatHook,
     BackpackStatHook,
     MoveLockHook,
-    PotionsAltHook,
     MouselessCursorMoveHook,
 )
 
@@ -67,10 +66,8 @@ class MemoryHandler:
         self.packet_buffer_addr = None
         self.packet_buffer_len = None
         self.move_lock_addr = None
-        self.potions_alt_addr = None
 
-        self.mouse_pos_x = None
-        self.mouse_pos_y = None
+        self.mouse_pos = None
 
         self.hooks = []
         self.active_hooks = defaultdict(lambda: False)
@@ -110,8 +107,8 @@ class MemoryHandler:
     @uses_hook("mouseless_cursor_move")
     @utils.executor_function
     def write_mouse_position(self, x: int, y: int):
-        self.process.write_int(self.mouse_pos_x, x)
-        self.process.write_int(self.mouse_pos_y, y)
+        self.process.write_int(self.mouse_pos, x)
+        self.process.write_int(self.mouse_pos + 4, y)
 
     @uses_hook("player_struct")
     @utils.executor_function
@@ -121,7 +118,7 @@ class MemoryHandler:
     @uses_hook("player_stat_struct")
     @utils.executor_function
     def read_player_stat_base(self):
-        return self.process.read_int(self.player_stat_addr)
+        return self.process.read_longlong(self.player_stat_addr)
 
     @uses_hook("backpack_stat_struct")
     @utils.executor_function
@@ -149,7 +146,7 @@ class MemoryHandler:
     @uses_hook("player_struct")
     @utils.executor_function
     def set_xyz(self, x=None, y=None, z=None):
-        player_struct = self.process.read_int(self.player_struct_addr)
+        player_struct = self.process.read_longlong(self.player_struct_addr)
         try:
             if x is not None:
                 self.process.write_float(player_struct + 0x58, x)
@@ -165,7 +162,7 @@ class MemoryHandler:
     @uses_hook("player_struct")
     @utils.executor_function
     def read_player_yaw(self):
-        player_struct = self.process.read_int(self.player_struct_addr)
+        player_struct = self.process.read_longlong(self.player_struct_addr)
         try:
             return self.process.read_float(player_struct + 0x58 + 20)
         except pymem.exception.MemoryReadError:
@@ -174,7 +171,7 @@ class MemoryHandler:
     @uses_hook("player_struct")
     @utils.executor_function
     def set_player_yaw(self, yaw):
-        player_struct = self.process.read_int(self.player_struct_addr)
+        player_struct = self.process.read_longlong(self.player_struct_addr)
         try:
             self.process.write_float(player_struct + 0x58 + 20, yaw)
         except pymem.exception.MemoryWriteError:
@@ -185,7 +182,7 @@ class MemoryHandler:
     @uses_hook("player_struct")
     @utils.executor_function
     def read_player_pitch(self):
-        player_struct = self.process.read_int(self.player_struct_addr)
+        player_struct = self.process.read_longlong(self.player_struct_addr)
         try:
             return self.process.read_float(player_struct + 0x58 + 12)
         except pymem.exception.MemoryReadError:
@@ -194,7 +191,7 @@ class MemoryHandler:
     @uses_hook("player_struct")
     @utils.executor_function
     def set_player_pitch(self, pitch):
-        player_struct = self.process.read_int(self.player_struct_addr)
+        player_struct = self.process.read_longlong(self.player_struct_addr)
         try:
             self.process.write_float(player_struct + 0x58 + 12, pitch)
         except pymem.exception.MemoryWriteError:
@@ -205,7 +202,7 @@ class MemoryHandler:
     @uses_hook("player_struct")
     @utils.executor_function
     def read_player_roll(self):
-        player_struct = self.process.read_int(self.player_struct_addr)
+        player_struct = self.process.read_longlong(self.player_struct_addr)
         try:
             return self.process.read_float(player_struct + 0x58 + 16)
         except pymem.exception.MemoryReadError:
@@ -214,7 +211,7 @@ class MemoryHandler:
     @uses_hook("player_struct")
     @utils.executor_function
     def set_player_roll(self, roll):
-        player_struct = self.process.read_int(self.player_struct_addr)
+        player_struct = self.process.read_longlong(self.player_struct_addr)
         try:
             self.process.write_float(player_struct + 0x58 + 16, roll)
         except pymem.exception.MemoryWriteError:
@@ -225,7 +222,7 @@ class MemoryHandler:
     @uses_hook("player_struct")
     @utils.executor_function
     def read_player_scale(self):
-        player_struct = self.process.read_int(self.player_struct_addr)
+        player_struct = self.process.read_longlong(self.player_struct_addr)
         try:
             return self.process.read_float(player_struct + 0x58 + 24)
         except pymem.exception.MemoryReadError:
@@ -234,7 +231,7 @@ class MemoryHandler:
     @uses_hook("player_struct")
     @utils.executor_function
     def set_player_scale(self, scale):
-        player_struct = self.process.read_int(self.player_struct_addr)
+        player_struct = self.process.read_longlong(self.player_struct_addr)
         try:
             self.process.write_float(player_struct + 0x58 + 24, scale)
         except pymem.exception.MemoryWriteError:
@@ -258,55 +255,131 @@ class MemoryHandler:
 
     @uses_hook("player_stat_struct")
     @utils.executor_function
-    def read_player_health(self):
-        stat_addr = self.process.read_int(self.player_stat_addr)
+    def read_player_level(self):
+        stat_addr = self.process.read_longlong(self.player_stat_addr)
         try:
-            return self.process.read_int(stat_addr + 0x40)
+            return self.process.read_int(stat_addr + 308)
+        except pymem.exception.MemoryReadError:
+            return None
+
+    @uses_hook("player_stat_struct")
+    @utils.executor_function
+    def read_player_gardening_level(self):
+        stat_addr = self.process.read_longlong(self.player_stat_addr)
+        try:
+            return self.process.read_uchar(stat_addr + 824)
+        except pymem.exception.MemoryReadError:
+            return None
+
+    @uses_hook("player_stat_struct")
+    @utils.executor_function
+    def read_player_gardening_experience(self):
+        stat_addr = self.process.read_longlong(self.player_stat_addr)
+        try:
+            return self.process.read_int(stat_addr + 828)
+        except pymem.exception.MemoryReadError:
+            return None
+
+    @uses_hook("player_stat_struct")
+    @utils.executor_function
+    def read_player_fishing_level(self):
+        stat_addr = self.process.read_longlong(self.player_stat_addr)
+        try:
+            return self.process.read_uchar(stat_addr + 853)
+        except pymem.exception.MemoryReadError:
+            return None
+
+    @uses_hook("player_stat_struct")
+    @utils.executor_function
+    def read_player_fishing_experience(self):
+        stat_addr = self.process.read_longlong(self.player_stat_addr)
+        try:
+            return self.process.read_int(stat_addr + 856)
+        except pymem.exception.MemoryReadError:
+            return None
+
+    @uses_hook("player_stat_struct")
+    @utils.executor_function
+    def read_player_health(self):
+        stat_addr = self.process.read_longlong(self.player_stat_addr)
+        try:
+            return self.process.read_int(stat_addr + 0x68)
+        except pymem.exception.MemoryReadError:
+            return None
+
+    @uses_hook("player_stat_struct")
+    @utils.executor_function
+    def read_player_health_max(self):
+        stat_addr = self.process.read_longlong(self.player_stat_addr)
+        try:
+            base = self.process.read_int(stat_addr + 80)
+            bonus = self.process.read_int(stat_addr + 208)
+            return base + bonus
         except pymem.exception.MemoryReadError:
             return None
 
     @uses_hook("player_stat_struct")
     @utils.executor_function
     def read_player_mana(self):
-        stat_addr = self.process.read_int(self.player_stat_addr)
+        stat_addr = self.process.read_longlong(self.player_stat_addr)
         try:
-            return self.process.read_int(stat_addr + 0x10 + 0x40)
+            return self.process.read_int(stat_addr + 0x78)
+        except pymem.exception.MemoryReadError:
+            return None
+
+    @uses_hook("player_stat_struct")
+    @utils.executor_function
+    def read_player_mana_max(self):
+        stat_addr = self.process.read_longlong(self.player_stat_addr)
+        try:
+            base = self.process.read_int(stat_addr + 84)
+            bonus = self.process.read_int(stat_addr + 212)
+            return base + bonus
         except pymem.exception.MemoryReadError:
             return None
 
     @uses_hook("player_stat_struct")
     @utils.executor_function
     def read_player_energy(self):
-        stat_addr = self.process.read_int(self.player_stat_addr)
+        stat_addr = self.process.read_longlong(self.player_stat_addr)
         try:
-            return self.process.read_int(stat_addr + 0x3C)
+            return self.process.read_int(stat_addr + 0x64)
         except pymem.exception.MemoryReadError:
             return None
 
     @uses_hook("player_stat_struct")
     @utils.executor_function
     def read_player_potions(self):
-        stat_addr = self.process.read_int(self.player_stat_addr)
+        stat_addr = self.process.read_longlong(self.player_stat_addr)
         try:
             # this is a float for some reason
             # it's because you can partially fill potions with minigames -Forrest
-            return int(self.process.read_float(stat_addr + 0x2C + 0x40))
+            return self.process.read_float(stat_addr + 156)
+        except pymem.exception.MemoryReadError:
+            return None
+
+    @uses_hook("player_stat_struct")
+    @utils.executor_function
+    def read_player_potions_max(self):
+        stat_addr = self.process.read_longlong(self.player_stat_addr)
+        try:
+            return self.process.read_float(stat_addr + 152)
         except pymem.exception.MemoryReadError:
             return None
 
     @uses_hook("player_stat_struct")
     @utils.executor_function
     def read_player_gold(self):
-        stat_addr = self.process.read_int(self.player_stat_addr)
+        stat_addr = self.process.read_longlong(self.player_stat_addr)
         try:
-            return self.process.read_int(stat_addr + 0x4 + 0x40)
+            return self.process.read_int(stat_addr + 108)
         except pymem.exception.MemoryReadError:
             return None
 
     @uses_hook("backpack_stat_struct")
     @utils.executor_function
     def read_player_backpack_used(self):
-        backpack_addr = self.process.read_int(self.backpack_stat_addr)
+        backpack_addr = self.process.read_longlong(self.backpack_stat_addr)
         try:
             return self.process.read_int(backpack_addr)
         except pymem.exception.MemoryReadError:
@@ -315,52 +388,19 @@ class MemoryHandler:
     @uses_hook("backpack_stat_struct")
     @utils.executor_function
     def read_player_backpack_total(self):
-        backpack_addr = self.process.read_int(self.backpack_stat_addr)
+        backpack_addr = self.process.read_longlong(self.backpack_stat_addr)
         try:
             return self.process.read_int(backpack_addr + 0x4)
-        except pymem.exception.MemoryReadError:
-            return None
-
-    @uses_hook("packet_recv")
-    @utils.executor_function
-    def read_packet_socket_discriptor(self):
-        try:
-            return self.process.read_bytes(self.packet_socket_discriptor_addr, 20)
-        except pymem.exception.MemoryReadError:
-            return None
-
-    @uses_hook("packet_recv")
-    @utils.executor_function
-    def read_packet_buffer(self):
-        buffer_addr = self.process.read_int(self.packet_buffer_addr)
-        buffer_len = self.process.read_int(self.packet_buffer_len)
-        try:
-            return self.process.read_bytes(buffer_addr, buffer_len)
         except pymem.exception.MemoryReadError:
             return None
 
     @uses_hook("move_lock")
     @utils.executor_function
     def read_move_lock(self):
-        move_lock = self.process.read_int(self.move_lock_addr)
+        move_lock = self.process.read_longlong(self.move_lock_addr)
         try:
             data = self.process.read_bytes(move_lock, 1)
             return struct.unpack("?", data)[0]
-        except pymem.exception.MemoryReadError:
-            return None
-
-    @uses_hook("potions_alt")
-    @utils.executor_function
-    # This version of read potion uses a seperate hook but works correcly in mob zones
-    # Hit on clicking potions (even if empty), value not updated immedietly when hook is hit (sorry)
-    def read_player_potions_alt(self):
-        try:
-            potions_alt = int(
-                self.process.read_float(self.potions_alt_addr)
-            )  # we're going to cast this to an int so it makes more sense for end users
-            if potions_alt == -1:
-                return None
-            return potions_alt
         except pymem.exception.MemoryReadError:
             return None
 
@@ -418,16 +458,6 @@ class MemoryHandler:
         self.hooks.append(move_lock_hook)
         self.move_lock_addr = move_lock_hook.move_lock_addr
 
-    @register_hook("potions_alt")
-    @utils.executor_function
-    def hook_potions_alt(self):
-        potions_alt_hook = PotionsAltHook(self)
-        potions_alt_hook.hook()
-
-        self.hooks.append(potions_alt_hook)
-        self.potions_alt_addr = potions_alt_hook.potions_alt_addr
-        self.process.write_float(self.potions_alt_addr, -1.0)
-
     @register_hook("mouseless_cursor_move")
     @utils.executor_function
     def hook_mouseless_cursor_move(self):
@@ -435,8 +465,6 @@ class MemoryHandler:
         mouseless_cursor_hook.hook()
 
         self.hooks.append(mouseless_cursor_hook)
-        self.mouse_pos_x = mouseless_cursor_hook.x_addr
-        self.mouse_pos_y = mouseless_cursor_hook.y_addr
+        self.mouse_pos = mouseless_cursor_hook.mouse_pos_addr
 
-        self.process.write_int(self.mouse_pos_x, 0)
-        self.process.write_int(self.mouse_pos_y, 0)
+        self.process.write_longlong(self.mouse_pos, 0)
