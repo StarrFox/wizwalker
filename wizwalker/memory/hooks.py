@@ -45,8 +45,8 @@ def scan_all_from(start_address: int, handle: int, pattern: bytes):
 
 
 class MemoryHook:
-    def __init__(self, memory_handler):
-        self.memory_handler = memory_handler
+    def __init__(self, hook_handler):
+        self.hook_handler = hook_handler
         self.jump_original_bytecode = None
 
         self.hook_address = None
@@ -62,7 +62,7 @@ class MemoryHook:
         """
         Allocate <size> bytes
         """
-        addr = self.memory_handler.process.allocate(size)
+        addr = self.hook_handler.process.allocate(size)
         self._allocated_addresses.append(addr)
         return addr
 
@@ -81,16 +81,16 @@ class MemoryHook:
     def pattern_scan(self, pattern: bytes, *, module: str = None):
         if module:
             module = pymem.process.module_from_name(
-                self.memory_handler.process.process_handle, module
+                self.hook_handler.process.process_handle, module
             )
             jump_address = pymem.pattern.pattern_scan_module(
-                self.memory_handler.process.process_handle, module, pattern
+                self.hook_handler.process.process_handle, module, pattern
             )
 
         else:
             jump_address = scan_all_from(
-                self.memory_handler.process.process_base.lpBaseOfDll,
-                self.memory_handler.process.process_handle,
+                self.hook_handler.process.process_base.lpBaseOfDll,
+                self.hook_handler.process.process_handle,
                 pattern,
             )
 
@@ -99,10 +99,10 @@ class MemoryHook:
         return jump_address
 
     def read_bytes(self, address: int, size: int) -> bytes:
-        return self.memory_handler.process.read_bytes(address, size)
+        return self.hook_handler.process.read_bytes(address, size)
 
     def write_bytes(self, address: int, _bytes: bytes):
-        self.memory_handler.process.write_bytes(
+        self.hook_handler.process.write_bytes(
             address, _bytes, len(_bytes),
         )
 
@@ -164,9 +164,8 @@ class MemoryHook:
         also called when a client is closed
         """
         self.write_bytes(self.jump_address, self.jump_original_bytecode)
-        # TODO: replace for function usage hook
         for addr in self._allocated_addresses:
-            self.memory_handler.process.free(addr)
+            self.hook_handler.process.free(addr)
 
 
 class AutoBotBaseHook(MemoryHook):
@@ -175,7 +174,7 @@ class AutoBotBaseHook(MemoryHook):
     """
 
     def alloc(self, size: int) -> int:
-        return self.memory_handler.hook_handler.get_open_autobot_address(size)
+        return self.hook_handler.get_open_autobot_address(size)
 
     # This if overwritten bc we never call free
     def unhook(self):
@@ -223,7 +222,7 @@ def simple_hook(
             packed_exports = []
             for export in exports:
                 # addr = self.alloc(export[1])
-                addr = self.memory_handler.process.allocate(export[1])
+                addr = self.hook_handler.process.allocate(export[1])
                 setattr(self, export[0], addr)
                 packed_addr = pack_to_int_or_longlong(addr)
                 packed_exports.append((export[0], packed_addr))
@@ -243,7 +242,7 @@ def simple_hook(
             super().unhook()
             for export in exports:
                 if getattr(self, export[0], None):
-                    self.memory_handler.process.free(getattr(self, export[0]))
+                    self.hook_handler.process.free(getattr(self, export[0]))
 
     return _memory_hook
 
@@ -436,14 +435,14 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
             raise RuntimeError("toogle bool address pattern failed")
 
         self.toggle_bool_addrs = (bool_one_address, bool_two_address)
-        self.memory_handler.process.write_uchar(bool_one_address, 1)
-        self.memory_handler.process.write_uchar(bool_two_address, 1)
+        self.hook_handler.process.write_uchar(bool_one_address, 1)
+        self.hook_handler.process.write_uchar(bool_two_address, 1)
 
     def set_mouse_pos_addr(self):
-        self.mouse_pos_addr = self.memory_handler.process.allocate(8)
+        self.mouse_pos_addr = self.hook_handler.process.allocate(8)
 
     def free_mouse_pos_addr(self):
-        self.memory_handler.process.free(self.mouse_pos_addr)
+        self.hook_handler.process.free(self.mouse_pos_addr)
 
     def get_jump_bytecode(self) -> bytes:
         # distance = end - start
@@ -478,4 +477,4 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
         super().unhook()
         self.free_mouse_pos_addr()
         for bool_addr in self.toggle_bool_addrs:
-            self.memory_handler.process.write_uchar(bool_addr, 0)
+            self.hook_handler.process.write_uchar(bool_addr, 0)

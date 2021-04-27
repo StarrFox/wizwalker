@@ -1,9 +1,15 @@
 from typing import List, Union
-from wizwalker import NotEnoughMana, NotEnoughPips, CardNotFound, CardAlreadyEnchanted
+from wizwalker import (
+    NotEnoughMana,
+    NotEnoughPips,
+    CardNotFound,
+    CardAlreadyEnchanted,
+    Client,
+)
 
 
 class Hand:
-    def __init__(self, client: "wizwalker.Client"):
+    def __init__(self, client: Client):
         self.client = client
         self._cards: List[Card] = []
 

@@ -5,6 +5,24 @@ from enum import Enum
 user32 = ctypes.windll.user32
 
 
+type_format_dict = {
+    "char": "<c",
+    "signed char": "<b",
+    "unsigned char": "<B",
+    "bool": "?",
+    "short": "<h",
+    "unsigned short": "<H",
+    "int": "<i",
+    "unsigned int": "<I",
+    "long": "<l",
+    "unsigned long": "<L",
+    "long long": "<q",
+    "unsigned long long": "<Q",
+    "float": "<f",
+    "double": "<d",
+}
+
+
 # noinspection PyPep8
 class Keycode(Enum):
     Left_mouse = 1
