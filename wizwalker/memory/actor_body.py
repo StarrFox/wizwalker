@@ -1,5 +1,3 @@
-import struct
-
 from .memory_object import MemoryObject
 from wizwalker.utils import XYZ
 
@@ -9,25 +7,40 @@ class ActorBody(MemoryObject):
         raise NotImplementedError()
 
     async def position(self) -> XYZ:
-        base_address = await self.read_base_address()
-        position_bytes = await self.read_bytes(base_address + 88, 12)
-        x, y, z = struct.unpack("<fff", position_bytes)
-        return XYZ(x, y, z)
+        return await self.read_xyz(88)
+
+    async def write_position(self, position: XYZ):
+        await self.write_xyz(88, position)
 
     async def pitch(self) -> float:
         return await self.read_value_from_offset(100, "float")
 
+    async def write_pitch(self, pitch: float):
+        await self.write_value_to_offset(100, pitch, "float")
+
     async def roll(self) -> float:
         return await self.read_value_from_offset(104, "float")
+
+    async def write_roll(self, roll: float):
+        await self.write_value_to_offset(104, roll, "float")
 
     async def yaw(self) -> float:
         return await self.read_value_from_offset(108, "float")
 
+    async def write_yaw(self, yaw: float):
+        await self.write_value_to_offset(108, yaw, "float")
+
     async def height(self) -> float:
         return await self.read_value_from_offset(132, "float")
 
+    async def write_height(self, height: float):
+        await self.write_value_to_offset(132, height, "float")
+
     async def scale(self) -> float:
         return await self.read_value_from_offset(112, "float")
+
+    async def write_scale(self, scale: float):
+        await self.write_value_to_offset(112, scale, "float")
 
 
 class PlayerActorBody(ActorBody):

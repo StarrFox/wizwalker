@@ -5,10 +5,10 @@ from functools import cached_property
 import pymem
 
 from . import Keycode, utils
-from .memory import HookHandler, PlayerStats, PlayerActorBody
+from .memory import HookHandler, PlayerStats, PlayerActorBody, PlayerDuel
 
 from .constants import user32
-
+from .utils import XYZ
 
 WIZARD_SPEED = 580
 
@@ -60,6 +60,10 @@ class Client:
     @cached_property
     def player_body(self) -> PlayerActorBody:
         return PlayerActorBody(self.hook_handler)
+
+    @cached_property
+    def player_duel(self) -> PlayerDuel:
+        return PlayerDuel(self.hook_handler)
 
     async def activate_hooks(self):
         """
@@ -124,38 +128,6 @@ class Client:
             # mouse button up
             send_method(self.window_handle, button_down_message + 1, 0, 0)
 
-    async def goto(
-        self,
-        x: float,
-        y: float,
-        *,
-        speed_multiplier: float = 1.0,
-        use_nodes: bool = False,
-    ):
-        """
-        Moves the player to a specific x and y
-
-        Args:
-            x: X to move to
-            y: Y to move to
-            speed_multiplier: Multiplier for speed (for mounts) i.e. 1.4 for 40%
-            use_nodes: If node date should be used, currently WIP
-        """
-        if use_nodes is False:
-            await self._to_point(x, y, speed_multiplier)
-        else:
-            raise NotImplemented("Node data not implemented")
-
-    async def _to_point(self, x, y, speed_multiplier=1.0):
-        current_xyz = await self.xyz()
-        target_xyz = utils.XYZ(x, y, current_xyz.z)
-        distance = current_xyz - target_xyz
-        move_seconds = distance / (WIZARD_SPEED * speed_multiplier)
-        yaw = utils.calculate_perfect_yaw(current_xyz, target_xyz)
-
-        await self.set_yaw(yaw)
-        await utils.timed_send_key(self.window_handle, Keycode.W, move_seconds)
-
     async def set_mouse_position(
         self,
         x: int,
@@ -197,27 +169,38 @@ class Client:
         send_method(self.window_handle, 0x200, 0, 0)
         return res
 
-    async def teleport(
-        self, x: float = None, y: float = None, z: float = None, yaw: float = None
-    ) -> bool:
+    async def goto(
+        self, x: float, y: float, *, speed_multiplier: float = 1.0,
+    ):
         """
-        Teleport the player to a set x, y, z
+        Moves the player to a specific x and y
 
         Args:
-            x: X to teleport to or None to not change
-            y: Y to teleport to or None to not change
-            z: Z to teleport to or None to not change
+            x: X to move to
+            y: Y to move to
+            speed_multiplier: Multiplier for speed (for mounts) i.e. 1.4 for 40%
+        """
+        current_xyz = await self.player_body.position()
+        target_xyz = utils.XYZ(x, y, current_xyz.z)
+        distance = current_xyz - target_xyz
+        move_seconds = distance / (WIZARD_SPEED * speed_multiplier)
+        yaw = utils.calculate_perfect_yaw(current_xyz, target_xyz)
+
+        await self.player_body.write_yaw(yaw)
+        await utils.timed_send_key(self.window_handle, Keycode.W, move_seconds)
+
+    async def teleport(self, xyz: XYZ, yaw: int = None) -> bool:
+        """
+        Teleport the client
+
+        Args:
+            xyz: xyz to teleport to
             yaw: yaw to set or None to not change
 
         Raises:
-            RuntimeError: player_struct hook not active
-
-        Returns:
-            True if telelporting succseeded, False otherwise
+            RuntimeError: player hook not active
         """
-        res = await self.set_xyz(x=x, y=y, z=z)
+        await self.player_body.write_position(xyz)
 
         if yaw is not None:
-            res = res and await self.set_yaw(yaw)
-
-        return res
+            await self.player_body.write_yaw(yaw)
