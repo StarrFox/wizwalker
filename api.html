@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.16.4
+                0.17.0
               </div>
             
           
@@ -252,20 +252,6 @@
 </dd></dl>
 
 <dl class="py method">
-<dt id="wizwalker.WizWalker.get_wizard_messages">
-<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">get_wizard_messages</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">dict</span><a class="headerlink" href="#wizwalker.WizWalker.get_wizard_messages" title="Permalink to this definition">¶</a></dt>
-<dd><p>Loads wizard messages from cache</p>
-<dl class="field-list simple">
-<dt class="field-odd">Raises</dt>
-<dd class="field-odd"><p><strong>RuntimeError</strong> – wizard messages haven’t been cached yet</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>the loaded wizard messages</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
 <dt id="wizwalker.WizWalker.install_location">
 <em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">install_location</span></code><a class="headerlink" href="#wizwalker.WizWalker.install_location" title="Permalink to this definition">¶</a></dt>
 <dd><p>Wizard101 install location</p>
@@ -371,13 +357,69 @@ x and y positions are relative to the top left corner of the screen</p>
 <dl class="py method">
 <dt id="wizwalker.Client.energy">
 <em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">energy</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.Client.energy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Player energy</p>
+<dd><p>Player max energy</p>
 <dl class="field-list simple">
 <dt class="field-odd">Raises</dt>
 <dd class="field-odd"><p><strong>RuntimeError</strong> – player_stat_struct hook not active</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>energy int or None if hooked function hasn’t run yet</p>
+<dd class="field-even"><p>max energy int or None if hooked function hasn’t run yet</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.Client.fishing_experience">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">fishing_experience</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.Client.fishing_experience" title="Permalink to this definition">¶</a></dt>
+<dd><p>Player fishing_experience</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>RuntimeError</strong> – player_stat_struct hook not active</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>fishing experience int or None if hooked function hasn’t run yet</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.Client.fishing_level">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">fishing_level</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.Client.fishing_level" title="Permalink to this definition">¶</a></dt>
+<dd><p>Player fishing level</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>RuntimeError</strong> – player_stat_struct hook not active</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>fishing level int or None if hooked function hasn’t run yet</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.Client.gardening_experience">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">gardening_experience</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.Client.gardening_experience" title="Permalink to this definition">¶</a></dt>
+<dd><p>Player gardening experience</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>RuntimeError</strong> – player_stat_struct hook not active</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>gardening experience int or None if hooked function hasn’t run yet</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.Client.gardening_level">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">gardening_level</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.Client.gardening_level" title="Permalink to this definition">¶</a></dt>
+<dd><p>Player gardening level</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>RuntimeError</strong> – player_stat_struct hook not active</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>gardening level int or None if hooked function hasn’t run yet</p>
 </dd>
 </dl>
 </dd></dl>
@@ -438,6 +480,20 @@ x and y positions are relative to the top left corner of the screen</p>
 </dd></dl>
 
 <dl class="py method">
+<dt id="wizwalker.Client.level">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">level</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.Client.level" title="Permalink to this definition">¶</a></dt>
+<dd><p>Player level</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>RuntimeError</strong> – player_stat_struct hook not active</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>level int or None if hooked function hasn’t run yet</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="wizwalker.Client.login">
 <code class="sig-name descname"><span class="pre">login</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">username</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.login" title="Permalink to this definition">¶</a></dt>
 <dd><p>Login to a client that is at the login screen</p>
@@ -461,6 +517,50 @@ x and y positions are relative to the top left corner of the screen</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>mana int or None if hooked function hasn’t run yet</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.Client.max_health">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">max_health</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.Client.max_health" title="Permalink to this definition">¶</a></dt>
+<dd><p>Player max health</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>RuntimeError</strong> – player_stat_struct hook not active</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>max health int or None if hooked function hasn’t run yet</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.Client.max_mana">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">max_mana</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.Client.max_mana" title="Permalink to this definition">¶</a></dt>
+<dd><p>Player max mana</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>RuntimeError</strong> – player_stat_struct hook not active</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>max mana int or None if hooked function hasn’t run yet</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.Client.max_potions">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">max_potions</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.Client.max_potions" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Player full potions</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>RuntimeError</strong> – player_stat_struct hook not active</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>max potions float or None if hooked function hasn’t run yet</p>
 </dd>
 </dl>
 </dd></dl>
@@ -496,30 +596,22 @@ in combat/dialog</p>
 
 <dl class="py method">
 <dt id="wizwalker.Client.potions">
-<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">potions</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.Client.potions" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">potions</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.Client.potions" title="Permalink to this definition">¶</a></dt>
 <dd><p>Player full potions</p>
 <dl class="field-list simple">
 <dt class="field-odd">Raises</dt>
 <dd class="field-odd"><p><strong>RuntimeError</strong> – player_stat_struct hook not active</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p># of potions int or None if hooked function hasn’t run yet</p>
+<dd class="field-even"><p>potions float or None if hooked function hasn’t run yet</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt id="wizwalker.Client.potions_alt">
-<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">potions_alt</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.Client.potions_alt" title="Permalink to this definition">¶</a></dt>
-<dd><p>Player full potions (alternative)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Raises</dt>
-<dd class="field-odd"><p><strong>RuntimeError</strong> – potion hook not active</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p># of potions int or None if hooked function hasn’t run yet</p>
-</dd>
-</dl>
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">potions_alt</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.Client.potions_alt" title="Permalink to this definition">¶</a></dt>
+<dd><p>copatibility function for old scripts; removed in 1.0</p>
 </dd></dl>
 
 <dl class="py method">
@@ -935,12 +1027,6 @@ top left corner of the client</p>
 </ul>
 </dd>
 </dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="wizwalker.utils.pharse_message_file">
-<code class="sig-prename descclassname"><span class="pre">wizwalker.utils.</span></code><code class="sig-name descname"><span class="pre">pharse_message_file</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.utils.pharse_message_file" title="Permalink to this definition">¶</a></dt>
-<dd><p>Pharse a message file’s data</p>
 </dd></dl>
 
 <dl class="py function">
