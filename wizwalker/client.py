@@ -170,7 +170,7 @@ class Client:
         target_xyz = utils.XYZ(x, y, current_xyz.z)
         distance = current_xyz - target_xyz
         move_seconds = distance / (WIZARD_SPEED * speed_multiplier)
-        yaw = current_xyz.yaw(target_xyz)
+        yaw = utils.calculate_perfect_yaw(current_xyz, target_xyz)
 
         await self.set_yaw(yaw)
         await utils.timed_send_key(self.window_handle, Keycode.W, move_seconds)
