@@ -174,60 +174,12 @@ class AutoBotBaseHook(MemoryHook):
     Subclass of MemoryHook that uses an autobot function for bytes so addresses arent huge
     """
 
-    # Yes this does have to be this long
-    AUTOBOT_PATTERN = (
-        rb"\x48\x8B\xC4\x55\x41\x54\x41\x55\x41\x56\x41\x57"
-        rb"\x48\x8D\xA8\x18\xFE\xFF\xFF\x48\x81\xEC\xC0\x02\x00"
-        rb"\x00\x48\xC7\x45\xC8\xFE\xFF\xFF\xFF\x48\x89\x58\x10"
-        rb"\x48\x89\x70\x18\x48\x89\x78\x20\x48\x8B\x05\x63\xA0"
-        rb"\xBE\x01\x48\x33\xC4\x48\x89\x85\xB0\x01\x00\x00\x4C\x8B\xE9"
-    )
-    # rounded down
-    AUTOBOT_SIZE = 3900
-
-    _autobot_addr = None
-    # How far into the function we are
-    _autobot_bytes_offset = 0
-
-    _autobot_original_bytes = None
-
-    # this is really hacky
-    _hooked_instances = 0
-
     def alloc(self, size: int) -> int:
-        if self._autobot_addr is None:
-            addr = self.pattern_scan(self.AUTOBOT_PATTERN)
-            # this is so all instances have the address
-            AutoBotBaseHook._autobot_addr = addr
+        return self.memory_handler.hook_handler.get_open_autobot_address(size)
 
-        if self._autobot_bytes_offset + size > self.AUTOBOT_SIZE:
-            raise RuntimeError("Somehow used the entirety of the autobot function")
-
-        if self._autobot_original_bytes is None:
-            AutoBotBaseHook._autobot_original_bytes = self.read_bytes(
-                self._autobot_addr, self.AUTOBOT_SIZE
-            )
-            # this is so instructions don't collide
-            self.write_bytes(self._autobot_addr, b"\x00" * self.AUTOBOT_SIZE)
-
-        addr = self._autobot_addr + self._autobot_bytes_offset
-        AutoBotBaseHook._autobot_bytes_offset += size
-
-        return addr
-
-    def hook(self) -> Any:
-        AutoBotBaseHook._hooked_instances += 1
-        return super().hook()
-
-    # TODO: make it so this "deallocates" autobot bytes
     # This if overwritten bc we never call free
     def unhook(self):
-        AutoBotBaseHook._hooked_instances -= 1
         self.write_bytes(self.jump_address, self.jump_original_bytecode)
-
-        if self._hooked_instances == 0:
-            self.write_bytes(self._autobot_addr, self._autobot_original_bytes)
-            AutoBotBaseHook._autobot_bytes_offset = 0
 
 
 # This is a function and not a subclass so I don't have to change anything in handler
@@ -314,7 +266,7 @@ def player_hook_bytecode_gen(_, packed_exports):
 
 
 PlayerHook = simple_hook(
-    pattern=rb"\xF2\x0F\x10\x40\x58\xF2\x0F\x11\x02",
+    pattern=rb"\xF2\x0F\x10\x40\x58\xF2",
     bytecode_generator=player_hook_bytecode_gen,
     exports=[("player_struct", 8)],
 )
@@ -336,7 +288,7 @@ def player_stat_hook_bytecode_gen(_, packed_exports):
 
 
 PlayerStatHook = simple_hook(
-    pattern=rb"\x03\x59\x54\x0F\x29\x74\x24\x20\x0F\x57",
+    pattern=rb"\x03\x59\x54\x0F\x29\x74\x24\x20\x0F\x57\xF6\xC7\x44......\x66\x0F\x6E\xC3\x0F\x5B\xC0",
     bytecode_generator=player_stat_hook_bytecode_gen,
     instruction_length=8,
     exports=[("stat_addr", 8)],
@@ -357,7 +309,7 @@ def quest_hook_bytecode_gen(_, packed_exports):
 
 
 QuestHook = simple_hook(
-    pattern=rb"\xF3\x41\x0F\x10\x86\xAC\x0C\x00\x00",
+    pattern=rb".........\xF3\x0F\x11\x45\xE0.........\xF3\x0F\x11\x4D\xE4.........\xF3\x0F\x11\x45\xE8\x48",
     bytecode_generator=quest_hook_bytecode_gen,
     exports=[("cord_struct", 4)],
     noops=4,
@@ -378,7 +330,7 @@ def backpack_stat_bytecode_gen(_, packed_exports):
 
 
 BackpackStatHook = simple_hook(
-    pattern=rb"\x01\x83\x38\x05\x00\x00\x48\x8B\x8B\x58\x02\x00\x00\x48\x85\xC9",
+    pattern=rb"\x01............\x48\x85\xC9\x74\x0B\xE8....\x01.....\x48\x83",
     bytecode_generator=backpack_stat_bytecode_gen,
     instruction_length=6,
     exports=[("backpack_struct_addr", 8)],
@@ -414,10 +366,9 @@ class User32GetClassInfoBaseHook(AutoBotBaseHook):
     Subclass of MemoryHook that uses the user32.GetClassInfoExA for bytes so addresses arent huge
     """
 
-    # Yes this does have to be this long
     AUTOBOT_PATTERN = (
-        rb"\x48\x89\x5C\x24\x20\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D"
-        rb"\xAC\x24\x60\xFF\xFF\xFF\x48\x81\xEC\xA0\x01\x00\x00\x48\x8B\x05\x9A\xFD\x0A\x00"
+        rb"\x48\x89\x5C\x24\x20\x55\x56\x57\x41\x54"
+        rb"\x41\x55\x41\x56\x41\x57........\x48......\x48\x8B\x05\x9A"
     )
     # rounded down
     AUTOBOT_SIZE = 1200
@@ -477,7 +428,7 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
             rb"[\x00\x01]\xFF\x50\x18\x66\xC7", module="WizardGraphicalClient.exe"
         )
         bool_two_address = self.pattern_scan(
-            rb"[\x00\x01]\x33\xFF\x89\xBD\x80\x01\x00\x00\x8D",
+            rb"[\x00\x01]\x33\xFF\x89....\x00.....\x8D",
             module="WizardGraphicalClient.exe",
         )
 
@@ -519,7 +470,7 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
 
     def get_pattern(self) -> Tuple[re.Pattern, str]:
         return (
-            re.compile(rb"[\xBA\xE9]....\x44\x8D\x42\x7E\x48\xFF\x25\xF8\xB0\x06\x00"),
+            re.compile(rb"[\xBA\xE9]....\x44\x8D\x42\x7E\x48\xFF\x25"),
             "user32.dll",
         )
 
