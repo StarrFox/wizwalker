@@ -424,15 +424,17 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
 
     def posthook(self):
         bool_one_address = self.pattern_scan(
-            rb"[\x00\x01]\xFF\x50\x18\x66\xC7", module="WizardGraphicalClient.exe"
+            rb"\x00\xFF\x50\x18\x66\xC7", module="WizardGraphicalClient.exe"
         )
         bool_two_address = self.pattern_scan(
-            rb"[\x00\x01]\x33\xFF\x89....\x00.....\x8D",
-            module="WizardGraphicalClient.exe",
+            rb"\xC6\x86.....\x33\xFF", module="WizardGraphicalClient.exe",
         )
 
         if bool_one_address is None or bool_two_address is None:
             raise RuntimeError("toogle bool address pattern failed")
+
+        # bool is 6 away from pattern target
+        bool_two_address += 6
 
         self.toggle_bool_addrs = (bool_one_address, bool_two_address)
         self.hook_handler.process.write_uchar(bool_one_address, 1)
