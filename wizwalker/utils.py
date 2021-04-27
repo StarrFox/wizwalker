@@ -32,6 +32,9 @@ class XYZ:
     def __str__(self):
         return f"({self.x}, {self.y}, {self.z})"
 
+    def __iter__(self):
+        return iter((self.x, self.y, self.z))
+
     def distance(self, other):
         """
         Calculate the distance between two points
