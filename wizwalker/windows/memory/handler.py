@@ -1,6 +1,5 @@
 import asyncio
 import functools
-import struct
 from collections import defaultdict
 
 import pymem
@@ -48,6 +47,184 @@ def register_hook(hook: str):
     return decorator
 
 
+def scan_all_from(start_address: int, handle: int, pattern: bytes):
+    next_region = start_address
+    found = None
+
+    while next_region < 0x7FFFFFFF0000:
+        next_region, found = pymem.pattern.scan_pattern_page(
+            handle, next_region, pattern
+        )
+        if found:
+            break
+
+    return found
+
+
+class HookHandler:
+    AUTOBOT_PATTERN = (
+        rb"\x48\x8B\xC4\x55\x41\x54\x41\x55\x41\x56\x41\x57......."
+        rb"\x48......\x48.......\x48\x89\x58\x10\x48\x89"
+        rb"\x70\x18\x48\x89\x78\x20.......\x48\x33\xC4....."
+        rb"..\x4C\x8B\xE9.......\x80"
+    )
+    # rounded down
+    AUTOBOT_SIZE = 3900
+
+    def __init__(self, memory_handler):
+        self.process = memory_handler.process
+        self.memory_handler = memory_handler
+
+        self.autobot_address = None
+        self.autobot_lock = None
+        self.original_autobot_bytes = None
+
+    @staticmethod
+    async def run_in_executor(func, *args, **kwargs):
+        loop = asyncio.get_event_loop()
+        function = functools.partial(func, *args, **kwargs)
+
+        return await loop.run_in_executor(None, function)
+
+    # TODO: replace with abstract memory-object
+    # This could be blocking; handle that
+    def pattern_scan(self, pattern: bytes, *, module: str = None):
+        if module:
+            module = pymem.process.module_from_name(
+                self.memory_handler.process.process_handle, module
+            )
+            jump_address = pymem.pattern.pattern_scan_module(
+                self.memory_handler.process.process_handle, module, pattern
+            )
+
+        else:
+            jump_address = scan_all_from(
+                self.memory_handler.process.process_base.lpBaseOfDll,
+                self.memory_handler.process.process_handle,
+                pattern,
+            )
+
+        return jump_address
+
+    def read_bytes(self, address: int, size: int) -> bytes:
+        return self.memory_handler.process.read_bytes(address, size)
+
+    def write_bytes(self, address: int, _bytes: bytes):
+        self.memory_handler.process.write_bytes(
+            address, _bytes, len(_bytes),
+        )
+
+    def get_autobot_address(self):
+        addr = self.pattern_scan(self.AUTOBOT_PATTERN)
+        if addr is None:
+            raise RuntimeError("Pattern scan failed for autobot pattern")
+
+        self.autobot_address = addr
+
+    def prepare_autobot(self):
+        if self.autobot_address is None:
+            self.get_autobot_address()
+
+            self.original_autobot_bytes = self.read_bytes(
+                self.autobot_address, self.AUTOBOT_SIZE
+            )
+
+    # also blocking
+    def rewrite_autobot(self):
+        if self.autobot_address is not None:
+            self.write_bytes(self.autobot_address, self.original_autobot_bytes)
+
+    def close(self):
+        self.rewrite_autobot()
+
+    async def activate_player_hook(self):
+        if self.autobot_lock is None:
+            self.autobot_lock = asyncio.Lock()
+
+        # this is so it isn't prepared more than once
+        async with self.autobot_lock:
+            self.prepare_autobot()
+
+        player_hook = PlayerHook(self.memory_handler)
+        player_hook.hook()
+        # await self.run_in_executor(player_hook.hook)
+
+        self.memory_handler.hooks.append(player_hook)
+        self.memory_handler.player_struct_addr = player_hook.player_struct
+
+    async def activate_duel_hook(self):
+        if self.autobot_lock is None:
+            self.autobot_lock = asyncio.Lock()
+
+        # this is so it isn't prepared more than once
+        async with self.autobot_lock:
+            self.prepare_autobot()
+
+        duel_hook = DuelHook(self.memory_handler)
+        await self.run_in_executor(duel_hook.hook)
+
+        self.memory_handler.hooks.append(duel_hook)
+        self.memory_handler.current_duel_addr = duel_hook.current_duel_addr
+
+    async def activate_quest_hook(self):
+        if self.autobot_lock is None:
+            self.autobot_lock = asyncio.Lock()
+
+        # this is so it isn't prepared more than once
+        async with self.autobot_lock:
+            self.prepare_autobot()
+
+        quest_hook = QuestHook(self.memory_handler)
+        await self.run_in_executor(quest_hook.hook)
+
+        self.memory_handler.hooks.append(quest_hook)
+        self.memory_handler.quest_struct_addr = quest_hook.cord_struct
+
+    async def activate_player_stat_hook(self):
+        if self.autobot_lock is None:
+            self.autobot_lock = asyncio.Lock()
+
+        # this is so it isn't prepared more than once
+        async with self.autobot_lock:
+            self.prepare_autobot()
+
+        player_stat_hook = PlayerStatHook(self.memory_handler)
+        await self.run_in_executor(player_stat_hook.hook)
+
+        self.memory_handler.hooks.append(player_stat_hook)
+        self.memory_handler.player_stat_addr = player_stat_hook.stat_addr
+
+    async def activate_backpack_stat_hook(self):
+        if self.autobot_lock is None:
+            self.autobot_lock = asyncio.Lock()
+
+        # this is so it isn't prepared more than once
+        async with self.autobot_lock:
+            self.prepare_autobot()
+
+        backpack_stat_hook = BackpackStatHook(self.memory_handler)
+        await self.run_in_executor(backpack_stat_hook.hook)
+
+        self.memory_handler.hooks.append(backpack_stat_hook)
+        self.memory_handler.backpack_stat_addr = backpack_stat_hook.backpack_struct_addr
+
+    async def activate_mouseless_cursor_hook(self):
+        if self.autobot_lock is None:
+            self.autobot_lock = asyncio.Lock()
+
+        # this is so it isn't prepared more than once
+        async with self.autobot_lock:
+            self.prepare_autobot()
+
+        mouseless_cursor_hook = MouselessCursorMoveHook(self.memory_handler)
+        await self.run_in_executor(mouseless_cursor_hook.hook)
+
+        self.memory_handler.hooks.append(mouseless_cursor_hook)
+        self.memory_handler.mouse_pos = mouseless_cursor_hook.mouse_pos_addr
+
+        self.process.write_longlong(self.memory_handler.mouse_pos, 0)
+
+
 class MemoryHandler:
     """
     Handles the internal memory calls, not for public use
@@ -57,6 +234,8 @@ class MemoryHandler:
         self.process = pymem.Pymem()
         self.process.open_process_from_id(pid)
         self.process.check_wow64()
+
+        self.hook_handler = HookHandler(self)
 
         self.player_struct_addr = None
         self.quest_struct_addr = None
@@ -82,6 +261,7 @@ class MemoryHandler:
                 # TODO: error here
                 pass
 
+        self.hook_handler.close()
         self.active_hooks = defaultdict(lambda: False)
 
     def set_hook_active(self, hook):
@@ -93,7 +273,7 @@ class MemoryHandler:
         # some attr on each hook method
         for thing in dir(self):
             if thing.startswith("hook_") and not any(
-                thing.endswith(i) for i in ("all", "functs")
+                thing.endswith(i) for i in ("all", "functs", "handler")
             ):
                 hooks[thing.replace("hook_", "")] = getattr(self, thing)
 
@@ -416,75 +596,38 @@ class MemoryHandler:
             return duel_phase in (0, 1, 2, 3, 4, 5, 6)
 
     async def hook_all(self):
-        hooks = []
-        for hook in self.hook_functs().values():
-            # Need the coroutine objects
-            hooks.append(hook())
+        hooks = [
+            self.hook_player_struct(),
+            self.hook_quest_struct(),
+            self.hook_backpack_stat_struct(),
+            self.hook_duel(),
+            self.hook_mouseless_cursor_move(),
+            self.hook_player_stat_struct(),
+        ]
 
         # return_exceptions=True will make all exceptions return as results
         return await asyncio.gather(*hooks, return_exceptions=True)
 
     @register_hook("player_struct")
-    @utils.executor_function
-    def hook_player_struct(self):
-        player_hook = PlayerHook(self)
-        player_hook.hook()
-
-        self.hooks.append(player_hook)
-        self.player_struct_addr = player_hook.player_struct
+    async def hook_player_struct(self):
+        await self.hook_handler.activate_player_hook()
 
     @register_hook("quest_struct")
-    @utils.executor_function
-    def hook_quest_struct(self):
-        quest_hook = QuestHook(self)
-        quest_hook.hook()
-
-        self.hooks.append(quest_hook)
-        self.quest_struct_addr = quest_hook.cord_struct
+    async def hook_quest_struct(self):
+        await self.hook_handler.activate_quest_hook()
 
     @register_hook("player_stat_struct")
-    @utils.executor_function
-    def hook_player_stat_struct(self):
-        player_stat_hook = PlayerStatHook(self)
-        player_stat_hook.hook()
-
-        self.hooks.append(player_stat_hook)
-        self.player_stat_addr = player_stat_hook.stat_addr
+    async def hook_player_stat_struct(self):
+        await self.hook_handler.activate_player_stat_hook()
 
     @register_hook("backpack_stat_struct")
-    @utils.executor_function
-    def hook_backpack_stat_struct(self):
-        backpack_stat_hook = BackpackStatHook(self)
-        backpack_stat_hook.hook()
-
-        self.hooks.append(backpack_stat_hook)
-        self.backpack_stat_addr = backpack_stat_hook.backpack_struct_addr
-
-    # @register_hook("move_lock")
-    # @utils.executor_function
-    # def hook_move_lock(self):
-    #     move_lock_hook = MoveLockHook(self)
-    #     move_lock_hook.hook()
-    #
-    #     self.hooks.append(move_lock_hook)
-    #     self.move_lock_addr = move_lock_hook.move_lock_addr
+    async def hook_backpack_stat_struct(self):
+        await self.hook_handler.activate_backpack_stat_hook()
 
     @register_hook("duel")
-    @utils.executor_function
-    def hook_duel(self):
-        duel_hook = DuelHook(self)
-        duel_hook.hook()
-
-        self.hooks.append(duel_hook)
-        self.current_duel_addr = duel_hook.current_duel_addr
+    async def hook_duel(self):
+        await self.hook_handler.activate_duel_hook()
 
     @register_hook("mouseless_cursor_move")
-    @utils.executor_function
-    def hook_mouseless_cursor_move(self):
-        mouseless_cursor_hook = MouselessCursorMoveHook(self)
-        mouseless_cursor_hook.hook()
-
-        self.hooks.append(mouseless_cursor_hook)
-        self.mouse_pos = mouseless_cursor_hook.mouse_pos_addr
-
-        self.process.write_longlong(self.mouse_pos, 0)
+    async def hook_mouseless_cursor_move(self):
+        await self.hook_handler.activate_mouseless_cursor_hook()
