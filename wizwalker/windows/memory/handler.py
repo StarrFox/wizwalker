@@ -78,6 +78,7 @@ class HookHandler:
         self.autobot_address = None
         self.autobot_lock = None
         self.original_autobot_bytes = None
+        self.autobot_pos = 0
 
     @staticmethod
     async def run_in_executor(func, *args, **kwargs):
@@ -113,6 +114,14 @@ class HookHandler:
         self.memory_handler.process.write_bytes(
             address, _bytes, len(_bytes),
         )
+
+    def get_open_autobot_address(self, size: int) -> int:
+        if self.autobot_pos + size > self.AUTOBOT_SIZE:
+            raise RuntimeError("Somehow went over autobot size")
+
+        addr = self.autobot_address + self.autobot_pos
+        self.autobot_pos += size
+        return addr
 
     def get_autobot_address(self):
         addr = self.pattern_scan(self.AUTOBOT_PATTERN)

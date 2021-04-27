@@ -174,63 +174,12 @@ class AutoBotBaseHook(MemoryHook):
     Subclass of MemoryHook that uses an autobot function for bytes so addresses arent huge
     """
 
-    # Yes this does have to be this long
-    AUTOBOT_PATTERN = (
-        rb"\x48\x8B\xC4\x55\x41\x54\x41\x55\x41\x56\x41\x57......."
-        rb"\x48......\x48.......\x48\x89\x58\x10\x48\x89"
-        rb"\x70\x18\x48\x89\x78\x20.......\x48\x33\xC4....."
-        rb"..\x4C\x8B\xE9.......\x80"
-    )
-    # rounded down
-    AUTOBOT_SIZE = 3900
-
-    _autobot_addr = None
-    # How far into the function we are
-    _autobot_bytes_offset = 0
-
-    _autobot_original_bytes = None
-
-    # this is really hacky
-    _hooked_instances = 0
-
     def alloc(self, size: int) -> int:
-        if self._autobot_addr is None:
-            addr = self.pattern_scan(self.AUTOBOT_PATTERN)
+        return self.memory_handler.hook_handler.get_open_autobot_address(size)
 
-            if addr is None:
-                raise RuntimeError("Autobot signature failed")
-
-            # this is so all instances have the address
-            AutoBotBaseHook._autobot_addr = addr
-
-        if self._autobot_bytes_offset + size > self.AUTOBOT_SIZE:
-            raise RuntimeError("Somehow used the entirety of the autobot function")
-
-        if self._autobot_original_bytes is None:
-            AutoBotBaseHook._autobot_original_bytes = self.read_bytes(
-                self._autobot_addr, self.AUTOBOT_SIZE
-            )
-            # this is so instructions don't collide
-            self.write_bytes(self._autobot_addr, b"\x00" * self.AUTOBOT_SIZE)
-
-        addr = self._autobot_addr + self._autobot_bytes_offset
-        AutoBotBaseHook._autobot_bytes_offset += size
-
-        return addr
-
-    def hook(self) -> Any:
-        AutoBotBaseHook._hooked_instances += 1
-        return super().hook()
-
-    # TODO: make it so this "deallocates" autobot bytes
     # This if overwritten bc we never call free
     def unhook(self):
-        AutoBotBaseHook._hooked_instances -= 1
         self.write_bytes(self.jump_address, self.jump_original_bytecode)
-
-        if self._hooked_instances == 0:
-            self.write_bytes(self._autobot_addr, self._autobot_original_bytes)
-            AutoBotBaseHook._autobot_bytes_offset = 0
 
 
 # This is a function and not a subclass so I don't have to change anything in handler
