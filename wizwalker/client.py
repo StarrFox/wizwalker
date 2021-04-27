@@ -5,7 +5,7 @@ from functools import cached_property
 from typing import Optional
 
 from . import Keycode, utils
-from .windows import MemoryHandler
+from .memory import MemoryHandler
 
 from .constants import user32
 

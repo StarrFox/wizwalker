@@ -1,6 +1,5 @@
 import asyncio
 import functools
-import struct
 from collections import defaultdict
 
 import pymem

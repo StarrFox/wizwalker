@@ -11,7 +11,6 @@ from concurrent.futures.thread import ThreadPoolExecutor
 from ctypes import WinDLL
 from pathlib import Path
 from typing import Callable, Iterable
-from xml.etree import ElementTree
 
 import appdirs
 
@@ -342,15 +341,17 @@ def pharse_node_data(file_data: bytes) -> dict:
         if start == -1:
             break
 
-        entry = file_data[start : start + 48 + 2]
+        # fmt: off
+        entry = file_data[start: start + 48 + 2]
 
-        cords_data = entry[16 : 16 + (4 * 3)]
+        cords_data = entry[16: 16 + (4 * 3)]
         x = struct.unpack("<f", cords_data[0:4])[0]
         y = struct.unpack("<f", cords_data[4:8])[0]
         z = struct.unpack("<f", cords_data[8:12])[0]
 
-        node_num = entry[48 : 48 + 2]
+        node_num = entry[48: 48 + 2]
         unpacked_num = struct.unpack("<H", node_num)[0]
+        # fmt: on
 
         node_data[unpacked_num] = (x, y, z)
 

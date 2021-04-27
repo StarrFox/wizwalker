@@ -83,11 +83,11 @@ class CardNotFound(WizWalkerError):
         card_name_or_position: The unfound card name or position
     """
 
-    def __init__(self, card_name_or_positon: Union[str, int]):
+    def __init__(self, card_name_or_position: Union[str, int]):
         super().__init__(
-            f"Card with name or position {card_name_or_positon} not found."
+            f"Card with name or position {card_name_or_position} not found."
         )
-        self.card_name_or_positon = card_name_or_positon
+        self.card_name_or_positon = card_name_or_position
 
 
 class CardAlreadyEnchanted(WizWalkerError):
