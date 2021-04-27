@@ -80,7 +80,9 @@ class WizWalkerConsole(Monitor):
             self.write(f"Timeout error with coro {coro.__name__}")
             future.cancel()
         except Exception as exc:
-            self.write(f"Error in coro {coro.__name__}: {exc}")
+            import traceback
+
+            traceback.print_exception(type(exc), exc, exc.__traceback__)
         else:
             return result
 

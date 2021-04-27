@@ -11,7 +11,7 @@ from .hooks import (
     QuestHook,
     PlayerStatHook,
     BackpackStatHook,
-    MoveLockHook,
+    DuelHook,
     MouselessCursorMoveHook,
 )
 
@@ -62,10 +62,8 @@ class MemoryHandler:
         self.quest_struct_addr = None
         self.player_stat_addr = None
         self.backpack_stat_addr = None
-        self.packet_socket_discriptor_addr = None
-        self.packet_buffer_addr = None
-        self.packet_buffer_len = None
         self.move_lock_addr = None
+        self.current_duel_addr = None
 
         self.mouse_pos = None
 
@@ -103,6 +101,18 @@ class MemoryHandler:
 
     def is_hook_active(self, hook):
         return self.active_hooks[hook]
+
+    @uses_hook("duel")
+    @utils.executor_function
+    def is_in_battle(self):
+        """True if in battle; False if None"""
+        current_battle_addr = self.process.read_longlong(self.current_duel_addr)
+        try:
+            duel_phase = self.process.read_int(current_battle_addr + 160)
+        except pymem.exception.MemoryReadError:
+            return None
+        else:
+            return duel_phase in (0, 1, 2, 3, 4, 5, 6)
 
     @uses_hook("mouseless_cursor_move")
     @utils.executor_function
@@ -394,15 +404,16 @@ class MemoryHandler:
         except pymem.exception.MemoryReadError:
             return None
 
-    @uses_hook("move_lock")
+    @uses_hook("duel")
     @utils.executor_function
     def read_move_lock(self):
-        move_lock = self.process.read_longlong(self.move_lock_addr)
+        current_battle_addr = self.process.read_longlong(self.current_duel_addr)
         try:
-            data = self.process.read_bytes(move_lock, 1)
-            return struct.unpack("?", data)[0]
+            duel_phase = self.process.read_int(current_battle_addr + 160)
         except pymem.exception.MemoryReadError:
             return None
+        else:
+            return duel_phase in (0, 1, 2, 3, 4, 5, 6)
 
     async def hook_all(self):
         hooks = []
@@ -449,14 +460,23 @@ class MemoryHandler:
         self.hooks.append(backpack_stat_hook)
         self.backpack_stat_addr = backpack_stat_hook.backpack_struct_addr
 
-    @register_hook("move_lock")
-    @utils.executor_function
-    def hook_move_lock(self):
-        move_lock_hook = MoveLockHook(self)
-        move_lock_hook.hook()
+    # @register_hook("move_lock")
+    # @utils.executor_function
+    # def hook_move_lock(self):
+    #     move_lock_hook = MoveLockHook(self)
+    #     move_lock_hook.hook()
+    #
+    #     self.hooks.append(move_lock_hook)
+    #     self.move_lock_addr = move_lock_hook.move_lock_addr
 
-        self.hooks.append(move_lock_hook)
-        self.move_lock_addr = move_lock_hook.move_lock_addr
+    @register_hook("duel")
+    @utils.executor_function
+    def hook_duel(self):
+        duel_hook = DuelHook(self)
+        duel_hook.hook()
+
+        self.hooks.append(duel_hook)
+        self.current_duel_addr = duel_hook.current_duel_addr
 
     @register_hook("mouseless_cursor_move")
     @utils.executor_function

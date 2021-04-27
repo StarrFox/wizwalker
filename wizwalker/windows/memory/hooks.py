@@ -336,7 +336,7 @@ def player_stat_hook_bytecode_gen(_, packed_exports):
 
 
 PlayerStatHook = simple_hook(
-    pattern=rb"\x03\x59\x54",
+    pattern=rb"\x03\x59\x54\x0F\x29\x74\x24\x20\x0F\x57",
     bytecode_generator=player_stat_hook_bytecode_gen,
     instruction_length=8,
     exports=[("stat_addr", 8)],
@@ -359,7 +359,7 @@ def quest_hook_bytecode_gen(_, packed_exports):
 QuestHook = simple_hook(
     pattern=rb"\xF3\x41\x0F\x10\x86\xAC\x0C\x00\x00",
     bytecode_generator=quest_hook_bytecode_gen,
-    exports=[("stat_addr", 4)],
+    exports=[("cord_struct", 4)],
     noops=4,
 )
 
@@ -386,62 +386,27 @@ BackpackStatHook = simple_hook(
 )
 
 
-class MoveLockHook(MemoryHook):
-    def __init__(self, memory_handler):
-        super().__init__(memory_handler)
-        self.move_lock_addr = None
+def duel_hook_bytecode_gen(_, exports):
+    # fmt: off
+    bytecode = (
+        b"\x48\x39\xD1"  # cmp rcx,rdx
+        b"\x0F\x85\x0F\x00\x00\x00"  # jne 15
+        b"\x50"  # push rax
+        b"\x49\x8B\x07"  # mov rax,[r15]
+        b"\x48\xA3" + exports[0][1] +  # mov [current_duel],rax
+        b"\x58"  # pop rax
+        b"\x48\x89\x4C\x24\x50"  # original instruction
+    )
+    # fmt: on
 
-    def set_move_lock_addr(self):
-        self.move_lock_addr = self.memory_handler.process.allocate(4)
+    return bytecode
 
-    def free_move_lock_addr(self):
-        self.memory_handler.process.free(self.move_lock_addr)
 
-    def get_pattern(self) -> Tuple[bytes, str]:
-        return (
-            rb"\xCC\x8A\x44..\x8B\x11\x88\x81",
-            "WizardGraphicalClient.exe",
-        )
-
-    def get_jump_address(self, pattern: bytes, *, module=None) -> int:
-        """
-        gets the address to write jump at
-        """
-        jump_address = pymem.pattern.pattern_scan_module(
-            self.memory_handler.process.process_handle, module, pattern
-        )
-
-        return jump_address + 0x7
-
-    def get_jump_bytecode(self) -> bytes:
-        # distance = end - start
-        distance = self.hook_address - self.jump_address
-        relitive_jump = distance - 5  # size of this line
-        packed_relitive_jump = struct.pack("<i", relitive_jump)
-        return b"\xE9" + packed_relitive_jump + b"\x90"
-
-    def get_hook_bytecode(self) -> bytes:
-        self.set_move_lock_addr()
-        packed_move_lock_addr = struct.pack("<i", self.move_lock_addr)
-
-        bytecode = (
-            b"\x52\x8D\x91\x08\x02\x00\x00\x89\x15"
-            + packed_move_lock_addr
-            + b"\x5A\x88\x81\x08\x02\x00\x00"
-        )
-
-        return_addr = self.jump_address + 6
-
-        relitive_return_jump = return_addr - (self.hook_address + len(bytecode)) - 5
-        packed_relitive_return_jump = struct.pack("<i", relitive_return_jump)
-
-        bytecode += b"\xE9" + packed_relitive_return_jump
-
-        return bytecode
-
-    def unhook(self):
-        super().unhook()
-        self.free_move_lock_addr()
+DuelHook = simple_hook(
+    pattern=rb"\x48\x89\x4C\x24\x50\x4C\x89\x74\x24\x48",
+    bytecode_generator=duel_hook_bytecode_gen,
+    exports=[("current_duel_addr", 8)],
+)
 
 
 class User32GetClassInfoBaseHook(AutoBotBaseHook):
@@ -525,7 +490,6 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
 
     def set_mouse_pos_addr(self):
         self.mouse_pos_addr = self.memory_handler.process.allocate(8)
-        print(f"{self.mouse_pos_addr=}")
 
     def free_mouse_pos_addr(self):
         self.memory_handler.process.free(self.mouse_pos_addr)
