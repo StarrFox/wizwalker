@@ -428,8 +428,7 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
             rb"\x00\xFF\x50\x18\x66\xC7", module="WizardGraphicalClient.exe"
         )
         bool_two_address = self.pattern_scan(
-            rb"\xC6\x86.....\x33\xFF",
-            module="WizardGraphicalClient.exe",
+            rb"\xC6\x86.....\x33\xFF", module="WizardGraphicalClient.exe",
         )
 
         if bool_one_address is None or bool_two_address is None:
