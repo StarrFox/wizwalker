@@ -5,7 +5,7 @@ from functools import cached_property
 import pymem
 
 from . import Keycode, utils
-from .memory import HookHandler
+from .memory import HookHandler, PlayerStats, PlayerActorBody
 
 from .constants import user32
 
@@ -38,7 +38,7 @@ class Client:
         """
         Closes this client; unhooking all active hooks
         """
-        await self._memory.close()
+        await self.hook_handler.close()
 
     @cached_property
     def process_id(self) -> int:
@@ -52,6 +52,14 @@ class Client:
         pid = ctypes.wintypes.DWORD()
         user32.GetWindowThreadProcessId(self.window_handle, ctypes.byref(pid))
         return pid.value
+
+    @cached_property
+    def player_stats(self) -> PlayerStats:
+        return PlayerStats(self.hook_handler)
+
+    @cached_property
+    def player_body(self) -> PlayerActorBody:
+        return PlayerActorBody(self.hook_handler)
 
     async def activate_hooks(self):
         """

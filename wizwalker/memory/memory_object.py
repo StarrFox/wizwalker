@@ -18,4 +18,4 @@ class MemoryObject(MemoryReader):
 
     async def read_value_from_offset(self, offset: int, data_type: str) -> Any:
         base_address = await self.read_base_address()
-        return self.read_typed(base_address + offset, data_type)
+        return await self.read_typed(base_address + offset, data_type)

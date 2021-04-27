@@ -118,6 +118,7 @@ class WizWalkerConsole(Monitor):
         self.write("Closing wizwalker, hooks should be rewritten")
         self.run_coro(walker.close())
 
+    # TODO: update to new api
     def do_info(self):
         """Print out info from each client"""
         walker = self.get_local("walker")

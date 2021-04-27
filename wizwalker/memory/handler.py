@@ -74,7 +74,7 @@ class HookHandler(MemoryReader):
         await self.rewrite_autobot()
 
         for hook in self.active_hooks:
-            await self.run_in_executor(hook.unhook())
+            await self.run_in_executor(hook.unhook)
 
     async def check_for_autobot(self):
         if self.autobot_lock is None:
