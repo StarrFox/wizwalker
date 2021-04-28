@@ -18,7 +18,7 @@ class Quester:
             quest_xyz = await client.quest_xyz()
             await client.teleport(quest_xyz.x, quest_xyz.y, quest_xyz.z)
 
-    async def main(self):
+    async def run(self):
         await self.activate_hooks()
 
         quest_hotkey = Hotkey(wizwalker.Keycode.E, self.handle_e_pressed)
@@ -27,6 +27,14 @@ class Quester:
         while True:
             await quest_listener.listen()
 
+    async def close(self):
+        await self.walker.close()
+
 
 if __name__ == "__main__":
-    asyncio.run(Quester().main())
+    quester = Quester()
+    try:
+        asyncio.run(quester.run())
+    except KeyboardInterrupt:
+        print("Exiting")
+        asyncio.run(quester.close())
