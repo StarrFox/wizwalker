@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "wizwalker"
-version = "0.17.4"
+version = "1.0.0-alpha.0"
 description = "Automation bot for wizard101"
 authors = ["StarrFox <starrfox6312@gmail.com>"]
 license = "GPL-3.0-or-later"

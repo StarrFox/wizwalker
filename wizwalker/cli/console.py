@@ -135,7 +135,9 @@ class WizWalkerConsole(Monitor):
                 "read_backpack_stat_base",
             ]
             for attr in hook_handler_attrs:
-                table_data.append([attr, self.run_coro(getattr(client, attr)())])
+                table_data.append(
+                    [attr, self.run_coro(getattr(client.hook_handler, attr)())]
+                )
 
             table = terminaltables.AsciiTable(table_data, f"client-{idx}")
             self.write(table.table)
