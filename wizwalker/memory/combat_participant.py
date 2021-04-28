@@ -1,0 +1,521 @@
+from .memory_object import MemoryObject, DynamicMemoryObject
+from .enums import PipAquiredByEnum
+from .spell import DynamicHand
+
+
+class CombatParticipant(MemoryObject):
+    def read_base_address(self) -> int:
+        raise NotImplementedError()
+
+    async def owner_id_full(self) -> int:
+        return await self.read_value_from_offset(112, "unsigned long long")
+
+    async def write_owner_id_full(self, owner_id_full: int):
+        await self.write_value_to_offset(112, owner_id_full, "unsigned long long")
+
+    async def template_id_full(self) -> int:
+        return await self.read_value_from_offset(120, "unsigned long long")
+
+    async def write_template_id_full(self, template_id_full: int):
+        await self.write_value_to_offset(120, template_id_full, "unsigned long long")
+
+    async def is_player(self) -> bool:
+        return await self.read_value_from_offset(128, "bool")
+
+    async def write_is_player(self, is_player: bool):
+        await self.write_value_to_offset(128, is_player, "bool")
+
+    async def zone_id_full(self) -> int:
+        return await self.read_value_from_offset(136, "unsigned long long")
+
+    async def write_zone_id_full(self, zone_id_full: int):
+        await self.write_value_to_offset(136, zone_id_full, "unsigned long long")
+
+    async def team_id(self) -> int:
+        return await self.read_value_from_offset(144, "int")
+
+    async def write_team_id(self, team_id: int):
+        await self.write_value_to_offset(144, team_id, "int")
+
+    async def primary_magic_school_id(self) -> int:
+        return await self.read_value_from_offset(148, "int")
+
+    async def write_primary_magic_school_id(self, primary_magic_school_id: int):
+        await self.write_value_to_offset(148, primary_magic_school_id, "int")
+
+    async def num_pips(self) -> int:
+        return await self.read_value_from_offset(152, "unsigned char")
+
+    async def write_num_pips(self, num_pips: int):
+        await self.write_value_to_offset(152, num_pips, "unsigned char")
+
+    async def num_power_pips(self) -> int:
+        return await self.read_value_from_offset(153, "unsigned char")
+
+    async def write_num_power_pips(self, num_power_pips: int):
+        await self.write_value_to_offset(153, num_power_pips, "unsigned char")
+
+    async def num_shadow_pips(self) -> int:
+        return await self.read_value_from_offset(154, "unsigned char")
+
+    async def write_num_shadow_pips(self, num_shadow_pips: int):
+        await self.write_value_to_offset(154, num_shadow_pips, "unsigned char")
+
+    # async def pip_round_rates(self) -> class SharedPointer<class ModifyPipRoundRateData>:
+    #     return await self.read_value_from_offset(160, "class SharedPointer<class ModifyPipRoundRateData>")
+    #
+    # async def write_pip_round_rates(self, pip_round_rates: class SharedPointer<class ModifyPipRoundRateData>):
+    #     await self.write_value_to_offset(160, pip_round_rates, "class SharedPointer<class ModifyPipRoundRateData>")
+
+    async def pips_suspended(self) -> bool:
+        return await self.read_value_from_offset(176, "bool")
+
+    async def write_pips_suspended(self, pips_suspended: bool):
+        await self.write_value_to_offset(176, pips_suspended, "bool")
+
+    async def stunned(self) -> int:
+        return await self.read_value_from_offset(180, "int")
+
+    async def write_stunned(self, stunned: int):
+        await self.write_value_to_offset(180, stunned, "int")
+
+    async def mindcontrolled(self) -> int:
+        return await self.read_value_from_offset(208, "int")
+
+    async def write_mindcontrolled(self, mindcontrolled: int):
+        await self.write_value_to_offset(208, mindcontrolled, "int")
+
+    async def original_team(self) -> int:
+        return await self.read_value_from_offset(216, "int")
+
+    async def write_original_team(self, original_team: int):
+        await self.write_value_to_offset(216, original_team, "int")
+
+    async def n_aura_turn_length(self) -> int:
+        return await self.read_value_from_offset(228, "int")
+
+    async def write_n_aura_turn_length(self, n_aura_turn_length: int):
+        await self.write_value_to_offset(228, n_aura_turn_length, "int")
+
+    async def clue(self) -> int:
+        return await self.read_value_from_offset(220, "int")
+
+    async def write_clue(self, clue: int):
+        await self.write_value_to_offset(220, clue, "int")
+
+    async def rounds_dead(self) -> int:
+        return await self.read_value_from_offset(224, "int")
+
+    async def write_rounds_dead(self, rounds_dead: int):
+        await self.write_value_to_offset(224, rounds_dead, "int")
+
+    async def n_polymorph_turn_length(self) -> int:
+        return await self.read_value_from_offset(232, "int")
+
+    async def write_n_polymorph_turn_length(self, n_polymorph_turn_length: int):
+        await self.write_value_to_offset(232, n_polymorph_turn_length, "int")
+
+    async def player_health(self) -> int:
+        return await self.read_value_from_offset(236, "int")
+
+    async def write_player_health(self, player_health: int):
+        await self.write_value_to_offset(236, player_health, "int")
+
+    async def max_player_health(self) -> int:
+        return await self.read_value_from_offset(240, "int")
+
+    async def write_max_player_health(self, max_player_health: int):
+        await self.write_value_to_offset(240, max_player_health, "int")
+
+    async def hide_current_hp(self) -> bool:
+        return await self.read_value_from_offset(244, "bool")
+
+    async def write_hide_current_hp(self, _hide_current_h_p: bool):
+        await self.write_value_to_offset(244, _hide_current_h_p, "bool")
+
+    async def max_hand_size(self) -> int:
+        return await self.read_value_from_offset(248, "int")
+
+    async def write_max_hand_size(self, max_hand_size: int):
+        await self.write_value_to_offset(248, max_hand_size, "int")
+
+    # TODO: fix
+    async def hand(self) -> DynamicHand:
+        addr = await self.read_value_from_offset(256, "long long")
+        return DynamicHand(self.hook_handler, addr)
+
+    # async def p_hand(self) -> class Hand*:
+    #     return await self.read_value_from_offset(256, "class Hand*")
+    #
+    # async def write_p_hand(self, p_hand: class Hand*):
+    #     await self.write_value_to_offset(256, p_hand, "class Hand*")
+
+    # async def p_saved_hand(self) -> class Hand*:
+    #     return await self.read_value_from_offset(264, "class Hand*")
+    #
+    # async def write_p_saved_hand(self, p_saved_hand: class Hand*):
+    #     await self.write_value_to_offset(264, p_saved_hand, "class Hand*")
+
+    # async def p_play_deck(self) -> class PlayDeck*:
+    #     return await self.read_value_from_offset(272, "class PlayDeck*")
+    #
+    # async def write_p_play_deck(self, p_play_deck: class PlayDeck*):
+    #     await self.write_value_to_offset(272, p_play_deck, "class PlayDeck*")
+    #
+    # async def p_saved_play_deck(self) -> class PlayDeck*:
+    #     return await self.read_value_from_offset(280, "class PlayDeck*")
+    #
+    # async def write_p_saved_play_deck(self, p_saved_play_deck: class PlayDeck*):
+    #     await self.write_value_to_offset(280, p_saved_play_deck, "class PlayDeck*")
+
+    # async def p_saved_game_stats(self) -> class SharedPointer<class WizGameStats>:
+    #     return await self.read_value_from_offset(288, "class SharedPointer<class WizGameStats>")
+    #
+    # async def write_p_saved_game_stats(self, p_saved_game_stats: class SharedPointer<class WizGameStats>):
+    #     await self.write_value_to_offset(288, p_saved_game_stats, "class SharedPointer<class WizGameStats>")
+
+    async def saved_primary_magic_school_id(self) -> int:
+        return await self.read_value_from_offset(304, "int")
+
+    async def write_saved_primary_magic_school_i_d(
+        self, saved_primary_magic_school_id: int
+    ):
+        await self.write_value_to_offset(304, saved_primary_magic_school_id, "int")
+
+    # async def p_game_stats(self) -> class SharedPointer<class WizGameStats>:
+    #     return await self.read_value_from_offset(312, "class SharedPointer<class WizGameStats>")
+    #
+    # async def write_p_game_stats(self, p_game_stats: class SharedPointer<class WizGameStats>):
+    #     await self.write_value_to_offset(312, p_game_stats, "class SharedPointer<class WizGameStats>")
+
+    # async def color(self) -> class Color:
+    #     return await self.read_value_from_offset(328, "class Color")
+    #
+    # async def write_color(self, color: class Color):
+    #     await self.write_value_to_offset(328, color, "class Color")
+
+    async def rotation(self) -> float:
+        return await self.read_value_from_offset(332, "float")
+
+    async def write_rotation(self, rotation: float):
+        await self.write_value_to_offset(332, rotation, "float")
+
+    async def radius(self) -> float:
+        return await self.read_value_from_offset(336, "float")
+
+    async def write_radius(self, radius: float):
+        await self.write_value_to_offset(336, radius, "float")
+
+    async def subcircle(self) -> int:
+        return await self.read_value_from_offset(340, "int")
+
+    async def write_subcircle(self, subcircle: int):
+        await self.write_value_to_offset(340, subcircle, "int")
+
+    async def pvp(self) -> bool:
+        return await self.read_value_from_offset(344, "bool")
+
+    async def write_pvp(self, pvp: bool):
+        await self.write_value_to_offset(344, pvp, "bool")
+
+    async def accuracy_bonus(self) -> float:
+        return await self.read_value_from_offset(388, "float")
+
+    async def write_accuracy_bonus(self, accuracy_bonus: float):
+        await self.write_value_to_offset(388, accuracy_bonus, "float")
+
+    async def minion_sub_circle(self) -> int:
+        return await self.read_value_from_offset(392, "int")
+
+    async def write_minion_sub_circle(self, minion_sub_circle: int):
+        await self.write_value_to_offset(392, minion_sub_circle, "int")
+
+    async def is_minion(self) -> bool:
+        return await self.read_value_from_offset(396, "bool")
+
+    async def write_is_minion(self, is_minion: bool):
+        await self.write_value_to_offset(396, is_minion, "bool")
+
+    # async def hanging_effects(self) -> class SpellEffect:
+    #     return await self.read_value_from_offset(408, "class SpellEffect")
+    #
+    # async def write_hanging_effects(self, hanging_effects: class SpellEffect):
+    #     await self.write_value_to_offset(408, hanging_effects, "class SpellEffect")
+
+    # async def public_hanging_effects(self) -> class SpellEffect:
+    #     return await self.read_value_from_offset(424, "class SpellEffect")
+    #
+    # async def write_public_hanging_effects(self, public_hanging_effects: class SpellEffect):
+    #     await self.write_value_to_offset(424, public_hanging_effects, "class SpellEffect")
+
+    # async def aura_effects(self) -> class SpellEffect:
+    #     return await self.read_value_from_offset(440, "class SpellEffect")
+    #
+    # async def write_aura_effects(self, aura_effects: class SpellEffect):
+    #     await self.write_value_to_offset(440, aura_effects, "class SpellEffect")
+
+    # async def shadow_effects(self) -> class SharedPointer<class ShadowSpellTrackingData>:
+    #     return await self.read_value_from_offset(456, "class SharedPointer<class ShadowSpellTrackingData>")
+    #
+    # async def write_shadow_effects(self, shadow_effects: class SharedPointer<class ShadowSpellTrackingData>):
+    #     await self.write_value_to_offset(456, shadow_effects, "class SharedPointer<class ShadowSpellTrackingData>")
+
+    # async def shadow_spell_effects(self) -> class SpellEffect:
+    #     return await self.read_value_from_offset(472, "class SpellEffect")
+    #
+    # async def write_shadow_spell_effects(self, shadow_spell_effects: class SpellEffect):
+    #     await self.write_value_to_offset(472, shadow_spell_effects, "class SpellEffect")
+    #
+    # async def death_activated_effects(self) -> class SharedPointer<class SpellEffect>:
+    #     return await self.read_value_from_offset(504, "class SharedPointer<class SpellEffect>")
+    #
+    # async def write_death_activated_effects(self, death_activated_effects: class SharedPointer<class SpellEffect>):
+    #     await self.write_value_to_offset(504, death_activated_effects, "class SharedPointer<class SpellEffect>")
+
+    # async def delay_cast_effects(self) -> class DelaySpellEffect:
+    #     return await self.read_value_from_offset(520, "class DelaySpellEffect")
+    #
+    # async def write_delay_cast_effects(self, delay_cast_effects: class DelaySpellEffect):
+    #     await self.write_value_to_offset(520, delay_cast_effects, "class DelaySpellEffect")
+
+    async def polymorph_spell_template_id(self) -> int:
+        return await self.read_value_from_offset(568, "unsigned int")
+
+    async def write_polymorph_spell_template_id(self, polymorph_spell_template_id: int):
+        await self.write_value_to_offset(
+            568, polymorph_spell_template_id, "unsigned int"
+        )
+
+    # async def side(self) -> std::string:
+    #     return await self.read_value_from_offset(592, "std::string")
+    #
+    # async def write_side(self, side: std::string):
+    #     await self.write_value_to_offset(592, side, "std::string")
+
+    async def shadow_spells_disabled(self) -> bool:
+        return await self.read_value_from_offset(637, "bool")
+
+    async def write_shadow_spells_disabled(self, shadow_spells_disabled: bool):
+        await self.write_value_to_offset(637, shadow_spells_disabled, "bool")
+
+    async def boss_mob(self) -> bool:
+        return await self.read_value_from_offset(638, "bool")
+
+    async def write_boss_mob(self, boss_mob: bool):
+        await self.write_value_to_offset(638, boss_mob, "bool")
+
+    async def hide_p_v_p_enemy_chat(self) -> bool:
+        return await self.read_value_from_offset(639, "bool")
+
+    async def write_hide_p_v_p_enemy_chat(self, hide_p_v_p_enemy_chat: bool):
+        await self.write_value_to_offset(639, hide_p_v_p_enemy_chat, "bool")
+
+    async def combat_trigger_i_ds(self) -> int:
+        return await self.read_value_from_offset(664, "int")
+
+    async def write_combat_trigger_i_ds(self, combat_trigger_i_ds: int):
+        await self.write_value_to_offset(664, combat_trigger_i_ds, "int")
+
+    async def backlash(self) -> int:
+        return await self.read_value_from_offset(692, "int")
+
+    async def write_backlash(self, backlash: int):
+        await self.write_value_to_offset(692, backlash, "int")
+
+    async def past_backlash(self) -> int:
+        return await self.read_value_from_offset(696, "int")
+
+    async def write_past_backlash(self, past_backlash: int):
+        await self.write_value_to_offset(696, past_backlash, "int")
+
+    async def shadow_creature_level(self) -> int:
+        return await self.read_value_from_offset(700, "int")
+
+    async def write_shadow_creature_level(self, shadow_creature_level: int):
+        await self.write_value_to_offset(700, shadow_creature_level, "int")
+
+    async def past_shadow_creature_level(self) -> int:
+        return await self.read_value_from_offset(704, "int")
+
+    async def write_past_shadow_creature_level(self, past_shadow_creature_level: int):
+        await self.write_value_to_offset(704, past_shadow_creature_level, "int")
+
+    async def shadow_creature_level_count(self) -> int:
+        return await self.read_value_from_offset(712, "int")
+
+    async def write_shadow_creature_level_count(self, shadow_creature_level_count: int):
+        await self.write_value_to_offset(712, shadow_creature_level_count, "int")
+
+    # async def intercept_effect(self) -> class SharedPointer<class SpellEffect>:
+    #     return await self.read_value_from_offset(736, "class SharedPointer<class SpellEffect>")
+    #
+    # async def write_intercept_effect(self, intercept_effect: class SharedPointer<class SpellEffect>):
+    #     await self.write_value_to_offset(736, intercept_effect, "class SharedPointer<class SpellEffect>")
+
+    async def rounds_since_shadow_pip(self) -> int:
+        return await self.read_value_from_offset(768, "int")
+
+    async def write_rounds_since_shadow_pip(self, rounds_since_shadow_pip: int):
+        await self.write_value_to_offset(768, rounds_since_shadow_pip, "int")
+
+    # async def polymorph_effect(self) -> class SharedPointer<class SpellEffect>:
+    #     return await self.read_value_from_offset(792, "class SharedPointer<class SpellEffect>")
+    #
+    # async def write_polymorph_effect(self, polymorph_effect: class SharedPointer<class SpellEffect>):
+    #     await self.write_value_to_offset(792, polymorph_effect, "class SharedPointer<class SpellEffect>")
+
+    async def confused(self) -> int:
+        return await self.read_value_from_offset(188, "int")
+
+    async def write_confused(self, confused: int):
+        await self.write_value_to_offset(188, confused, "int")
+
+    async def confusion_trigger(self) -> int:
+        return await self.read_value_from_offset(192, "int")
+
+    async def write_confusion_trigger(self, confusion_trigger: int):
+        await self.write_value_to_offset(192, confusion_trigger, "int")
+
+    async def confusion_display(self) -> bool:
+        return await self.read_value_from_offset(196, "bool")
+
+    async def write_confusion_display(self, confusion_display: bool):
+        await self.write_value_to_offset(196, confusion_display, "bool")
+
+    async def confused_target(self) -> bool:
+        return await self.read_value_from_offset(197, "bool")
+
+    async def write_confused_target(self, confused_target: bool):
+        await self.write_value_to_offset(197, confused_target, "bool")
+
+    async def untargetable(self) -> bool:
+        return await self.read_value_from_offset(198, "bool")
+
+    async def write_untargetable(self, untargetable: bool):
+        await self.write_value_to_offset(198, untargetable, "bool")
+
+    async def untargetable_rounds(self) -> int:
+        return await self.read_value_from_offset(200, "int")
+
+    async def write_untargetable_rounds(self, untargetable_rounds: int):
+        await self.write_value_to_offset(200, untargetable_rounds, "int")
+
+    async def restricted_target(self) -> bool:
+        return await self.read_value_from_offset(204, "bool")
+
+    async def write_restricted_target(self, restricted_target: bool):
+        await self.write_value_to_offset(204, restricted_target, "bool")
+
+    async def exit_combat(self) -> bool:
+        return await self.read_value_from_offset(205, "bool")
+
+    async def write_exit_combat(self, exit_combat: bool):
+        await self.write_value_to_offset(205, exit_combat, "bool")
+
+    async def stunned_display(self) -> bool:
+        return await self.read_value_from_offset(184, "bool")
+
+    async def write_stunned_display(self, stunned_display: bool):
+        await self.write_value_to_offset(184, stunned_display, "bool")
+
+    async def mindcontrolled_display(self) -> bool:
+        return await self.read_value_from_offset(212, "bool")
+
+    async def write_mindcontrolled_display(self, mindcontrolled_display: bool):
+        await self.write_value_to_offset(212, mindcontrolled_display, "bool")
+
+    async def auto_pass(self) -> bool:
+        return await self.read_value_from_offset(688, "bool")
+
+    async def write_auto_pass(self, auto_pass: bool):
+        await self.write_value_to_offset(688, auto_pass, "bool")
+
+    async def vanish(self) -> bool:
+        return await self.read_value_from_offset(689, "bool")
+
+    async def write_vanish(self, vanish: bool):
+        await self.write_value_to_offset(689, vanish, "bool")
+
+    async def my_team_turn(self) -> bool:
+        return await self.read_value_from_offset(690, "bool")
+
+    async def write_my_team_turn(self, my_team_turn: bool):
+        await self.write_value_to_offset(690, my_team_turn, "bool")
+
+    async def planning_phase_pip_aquired_type(self) -> PipAquiredByEnum:
+        return await self.read_enum(784, PipAquiredByEnum)
+
+    async def write_planning_phase_pip_aquired_type(
+        self, planning_phase_pip_aquired_type: PipAquiredByEnum
+    ):
+        await self.write_enum(784, planning_phase_pip_aquired_type)
+
+    # async def cheat_settings(self) -> class SharedPointer<class CombatCheatSettings>:
+    #     return await self.read_value_from_offset(96, "class SharedPointer<class CombatCheatSettings>")
+    #
+    # async def write_cheat_settings(self, cheat_settings: class SharedPointer<class CombatCheatSettings>):
+    #     await self.write_value_to_offset(96, cheat_settings, "class SharedPointer<class CombatCheatSettings>")
+
+    async def is_monster(self) -> int:
+        return await self.read_value_from_offset(400, "unsigned int")
+
+    async def write_is_monster(self, is_monster: int):
+        await self.write_value_to_offset(400, is_monster, "unsigned int")
+
+    # async def weapon_nif_sound_list(self) -> class SharedPointer<class SpellNifSoundOverride>:
+    #     return await self.read_value_from_offset(80, "class SharedPointer<class SpellNifSoundOverride>")
+    #
+    # async def write_weapon_nif_sound_list(self, weapon_nif_sound_list: class SharedPointer<class SpellNifSoundOverride>):
+    #     await self.write_value_to_offset(80, weapon_nif_sound_list, "class SharedPointer<class SpellNifSoundOverride>")
+
+    async def pet_combat_trigger(self) -> int:
+        return await self.read_value_from_offset(680, "int")
+
+    async def write_pet_combat_trigger(self, pet_combat_trigger: int):
+        await self.write_value_to_offset(680, pet_combat_trigger, "int")
+
+    async def pet_combat_trigger_target(self) -> int:
+        return await self.read_value_from_offset(684, "int")
+
+    async def write_pet_combat_trigger_target(self, pet_combat_trigger_target: int):
+        await self.write_value_to_offset(684, pet_combat_trigger_target, "int")
+
+    async def shadow_pip_rate_threshold(self) -> float:
+        return await self.read_value_from_offset(808, "float")
+
+    async def write_shadow_pip_rate_threshold(self, shadow_pip_rate_threshold: float):
+        await self.write_value_to_offset(808, shadow_pip_rate_threshold, "float")
+
+    async def base_spell_damage(self) -> int:
+        return await self.read_value_from_offset(812, "int")
+
+    async def write_base_spell_damage(self, base_spell_damage: int):
+        await self.write_value_to_offset(812, base_spell_damage, "int")
+
+    async def stat_damage(self) -> float:
+        return await self.read_value_from_offset(816, "float")
+
+    async def write_stat_damage(self, stat_damage: float):
+        await self.write_value_to_offset(816, stat_damage, "float")
+
+    async def stat_resist(self) -> float:
+        return await self.read_value_from_offset(820, "float")
+
+    async def write_stat_resist(self, stat_resist: float):
+        await self.write_value_to_offset(820, stat_resist, "float")
+
+    async def stat_pierce(self) -> float:
+        return await self.read_value_from_offset(824, "float")
+
+    async def write_stat_pierce(self, stat_pierce: float):
+        await self.write_value_to_offset(824, stat_pierce, "float")
+
+    async def mob_level(self) -> int:
+        return await self.read_value_from_offset(828, "int")
+
+    async def write_mob_level(self, mob_level: int):
+        await self.write_value_to_offset(828, mob_level, "int")
+
+
+class DynamicCombatParticipant(DynamicMemoryObject, CombatParticipant):
+    pass

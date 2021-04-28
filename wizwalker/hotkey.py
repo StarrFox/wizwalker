@@ -2,7 +2,7 @@ import asyncio
 import ctypes
 import ctypes.wintypes
 from enum import IntFlag
-from typing import Coroutine, List
+from typing import List, Callable
 
 import janus
 
@@ -33,7 +33,7 @@ class Hotkey:
     """
 
     def __init__(
-        self, keycode: Keycode, callback: Coroutine, *, modifiers: ModifierKeys = 0
+        self, keycode: Keycode, callback: Callable, *, modifiers: ModifierKeys = 0
     ):
         self.keycode = keycode
         self.modifiers = modifiers
@@ -57,22 +57,17 @@ class Listener:
                     print("a was pressed")
 
                 hotkey = Hotkey(Keycode.A, callback)
-                listener = Listener([hotkey])
+                listener = Listener(hotkey)
 
                 # listens for a to be pressed once
                 await listener.listen()
 
     """
 
-    def __init__(
-        self, hotkeys: List[Hotkey], *, loop: asyncio.AbstractEventLoop = None
-    ):
+    def __init__(self, *hotkeys: Hotkey):
         self.ready = False
 
-        if loop is None:
-            loop = asyncio.get_event_loop()
-
-        self._loop = loop
+        self._loop = asyncio.get_event_loop()
         self._hotkeys = hotkeys
         self._callbacks = {}
         self._queue = None
@@ -100,8 +95,9 @@ class Listener:
         message = await self._queue.async_q.get()
         keycode, modifiers = message.split("|")
         keycode = int(keycode)
-        if modifiers == "0":
-            modifiers = 0
+        modifiers = int(modifiers)
+        if modifiers == 0:
+            pass
         else:
             modifiers = ModifierKeys(modifiers)
 

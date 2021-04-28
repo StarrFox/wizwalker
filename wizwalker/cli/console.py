@@ -152,7 +152,7 @@ class WizWalkerConsole(Monitor):
     def do_cache(self):
         """Cache data"""
         walker = self.get_local("walker")
-        self.run_coro(walker.cache_data())
+        self.run_coro(walker.cache())
         self.write("Cached data")
 
     def do_teleport(self, x: float, y: float, z: float = None, yaw: float = None):

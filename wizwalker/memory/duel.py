@@ -1,5 +1,8 @@
+from typing import List
+
 from .memory_object import MemoryObject
 from .enums import DuelPhase, DuelExecutionOrder, SigilInitiativeSwitchMode
+from .combat_participant import DynamicCombatParticipant
 from wizwalker.utils import XYZ
 
 
@@ -7,17 +10,24 @@ class Duel(MemoryObject):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 
-    # async def flat_participant_list(self) -> class SharedPointer<class CombatParticipant>:
-    #     return await self.read_value_from_offset(80, "class SharedPointer<class CombatParticipant>")
-    #
+    async def flat_participant_list(self,) -> List[DynamicCombatParticipant]:
+        pointers = await self.read_shared_pointers(80)
+        participants = []
+        for pointer in pointers:
+            participants.append(
+                DynamicCombatParticipant(self.hook_handler, pointer.pointed_address)
+            )
+
+        return participants
+
     # async def write_flat_participant_list(self, flat_participant_list: class SharedPointer<class CombatParticipant>):
     #     await self.write_value_to_offset(80, flat_participant_list, "class SharedPointer<class CombatParticipant>")
 
     async def duel_id_full(self) -> int:
-        return await self.read_value_from_offset(72, "unsigned int")
+        return await self.read_value_from_offset(72, "unsigned long long")
 
     async def write_duel_id_full(self, duel_id_full: int):
-        await self.write_value_to_offset(72, duel_id_full, "unsigned int")
+        await self.write_value_to_offset(72, duel_id_full, "unsigned long long")
 
     async def planning_timer(self) -> float:
         return await self.read_value_from_offset(112, "float")
@@ -171,10 +181,10 @@ class Duel(MemoryObject):
     async def write_no_henchmen(self, no_henchmen: bool):
         await self.write_value_to_offset(460, no_henchmen, "bool")
 
-    async def _spell_truncation(self) -> bool:
+    async def spell_truncation(self) -> bool:
         return await self.read_value_from_offset(461, "bool")
 
-    async def write__spell_truncation(self, _spell_truncation: bool):
+    async def write_spell_truncation(self, _spell_truncation: bool):
         await self.write_value_to_offset(461, _spell_truncation, "bool")
 
     async def shadow_threshold_factor(self) -> float:

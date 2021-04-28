@@ -22,3 +22,17 @@ class SigilInitiativeSwitchMode(Enum):
 class DuelExecutionOrder(Enum):
     sequential = 0
     alternating = 1
+
+
+class PipAquiredByEnum(Enum):
+    unknown = 0
+    normal = 1
+    power = 2
+    normal_to_power_conversion = 4
+    impede_pips = 5
+
+
+class DelayOrder(Enum):
+    any_order = 0
+    first = 1
+    second = 2

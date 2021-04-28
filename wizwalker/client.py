@@ -5,7 +5,13 @@ from functools import cached_property
 import pymem
 
 from . import Keycode, utils
-from .memory import HookHandler, PlayerStats, PlayerActorBody, PlayerDuel
+from .memory import (
+    HookHandler,
+    PlayerStats,
+    PlayerActorBody,
+    PlayerDuel,
+    CurrentQuestPosition,
+)
 
 from .constants import user32
 from .utils import XYZ
@@ -64,6 +70,10 @@ class Client:
     @cached_property
     def player_duel(self) -> PlayerDuel:
         return PlayerDuel(self.hook_handler)
+
+    @cached_property
+    def player_quest_position(self) -> CurrentQuestPosition:
+        return CurrentQuestPosition(self.hook_handler)
 
     async def activate_hooks(self):
         """
