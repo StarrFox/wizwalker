@@ -174,7 +174,7 @@ class AutoBotBaseHook(MemoryHook):
     """
 
     def alloc(self, size: int) -> int:
-        return self.hook_handler.get_open_autobot_address(size)
+        return self.hook_handler._get_open_autobot_address(size)
 
     # This if overwritten bc we never call free
     def unhook(self):

@@ -3,21 +3,46 @@ from typing import Union
 
 class WizWalkerError(Exception):
     """
-    Base wizwalker exception, all exceptions raised should inharit from this
+    Base wizwalker exception, all exceptions raised should inherit from this
     """
 
-    pass
+
+class WizWalkerMemoryError(WizWalkerError):
+    """
+    Raised to error with reading/writing memory
+    """
 
 
-class HookPatternFailed(WizWalkerError):
+class HookPatternFailed(WizWalkerMemoryError):
     """
     Raised when the pattern scan for a hook fails
     """
 
     def __init__(self):
         super().__init__(
-            "A hook search pattern failed. You most likely need to restart the client"
+            "A hook search pattern failed. You most likely need to restart the client."
         )
+
+
+class ReadingEnumFailed(WizWalkerMemoryError):
+    """
+    Raised when the value passed to an enum is not valid
+    """
+
+    def __init__(self, enum, value):
+        super().__init__(f"Error reading enum: {value} is not a vaid {enum}.")
+
+
+class HookNotReady(WizWalkerMemoryError):
+    """
+    Raised when trying to use a value from a hook before hook has run
+
+    Attributes:
+        hook_name: Name of the hook that is not ready
+    """
+
+    def __init__(self, hook_name: str):
+        super().__init__(f"{hook_name} has not run yet and is not ready.")
 
 
 class HookNotActive(WizWalkerError):
@@ -26,12 +51,12 @@ class HookNotActive(WizWalkerError):
     but it is not
 
     Attributes:
-        hook: The hook that is not active
+        hook_name: Name of the hook that is not active
     """
 
-    def __init__(self, hook: str):
-        super().__init__(f"{hook} is not active.")
-        self.hook = hook
+    def __init__(self, hook_name: str):
+        super().__init__(f"{hook_name} is not active.")
+        self.hook_name = hook_name
 
 
 class HookAlreadyActivated(WizWalkerError):
@@ -39,14 +64,15 @@ class HookAlreadyActivated(WizWalkerError):
     Raised when trying to activate an active hook
 
     Attributes:
-        hook: The hook that is already active
+        hook_name: Name of the hook that is already active
     """
 
-    def __init__(self, hook: str):
-        super().__init__(f"{hook} was already activated.")
-        self.hook = hook
+    def __init__(self, hook_name: str):
+        super().__init__(f"{hook_name} was already activated.")
+        self.hook_name = hook_name
 
 
+# TODO: WizWalkerCombatError
 class NotEnoughPips(WizWalkerError):
     """
     Raised when trying to use a card that costs more pips then

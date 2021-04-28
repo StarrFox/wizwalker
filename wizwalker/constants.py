@@ -5,6 +5,9 @@ from enum import Enum
 user32 = ctypes.windll.user32
 
 
+WIZARD_SPEED = 580
+
+
 type_format_dict = {
     "char": "<c",
     "signed char": "<b",

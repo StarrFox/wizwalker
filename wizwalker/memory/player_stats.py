@@ -5,16 +5,6 @@ class PlayerStats(MemoryObject):
     async def read_base_address(self) -> int:
         return await self.hook_handler.read_player_stat_base()
 
-    async def max_hitpoints(self):
-        base = await self.base_hitpoints()
-        bonus = await self.bonus_hitpoints()
-        return base + bonus
-
-    async def max_mana(self):
-        base = await self.base_mana()
-        bonus = await self.bonus_mana()
-        return base + bonus
-
     async def base_hitpoints(self) -> int:
         return await self.read_value_from_offset(80, "int")
 

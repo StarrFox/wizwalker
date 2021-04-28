@@ -16,7 +16,7 @@ class Quester:
 
     async def handle_e_pressed(self):
         for client in self.walker.clients:
-            await client.teleport(await client.player_quest_position.position())
+            await client.teleport(await client.quest_position.position())
 
     async def run(self):
         await self.activate_hooks()

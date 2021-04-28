@@ -1,3 +1,4 @@
+import struct
 from typing import List
 
 from .memory_object import MemoryObject
@@ -10,17 +11,32 @@ class Duel(MemoryObject):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 
-    async def flat_participant_list(self,) -> List[DynamicCombatParticipant]:
-        pointers = await self.read_shared_pointers(80)
+    async def participant_list(self,) -> List[DynamicCombatParticipant]:
+        start_address = await self.read_value_from_offset(80, "long long")
+        end_address = await self.read_value_from_offset(80 + 8, "long long")
+        size = end_address - start_address
+
+        shared_pointers_data = await self.read_bytes(start_address, size)
         participants = []
-        for pointer in pointers:
+        data_pos = 0
+        # Shared pointers are 16 in length
+        for _ in range(size // 16):
+            # fmt: off
+            shared_pointer_data = shared_pointers_data[data_pos: data_pos + 16]
+            # fmt: on
+
+            # first 8 bytes are the address
             participants.append(
-                DynamicCombatParticipant(self.hook_handler, pointer.pointed_address)
+                DynamicCombatParticipant(
+                    self.hook_handler, struct.unpack("<q", shared_pointer_data[:8])[0]
+                )
             )
+
+            data_pos += 16
 
         return participants
 
-    # async def write_flat_participant_list(self, flat_participant_list: class SharedPointer<class CombatParticipant>):
+    # async def write_participant_list(self, flat_participant_list: class SharedPointer<class CombatParticipant>):
     #     await self.write_value_to_offset(80, flat_participant_list, "class SharedPointer<class CombatParticipant>")
 
     async def duel_id_full(self) -> int:

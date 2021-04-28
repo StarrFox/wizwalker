@@ -165,6 +165,7 @@ class Hand(MemoryObject):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 
+    # TODO: fix
     async def spell_list(self) -> List[DynamicSpell]:
         pointers = await self.read_shared_pointers(72)
 

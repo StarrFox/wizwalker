@@ -1,5 +1,6 @@
 import asyncio
 import ctypes
+import ctypes.wintypes
 import functools
 import io
 import math
@@ -239,6 +240,13 @@ def get_logs_folder() -> Path:
         log_dir.mkdir(parents=True)
 
     return log_dir
+
+
+def get_pid_from_handle(handle: int) -> int:
+    # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowthreadprocessid
+    pid = ctypes.wintypes.DWORD()
+    user32.GetWindowThreadProcessId(handle, ctypes.byref(pid))
+    return pid.value
 
 
 def get_all_wizard_handles() -> list:

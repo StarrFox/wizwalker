@@ -155,7 +155,7 @@ class WizWalkerConsole(Monitor):
         """
         walker = self.get_local("walker")
         for client in walker.clients:
-            current_position = self.run_coro(client.player_body.position)
+            current_position = self.run_coro(client.body.position)
             new_position = XYZ(x, y, z or current_position.z)
             self.run_coro(client.teleport(new_position, yaw))
 

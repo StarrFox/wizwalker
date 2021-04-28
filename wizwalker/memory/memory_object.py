@@ -5,12 +5,13 @@ from typing import Any, List, Type
 from .memory_reader import MemoryReader
 from .handler import HookHandler
 from wizwalker.utils import XYZ
+from wizwalker.errors import ReadingEnumFailed
 
 
-# TODO: figure out what other 8 bytes are
-class SharedPointer:
-    def __init__(self, entry_bytes: bytes):
-        self.pointed_address: int = struct.unpack("<q", entry_bytes[:8])[0]
+# # TODO: figure out what other 8 bytes are
+# class SharedPointer:
+#     def __init__(self, entry_bytes: bytes):
+#         self.pointed_address: int = struct.unpack("<q", entry_bytes[:8])[0]
 
 
 class MemoryObject(MemoryReader):
@@ -46,29 +47,15 @@ class MemoryObject(MemoryReader):
 
     async def read_enum(self, offset, enum: Type[Enum]):
         value = await self.read_value_from_offset(offset, "int")
-        # TODO: catch and raise my own error for ValueError?
-        return enum(value)
+        try:
+            res = enum(value)
+        except ValueError:
+            raise ReadingEnumFailed(enum, value)
+        else:
+            return res
 
     async def write_enum(self, offset, value: Enum):
         await self.write_value_to_offset(offset, value.value, "int")
-
-    async def read_shared_pointers(self, offset: int) -> List[SharedPointer]:
-        start_address = await self.read_value_from_offset(offset, "long long")
-        end_address = await self.read_value_from_offset(offset + 0x8, "long long")
-        size = end_address - start_address
-
-        shared_pointers_data = await self.read_bytes(start_address, size)
-        shared_pointers = []
-        data_pos = 0
-        for _ in range(size // 16):
-            # fmt: off
-            shared_pointers.append(
-                SharedPointer(shared_pointers_data[data_pos: data_pos + 16])
-            )
-            # fmt: on
-            data_pos += 16
-
-        return shared_pointers
 
 
 class DynamicMemoryObject(MemoryObject):

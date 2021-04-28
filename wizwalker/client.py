@@ -4,8 +4,9 @@ from functools import cached_property
 
 import pymem
 
-from . import Keycode, utils
+from . import Keycode, ReadingEnumFailed, utils
 from .memory import (
+    DuelPhase,
     HookHandler,
     PlayerStats,
     PlayerActorBody,
@@ -13,10 +14,8 @@ from .memory import (
     CurrentQuestPosition,
 )
 
-from .constants import user32
+from .constants import user32, WIZARD_SPEED
 from .utils import XYZ
-
-WIZARD_SPEED = 580
 
 
 class Client:
@@ -32,7 +31,6 @@ class Client:
 
         self._pymem = pymem.Pymem()
         self._pymem.open_process_from_id(self.process_id)
-
         self.hook_handler = HookHandler(self._pymem)
 
         self.click_lock = None
@@ -49,31 +47,64 @@ class Client:
     @cached_property
     def process_id(self) -> int:
         """
-        This client's PID
-
-        Returns:
-            The pid
+        Client's process id
         """
-        # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowthreadprocessid
-        pid = ctypes.wintypes.DWORD()
-        user32.GetWindowThreadProcessId(self.window_handle, ctypes.byref(pid))
-        return pid.value
+        return utils.get_pid_from_handle(self.window_handle)
 
     @cached_property
-    def player_stats(self) -> PlayerStats:
+    def stats(self) -> PlayerStats:
+        """
+        Client's game stats struct
+        """
         return PlayerStats(self.hook_handler)
 
     @cached_property
-    def player_body(self) -> PlayerActorBody:
+    def body(self) -> PlayerActorBody:
+        """
+        Client's actor body struct
+        """
         return PlayerActorBody(self.hook_handler)
 
     @cached_property
-    def player_duel(self) -> PlayerDuel:
+    def duel(self) -> PlayerDuel:
+        """
+        Client's duel struct
+        """
         return PlayerDuel(self.hook_handler)
 
     @cached_property
-    def player_quest_position(self) -> CurrentQuestPosition:
+    def quest_position(self) -> CurrentQuestPosition:
+        """
+        Client's quest position struct
+        """
         return CurrentQuestPosition(self.hook_handler)
+
+    async def max_hitpoints(self) -> int:
+        """
+        Client's max hitpoints; base + bonus
+        """
+        base = await self.stats.base_hitpoints()
+        bonus = await self.stats.bonus_hitpoints()
+        return base + bonus
+
+    async def max_mana(self) -> int:
+        """
+        Clients's max mana; base + bonus
+        """
+        base = await self.stats.base_mana()
+        bonus = await self.stats.bonus_mana()
+        return base + bonus
+
+    async def in_battle(self) -> bool:
+        """
+        If the client is in battle or not
+        """
+        try:
+            duel_phase = await self.duel.duel_phase()
+        except ReadingEnumFailed:
+            return False
+        else:
+            return duel_phase is not DuelPhase.ended
 
     async def activate_hooks(self):
         """
@@ -190,16 +221,16 @@ class Client:
             y: Y to move to
             speed_multiplier: Multiplier for speed (for mounts) i.e. 1.4 for 40%
         """
-        current_xyz = await self.player_body.position()
+        current_xyz = await self.body.position()
         target_xyz = utils.XYZ(x, y, current_xyz.z)
         distance = current_xyz - target_xyz
         move_seconds = distance / (WIZARD_SPEED * speed_multiplier)
         yaw = utils.calculate_perfect_yaw(current_xyz, target_xyz)
 
-        await self.player_body.write_yaw(yaw)
+        await self.body.write_yaw(yaw)
         await utils.timed_send_key(self.window_handle, Keycode.W, move_seconds)
 
-    async def teleport(self, xyz: XYZ, yaw: int = None) -> bool:
+    async def teleport(self, xyz: XYZ, yaw: int = None):
         """
         Teleport the client
 
@@ -210,7 +241,7 @@ class Client:
         Raises:
             RuntimeError: player hook not active
         """
-        await self.player_body.write_position(xyz)
+        await self.body.write_position(xyz)
 
         if yaw is not None:
-            await self.player_body.write_yaw(yaw)
+            await self.body.write_yaw(yaw)
