@@ -10,6 +10,8 @@ import aioconsole
 from aiomonitor import Monitor, start_monitor, cli
 from aiomonitor.utils import close_server, console_proxy
 
+from wizwalker import XYZ
+
 
 def init_console_server(host: str, port: int, _locals, loop):
     def _factory(streams=None) -> aioconsole.AsynchronousConsole:
@@ -106,7 +108,7 @@ class WizWalkerConsole(Monitor):
     def do_start(self):
         """Attach and hook to all clients"""
         walker = self.get_local("walker")
-        walker.get_clients()
+        walker.get_new_clients()
         self.write(f"Attached to {len(walker.clients)} clients")
         for idx, client in enumerate(walker.clients):
             self.run_coro(client.activate_hooks())
@@ -118,7 +120,6 @@ class WizWalkerConsole(Monitor):
         self.write("Closing wizwalker, hooks should be rewritten")
         self.run_coro(walker.close())
 
-    # TODO: update to new api
     def do_info(self):
         """Print out info from each client"""
         walker = self.get_local("walker")
@@ -126,24 +127,14 @@ class WizWalkerConsole(Monitor):
         for idx, client in enumerate(walker.clients):
             table_data = [["attribute", "value"]]
 
-            # TODO: add player_base and player_stat_base and all other base address (optional arg)
-            client_attrs = [
-                "xyz",
-                "yaw",
-                "roll",
-                "pitch",
-                "scale",
-                "quest_xyz",
-                "health",
-                "mana",
-                "potions",
-                "gold",
-                "energy",
-                "backpack_space_used",
-                "backpack_space_total",
-                "move_lock",
+            hook_handler_attrs = [
+                "read_player_base",
+                "read_current_duel_base",
+                "read_quest_base",
+                "read_player_stat_base",
+                "read_backpack_stat_base",
             ]
-            for attr in client_attrs:
+            for attr in hook_handler_attrs:
                 table_data.append([attr, self.run_coro(getattr(client, attr)())])
 
             table = terminaltables.AsciiTable(table_data, f"client-{idx}")
@@ -162,7 +153,9 @@ class WizWalkerConsole(Monitor):
         """
         walker = self.get_local("walker")
         for client in walker.clients:
-            self.run_coro(client.teleport(x=x, y=y, z=z, yaw=yaw))
+            current_position = self.run_coro(client.player_body.position)
+            new_position = XYZ(x, y, z or current_position.z)
+            self.run_coro(client.teleport(new_position, yaw))
 
         self.write("Teleported")
 
@@ -180,7 +173,7 @@ class WizWalkerConsole(Monitor):
         cache command must be run first
         """
         walker = self.get_local("walker")
-        template_ids = self.run_coro(walker.get_template_ids())
+        template_ids: dict = self.run_coro(walker.get_template_ids())
 
         regex = re.compile(pattern, re.IGNORECASE)
         for tid, name in template_ids.items():
@@ -211,7 +204,7 @@ class WizWalkerConsole(Monitor):
     def do_onehook(self, name: str):
         """Get clients and activate one hook"""
         walker = self.get_local("walker")
-        walker.get_clients()
+        walker.get_new_clients()
         self.write(f"Attached to {len(walker.clients)} clients")
 
         for client in walker.clients:
