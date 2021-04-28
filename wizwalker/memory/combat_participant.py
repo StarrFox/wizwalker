@@ -109,10 +109,10 @@ class CombatParticipant(MemoryObject):
     async def write_rounds_dead(self, rounds_dead: int):
         await self.write_value_to_offset(224, rounds_dead, "int")
 
-    async def n_polymorph_turn_length(self) -> int:
+    async def polymorph_turn_length(self) -> int:
         return await self.read_value_from_offset(232, "int")
 
-    async def write_n_polymorph_turn_length(self, n_polymorph_turn_length: int):
+    async def write_polymorph_turn_length(self, n_polymorph_turn_length: int):
         await self.write_value_to_offset(232, n_polymorph_turn_length, "int")
 
     async def player_health(self) -> int:

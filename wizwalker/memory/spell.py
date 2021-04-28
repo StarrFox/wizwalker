@@ -165,13 +165,19 @@ class Hand(MemoryObject):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 
-    # TODO: fix
     async def spell_list(self) -> List[DynamicSpell]:
-        pointers = await self.read_shared_pointers(72)
+        # is pointed back to by last element
+        list_addr = await self.read_value_from_offset(72, "long long")
 
         spells = []
-        for pointer in pointers:
-            spells.append(DynamicSpell(self.hook_handler, pointer.pointed_address))
+        next_node_addr = list_addr
+        list_size = await self.read_value_from_offset(80, "int")
+        for _ in range(list_size):
+            list_node = await self.read_typed(next_node_addr, "long long")
+            next_node_addr = await self.read_typed(list_node, "long long")
+            # spell is +16 from each list node
+            spell_addr = await self.read_typed(list_node + 16, "long long")
+            spells.append(DynamicSpell(self.hook_handler, spell_addr))
 
         return spells
 

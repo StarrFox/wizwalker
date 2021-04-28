@@ -79,22 +79,6 @@ class Client:
         """
         return CurrentQuestPosition(self.hook_handler)
 
-    async def max_hitpoints(self) -> int:
-        """
-        Client's max hitpoints; base + bonus
-        """
-        base = await self.stats.base_hitpoints()
-        bonus = await self.stats.bonus_hitpoints()
-        return base + bonus
-
-    async def max_mana(self) -> int:
-        """
-        Clients's max mana; base + bonus
-        """
-        base = await self.stats.base_mana()
-        bonus = await self.stats.bonus_mana()
-        return base + bonus
-
     async def in_battle(self) -> bool:
         """
         If the client is in battle or not
