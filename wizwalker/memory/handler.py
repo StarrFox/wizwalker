@@ -74,7 +74,7 @@ class HookHandler(MemoryReader):
         await self._rewrite_autobot()
 
         for hook in self._active_hooks:
-            await self.run_in_executor(hook.unhook)
+            await hook.unhook()
 
     async def _check_for_autobot(self):
         if self._autobot_lock is None:
@@ -112,12 +112,12 @@ class HookHandler(MemoryReader):
 
     async def activate_player_hook(self):
         if self._check_if_hook_active(PlayerHook):
-            raise HookAlreadyActivated("Player hook already active")
+            raise HookAlreadyActivated("Player")
 
         await self._check_for_autobot()
 
         player_hook = PlayerHook(self)
-        await self.run_in_executor(player_hook.hook)
+        await player_hook.hook()
 
         self._active_hooks.append(player_hook)
         self._base_addrs["player_struct"] = player_hook.player_struct
@@ -125,7 +125,7 @@ class HookHandler(MemoryReader):
     async def read_player_base(self) -> Optional[int]:
         addr = self._base_addrs.get("player_struct")
         if addr is None:
-            raise HookNotActive("Player hook not active")
+            raise HookNotActive("Player")
 
         try:
             return await self.read_typed(addr, "long long")
@@ -134,12 +134,12 @@ class HookHandler(MemoryReader):
 
     async def activate_duel_hook(self):
         if self._check_if_hook_active(DuelHook):
-            raise HookAlreadyActivated("Duel hook already active")
+            raise HookAlreadyActivated("Duel")
 
         await self._check_for_autobot()
 
         duel_hook = DuelHook(self)
-        await self.run_in_executor(duel_hook.hook)
+        await duel_hook.hook()
 
         self._active_hooks.append(duel_hook)
         self._base_addrs["current_duel"] = duel_hook.current_duel_addr
@@ -147,7 +147,7 @@ class HookHandler(MemoryReader):
     async def read_current_duel_base(self) -> Optional[int]:
         addr = self._base_addrs.get("current_duel")
         if addr is None:
-            raise HookNotActive("Duel hook not active")
+            raise HookNotActive("Duel")
 
         try:
             return await self.read_typed(addr, "long long")
@@ -156,12 +156,12 @@ class HookHandler(MemoryReader):
 
     async def activate_quest_hook(self):
         if self._check_if_hook_active(QuestHook):
-            raise HookAlreadyActivated("Quest hook already active")
+            raise HookAlreadyActivated("Quest")
 
         await self._check_for_autobot()
 
         quest_hook = QuestHook(self)
-        await self.run_in_executor(quest_hook.hook)
+        await quest_hook.hook()
 
         self._active_hooks.append(quest_hook)
         self._base_addrs["quest_struct"] = quest_hook.cord_struct
@@ -169,7 +169,7 @@ class HookHandler(MemoryReader):
     async def read_quest_base(self) -> Optional[int]:
         addr = self._base_addrs.get("quest_struct")
         if addr is None:
-            raise HookNotActive("Quest hook not active")
+            raise HookNotActive("Quest")
 
         try:
             return await self.read_typed(addr, "long long")
@@ -178,12 +178,12 @@ class HookHandler(MemoryReader):
 
     async def activate_player_stat_hook(self):
         if self._check_if_hook_active(PlayerStatHook):
-            raise HookAlreadyActivated("Player stat hook already active")
+            raise HookAlreadyActivated("Player stat")
 
         await self._check_for_autobot()
 
         player_stat_hook = PlayerStatHook(self)
-        await self.run_in_executor(player_stat_hook.hook)
+        await player_stat_hook.hook()
 
         self._active_hooks.append(player_stat_hook)
         self._base_addrs["player_stat_struct"] = player_stat_hook.stat_addr
@@ -191,7 +191,7 @@ class HookHandler(MemoryReader):
     async def read_player_stat_base(self) -> Optional[int]:
         addr = self._base_addrs.get("player_stat_struct")
         if addr is None:
-            raise HookNotActive("Player stat hook not active")
+            raise HookNotActive("Player stat")
 
         try:
             return await self.read_typed(addr, "long long")
@@ -200,12 +200,12 @@ class HookHandler(MemoryReader):
 
     async def activate_backpack_stat_hook(self):
         if self._check_if_hook_active(BackpackStatHook):
-            raise HookAlreadyActivated("Backpack stat hook already active")
+            raise HookAlreadyActivated("Backpack stat")
 
         await self._check_for_autobot()
 
         backpack_stat_hook = BackpackStatHook(self)
-        await self.run_in_executor(backpack_stat_hook.hook)
+        await backpack_stat_hook.hook()
 
         self._active_hooks.append(backpack_stat_hook)
         self._base_addrs[
@@ -215,7 +215,7 @@ class HookHandler(MemoryReader):
     async def read_backpack_stat_base(self) -> Optional[int]:
         addr = self._base_addrs.get("backpack_stat_struct")
         if addr is None:
-            raise HookNotActive("Backpack stat hook not active")
+            raise HookNotActive("Backpack stat")
 
         try:
             return await self.read_typed(addr, "long long")
@@ -224,12 +224,12 @@ class HookHandler(MemoryReader):
 
     async def activate_mouseless_cursor_hook(self):
         if self._check_if_hook_active(MouselessCursorMoveHook):
-            raise HookAlreadyActivated("Mouseless cursor hook already active")
+            raise HookAlreadyActivated("Mouseless cursor")
 
         await self._check_for_autobot()
 
         mouseless_cursor_hook = MouselessCursorMoveHook(self)
-        await self.run_in_executor(mouseless_cursor_hook.hook)
+        await mouseless_cursor_hook.hook()
 
         self._active_hooks.append(mouseless_cursor_hook)
         self._base_addrs["mouse_position"] = mouseless_cursor_hook.mouse_pos_addr
@@ -239,7 +239,7 @@ class HookHandler(MemoryReader):
     async def write_mouse_position(self, x: int, y: int):
         addr = self._base_addrs.get("mouse_position")
         if addr is None:
-            raise HookNotActive("Mouseless cursor hook not active")
+            raise HookNotActive("Mouseless cursor")
 
         packed_position = struct.pack("<ii", x, y)
 
