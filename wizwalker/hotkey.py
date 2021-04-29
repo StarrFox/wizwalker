@@ -100,7 +100,8 @@ class Listener:
         message = await self._queue.async_q.get()
         keycode, modifiers = message.split("|")
         keycode = int(keycode)
-        if modifiers == "0":
+        modifiers = int(modifiers)
+        if modifiers == 0:
             modifiers = 0
         else:
             modifiers = ModifierKeys(modifiers)
