@@ -72,7 +72,19 @@ class HookAlreadyActivated(WizWalkerError):
         self.hook_name = hook_name
 
 
-# TODO: WizWalkerCombatError
+class WizWalkerCombatError(WizWalkerError):
+    """
+    Raised for errors relating to combat
+    """
+
+
+class NotInCombat(WizWalkerCombatError):
+    """
+    Raised when trying to do an action that requires the client
+    to be in combat
+    """
+
+
 class NotEnoughPips(WizWalkerError):
     """
     Raised when trying to use a card that costs more pips then

@@ -42,11 +42,13 @@ class CacheHandler:
             logger.debug(f"TEMP {self.wad_cache=} {type(self.wad_cache)}")
 
         res = []
+        has_updated = False
 
         for file_name in files:
             file_info = await wad_file.get_file_info(file_name)
 
             if self.wad_cache[wad_file.name][file_name] != file_info.size:
+                has_updated = True
                 logger.debug(
                     f"{file_name} has updated. old: {self.wad_cache[wad_file.name][file_name]} new: {file_info.size}"
                 )
@@ -55,6 +57,9 @@ class CacheHandler:
 
             else:
                 logger.debug(f"{file_name} has not updated from {file_info.size}")
+
+        if has_updated:
+            await self.write_wad_cache()
 
         return res
 
@@ -66,7 +71,6 @@ class CacheHandler:
 
         logger.debug("Caching template if needed")
         await self._cache_template(root_wad)
-        await self.write_wad_cache()
 
     async def _cache_template(self, root_wad):
         template_file = "TemplateManifest.xml"

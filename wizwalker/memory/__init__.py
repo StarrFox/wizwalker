@@ -8,3 +8,4 @@ from .actor_body import ActorBody, PlayerActorBody
 from .duel import Duel, PlayerDuel
 from .combat_participant import CombatParticipant, DynamicCombatParticipant
 from .quest_position import CurrentQuestPosition
+from .spell import Hand, DynamicHand, Spell, DynamicSpell

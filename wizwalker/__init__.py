@@ -7,7 +7,7 @@ from .wad import Wad
 from .nif import NifMap
 from .errors import *
 from .utils import XYZ
-from . import utils, cli, memory
+from . import utils, cli, memory, combat
 from .application import WizWalker
 from .client import Client
 from .cache_handler import CacheHandler

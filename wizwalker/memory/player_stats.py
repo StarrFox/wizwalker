@@ -1,9 +1,9 @@
-from .memory_object import MemoryObject
+from .memory_object import MemoryObject, DynamicMemoryObject
 
 
-class PlayerStats(MemoryObject):
+class GameStats(MemoryObject):
     async def read_base_address(self) -> int:
-        return await self.hook_handler.read_player_stat_base()
+        raise NotImplementedError()
 
     async def max_hitpoints(self) -> int:
         """
@@ -413,11 +413,11 @@ class PlayerStats(MemoryObject):
     async def write_gardening_level(self, gardening_level: int):
         await self.write_value_to_offset(824, gardening_level, "unsigned char")
 
-    async def gardening_x_p(self) -> int:
+    async def gardening_xp(self) -> int:
         return await self.read_value_from_offset(828, "int")
 
-    async def write_gardening_x_p(self, gardening_x_p: int):
-        await self.write_value_to_offset(828, gardening_x_p, "int")
+    async def write_gardening_xp(self, gardening_xp: int):
+        await self.write_value_to_offset(828, gardening_xp, "int")
 
     async def invisible_to_friends(self) -> bool:
         return await self.read_value_from_offset(832, "bool")
@@ -475,11 +475,11 @@ class PlayerStats(MemoryObject):
     async def write_fishing_level(self, fishing_level: int):
         await self.write_value_to_offset(853, fishing_level, "unsigned char")
 
-    async def fishing_x_p(self) -> int:
+    async def fishing_xp(self) -> int:
         return await self.read_value_from_offset(856, "int")
 
-    async def write_fishing_x_p(self, fishing_x_p: int):
-        await self.write_value_to_offset(856, fishing_x_p, "int")
+    async def write_fishing_xp(self, fishing_xp: int):
+        await self.write_value_to_offset(856, fishing_xp, "int")
 
     async def fishing_luck_bonus_percent(self) -> float:
         return await self.read_value_from_offset(536, "float")
@@ -555,11 +555,11 @@ class PlayerStats(MemoryObject):
     async def write_monster_magic_level(self, monster_magic_level: int):
         await self.write_value_to_offset(868, monster_magic_level, "unsigned char")
 
-    async def monster_magic_x_p(self) -> int:
+    async def monster_magic_xp(self) -> int:
         return await self.read_value_from_offset(872, "int")
 
-    async def write_monster_magic_x_p(self, monster_magic_x_p: int):
-        await self.write_value_to_offset(872, monster_magic_x_p, "int")
+    async def write_monster_magic_xp(self, monster_magic_xp: int):
+        await self.write_value_to_offset(872, monster_magic_xp, "int")
 
     async def player_chat_channel_is_public(self) -> bool:
         return await self.read_value_from_offset(876, "bool")
@@ -630,8 +630,8 @@ class PlayerStats(MemoryObject):
     async def highest_world1_id(self) -> int:
         return await self.read_value_from_offset(900, "unsigned int")
 
-    async def write_highest_world1_id(self, highest_world1_i_d: int):
-        await self.write_value_to_offset(900, highest_world1_i_d, "unsigned int")
+    async def write_highest_world1_id(self, highest_world1_id: int):
+        await self.write_value_to_offset(900, highest_world1_id, "unsigned int")
 
     async def highest_world2_id(self) -> int:
         return await self.read_value_from_offset(904, "unsigned int")
@@ -732,3 +732,12 @@ class PlayerStats(MemoryObject):
 
     async def write_friendly_player(self, friendly_player: bool):
         await self.write_value_to_offset(984, friendly_player, "bool")
+
+
+class PlayerStats(GameStats):
+    async def read_base_address(self) -> int:
+        return await self.hook_handler.read_player_stat_base()
+
+
+class DynamicGameStats(DynamicMemoryObject, GameStats):
+    pass

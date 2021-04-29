@@ -1,1 +1,1 @@
-from .cards import Hand, Card
+from .card import Card

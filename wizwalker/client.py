@@ -1,10 +1,11 @@
 import asyncio
 import ctypes.wintypes
 from functools import cached_property
+from typing import List
 
 import pymem
 
-from . import Keycode, ReadingEnumFailed, utils
+from . import Keycode, NotInCombat, ReadingEnumFailed, utils
 from .memory import (
     DuelPhase,
     HookHandler,
@@ -16,6 +17,7 @@ from .memory import (
 
 from .constants import user32, WIZARD_SPEED
 from .utils import XYZ
+from .combat import Card
 
 
 class Client:
@@ -78,6 +80,15 @@ class Client:
         Client's quest position struct
         """
         return CurrentQuestPosition(self.hook_handler)
+
+    # async def get_cards(self) -> List[Card]:
+    #     """
+    #     Get the client's current cards
+    #     """
+    #     if not await self.in_battle():
+    #         raise NotInCombat("Must be in combat to get cards")
+    #
+    #     spells = []
 
     async def in_battle(self) -> bool:
         """

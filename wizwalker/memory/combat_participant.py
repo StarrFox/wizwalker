@@ -1,5 +1,6 @@
 from .memory_object import MemoryObject, DynamicMemoryObject
 from .enums import PipAquiredByEnum
+from .player_stats import DynamicGameStats
 from .spell import DynamicHand
 
 
@@ -91,10 +92,10 @@ class CombatParticipant(MemoryObject):
     async def write_original_team(self, original_team: int):
         await self.write_value_to_offset(216, original_team, "int")
 
-    async def n_aura_turn_length(self) -> int:
+    async def aura_turn_length(self) -> int:
         return await self.read_value_from_offset(228, "int")
 
-    async def write_n_aura_turn_length(self, n_aura_turn_length: int):
+    async def write_aura_turn_length(self, n_aura_turn_length: int):
         await self.write_value_to_offset(228, n_aura_turn_length, "int")
 
     async def clue(self) -> int:
@@ -139,54 +140,51 @@ class CombatParticipant(MemoryObject):
     async def write_max_hand_size(self, max_hand_size: int):
         await self.write_value_to_offset(248, max_hand_size, "int")
 
-    # TODO: fix
     async def hand(self) -> DynamicHand:
         addr = await self.read_value_from_offset(256, "long long")
         return DynamicHand(self.hook_handler, addr)
 
-    # async def p_hand(self) -> class Hand*:
-    #     return await self.read_value_from_offset(256, "class Hand*")
-    #
-    # async def write_p_hand(self, p_hand: class Hand*):
-    #     await self.write_value_to_offset(256, p_hand, "class Hand*")
+    # async def write_hand
 
-    # async def p_saved_hand(self) -> class Hand*:
-    #     return await self.read_value_from_offset(264, "class Hand*")
-    #
-    # async def write_p_saved_hand(self, p_saved_hand: class Hand*):
+    async def saved_hand(self) -> DynamicHand:
+        addr = await self.read_value_from_offset(264, "long long")
+        return DynamicHand(self.hook_handler, addr)
+
+    # async def write_saved_hand(self, p_saved_hand: class Hand*):
     #     await self.write_value_to_offset(264, p_saved_hand, "class Hand*")
 
-    # async def p_play_deck(self) -> class PlayDeck*:
+    # async def play_deck(self) -> class PlayDeck*:
     #     return await self.read_value_from_offset(272, "class PlayDeck*")
     #
-    # async def write_p_play_deck(self, p_play_deck: class PlayDeck*):
+    # async def write_play_deck(self, p_play_deck: class PlayDeck*):
     #     await self.write_value_to_offset(272, p_play_deck, "class PlayDeck*")
     #
-    # async def p_saved_play_deck(self) -> class PlayDeck*:
+    # async def saved_play_deck(self) -> class PlayDeck*:
     #     return await self.read_value_from_offset(280, "class PlayDeck*")
     #
-    # async def write_p_saved_play_deck(self, p_saved_play_deck: class PlayDeck*):
+    # async def write_saved_play_deck(self, p_saved_play_deck: class PlayDeck*):
     #     await self.write_value_to_offset(280, p_saved_play_deck, "class PlayDeck*")
 
-    # async def p_saved_game_stats(self) -> class SharedPointer<class WizGameStats>:
+    # async def saved_game_stats(self) -> class SharedPointer<class WizGameStats>:
     #     return await self.read_value_from_offset(288, "class SharedPointer<class WizGameStats>")
     #
-    # async def write_p_saved_game_stats(self, p_saved_game_stats: class SharedPointer<class WizGameStats>):
+    # async def write_saved_game_stats(self, p_saved_game_stats: class SharedPointer<class WizGameStats>):
     #     await self.write_value_to_offset(288, p_saved_game_stats, "class SharedPointer<class WizGameStats>")
 
     async def saved_primary_magic_school_id(self) -> int:
         return await self.read_value_from_offset(304, "int")
 
-    async def write_saved_primary_magic_school_i_d(
+    async def write_saved_primary_magic_school_id(
         self, saved_primary_magic_school_id: int
     ):
         await self.write_value_to_offset(304, saved_primary_magic_school_id, "int")
 
-    # async def p_game_stats(self) -> class SharedPointer<class WizGameStats>:
-    #     return await self.read_value_from_offset(312, "class SharedPointer<class WizGameStats>")
-    #
-    # async def write_p_game_stats(self, p_game_stats: class SharedPointer<class WizGameStats>):
-    #     await self.write_value_to_offset(312, p_game_stats, "class SharedPointer<class WizGameStats>")
+    async def game_stats(self) -> DynamicGameStats:
+        addr = await self.read_value_from_offset(312, "long long")
+        return DynamicGameStats(self.hook_handler, addr)
+
+    # async def write_game_stats(self, game_stats: class SharedPointer<class WizGameStats>):
+    #     await self.write_value_to_offset(312, game_stats, "class SharedPointer<class WizGameStats>")
 
     # async def color(self) -> class Color:
     #     return await self.read_value_from_offset(328, "class Color")
@@ -304,17 +302,17 @@ class CombatParticipant(MemoryObject):
     async def write_boss_mob(self, boss_mob: bool):
         await self.write_value_to_offset(638, boss_mob, "bool")
 
-    async def hide_p_v_p_enemy_chat(self) -> bool:
+    async def hide_pvp_enemy_chat(self) -> bool:
         return await self.read_value_from_offset(639, "bool")
 
-    async def write_hide_p_v_p_enemy_chat(self, hide_p_v_p_enemy_chat: bool):
-        await self.write_value_to_offset(639, hide_p_v_p_enemy_chat, "bool")
+    async def write_hide_pvp_enemy_chat(self, hide_pvp_enemy_chat: bool):
+        await self.write_value_to_offset(639, hide_pvp_enemy_chat, "bool")
 
-    async def combat_trigger_i_ds(self) -> int:
+    async def combat_trigger_ids(self) -> int:
         return await self.read_value_from_offset(664, "int")
 
-    async def write_combat_trigger_i_ds(self, combat_trigger_i_ds: int):
-        await self.write_value_to_offset(664, combat_trigger_i_ds, "int")
+    async def write_combat_trigger_ids(self, combat_trigger_ids: int):
+        await self.write_value_to_offset(664, combat_trigger_ids, "int")
 
     async def backlash(self) -> int:
         return await self.read_value_from_offset(692, "int")
