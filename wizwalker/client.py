@@ -16,7 +16,7 @@ from .memory import (
 )
 
 from .constants import user32, WIZARD_SPEED
-from .utils import XYZ
+from .utils import XYZ, check_if_process_running
 from .combat import Card
 
 
@@ -40,10 +40,17 @@ class Client:
     def __repr__(self):
         return f"<Client {self.window_handle=} {self.process_id=}>"
 
+    def is_running(self):
+        return check_if_process_running(self._pymem.process_handle)
+
     async def close(self):
         """
         Closes this client; unhooking all active hooks
         """
+        # if the client isn't running there isn't anything to unhook
+        if not self.is_running():
+            return
+
         await self.hook_handler.close()
 
     @cached_property

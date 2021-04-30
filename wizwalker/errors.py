@@ -4,6 +4,15 @@ class WizWalkerError(Exception):
     """
 
 
+class ClientClosedError(WizWalkerError):
+    """
+    Raised when trying to do an action that requires a running client
+    """
+
+    def __init__(self):
+        super().__init__("Client must be running to preform this action.")
+
+
 class HookNotActive(WizWalkerError):
     """
     Raised when doing something that requires a hook to be active
@@ -52,6 +61,24 @@ class PatternFailed(WizWalkerMemoryError):
         super().__init__(
             f"Pattern {pattern} failed. You most likely need to restart the client."
         )
+
+
+class MemoryReadError(WizWalkerMemoryError):
+    """
+    Raised when we couldn't read some memory
+    """
+
+    def __init__(self, address: int):
+        super().__init__(f"Unable to read memory at address {address}.")
+
+
+class MemoryWriteError(WizWalkerMemoryError):
+    """
+    Raised when we couldn't write to some memory
+    """
+
+    def __init__(self, address: int):
+        super().__init__(f"Unable to write memory at address {address}.")
 
 
 class ReadingEnumFailed(WizWalkerMemoryError):

@@ -14,7 +14,7 @@ from typing import Callable, Iterable
 
 import appdirs
 
-from wizwalker.constants import Keycode, user32
+from wizwalker.constants import Keycode, user32, kernel32
 
 
 class XYZ:
@@ -240,6 +240,19 @@ def get_logs_folder() -> Path:
         log_dir.mkdir(parents=True)
 
     return log_dir
+
+
+def check_if_process_running(handle: int) -> bool:
+    """
+    Checks if a process is still running
+    True = Running
+    False = Not
+    """
+    # https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getexitcodeprocess
+    exit_code = ctypes.wintypes.DWORD()
+    kernel32.GetExitCodeProcess(handle, ctypes.byref(exit_code))
+    # 259 is the value of IS_ALIVE
+    return exit_code.value == 259
 
 
 def get_pid_from_handle(handle: int) -> int:

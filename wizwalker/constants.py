@@ -3,6 +3,7 @@ from enum import Enum
 
 
 user32 = ctypes.windll.user32
+kernel32 = ctypes.windll.kernel32
 
 
 WIZARD_SPEED = 580

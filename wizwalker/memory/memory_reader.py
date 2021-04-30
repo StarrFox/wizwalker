@@ -5,9 +5,18 @@ import re
 from typing import Any, Union
 
 import pymem
+import pymem.exception
 import pymem.ressources.structure
 
-from wizwalker import PatternFailed, PatternMultipleResults, type_format_dict
+from wizwalker import (
+    PatternFailed,
+    PatternMultipleResults,
+    type_format_dict,
+    utils,
+    MemoryReadError,
+    MemoryWriteError,
+    ClientClosedError,
+)
 
 
 class MemoryReader:
@@ -17,6 +26,12 @@ class MemoryReader:
 
     def __init__(self, process: pymem.Pymem):
         self.process = process
+
+    def is_running(self) -> bool:
+        """
+        Bool if the process we're reading/writing to/from is running
+        """
+        return utils.check_if_process_running(self.process.process_handle)
 
     @staticmethod
     async def run_in_executor(func, *args, **kwargs):
@@ -117,12 +132,27 @@ class MemoryReader:
         await self.run_in_executor(self.process.free, address)
 
     async def read_bytes(self, address: int, size: int) -> bytes:
-        return await self.run_in_executor(self.process.read_bytes, address, size)
+        try:
+            return await self.run_in_executor(self.process.read_bytes, address, size)
+        except pymem.exception.MemoryReadError:
+            # we don't want to run is running for every read
+            # so we just check after we error
+            if not self.is_running():
+                raise ClientClosedError()
+            else:
+                raise MemoryReadError(address)
 
     async def write_bytes(self, address: int, _bytes: bytes):
-        await self.run_in_executor(
-            self.process.write_bytes, address, _bytes, len(_bytes),
-        )
+        try:
+            await self.run_in_executor(
+                self.process.write_bytes, address, _bytes, len(_bytes),
+            )
+        except pymem.exception.MemoryWriteError:
+            # see read_bytes
+            if not self.is_running():
+                raise ClientClosedError()
+            else:
+                raise MemoryWriteError(address)
 
     async def read_typed(self, address: int, data_type: str) -> Any:
         type_format = type_format_dict.get(data_type)

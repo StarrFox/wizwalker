@@ -4,6 +4,7 @@ from typing import Any, Optional
 
 import pymem
 import pymem.exception
+from loguru import logger
 
 from wizwalker import HookAlreadyActivated, HookNotActive
 from .hooks import (
