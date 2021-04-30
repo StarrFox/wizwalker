@@ -49,6 +49,10 @@ class HookHandler(MemoryReader):
 
         addr = self._autobot_address + self._autobot_pos
         self._autobot_pos += size
+
+        logger.debug(
+            f"Allocating autobot address {addr}; autobto position is now {self._autobot_pos}"
+        )
         return addr
 
     async def _get_autobot_address(self):
@@ -66,6 +70,9 @@ class HookHandler(MemoryReader):
             self._original_autobot_bytes = await self.read_bytes(
                 self._autobot_address, len(self.AUTOBOT_PATTERN)
             )
+            logger.debug(
+                f"Got original bytes {self._original_autobot_bytes} from autobot"
+            )
             await self.write_bytes(self._autobot_address, b"\x00" * self.AUTOBOT_SIZE)
 
     async def _rewrite_autobot(self):
@@ -78,6 +85,9 @@ class HookHandler(MemoryReader):
 
             # Only write if the pattern isn't there
             if compare_bytes != self._original_autobot_bytes:
+                logger.debug(
+                    f"Rewriting bytes {self._original_autobot_bytes} to autbot"
+                )
                 await self.write_bytes(
                     self._autobot_address, self._original_autobot_bytes
                 )

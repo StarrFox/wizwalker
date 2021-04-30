@@ -7,6 +7,7 @@ from typing import Any, Union
 import pymem
 import pymem.exception
 import pymem.ressources.structure
+from loguru import logger
 
 from wizwalker import (
     PatternFailed,
@@ -79,7 +80,12 @@ class MemoryReader:
         found = []
 
         for match in re.finditer(pattern, page_bytes):
-            found.append(address + match.span()[0])
+            found_address = address + match.span()[0]
+            found.append(found_address)
+            logger.debug(
+                f"Found address {found_address} from pattern {pattern} within "
+                f"address {address} and size {mbi.RegionSize}"
+            )
 
         return next_region, found
 
@@ -116,6 +122,7 @@ class MemoryReader:
                 pattern,
             )
 
+        logger.debug(f"Got results {found_addresses} from pattern {pattern}")
         if (found_length := len(found_addresses)) == 0:
             raise PatternFailed(pattern)
         elif found_length > 1 and error_on_multiple:
@@ -132,6 +139,7 @@ class MemoryReader:
         await self.run_in_executor(self.process.free, address)
 
     async def read_bytes(self, address: int, size: int) -> bytes:
+        logger.debug(f"Reading bytes from address {address} with size {size}")
         try:
             return await self.run_in_executor(self.process.read_bytes, address, size)
         except pymem.exception.MemoryReadError:
@@ -143,9 +151,11 @@ class MemoryReader:
                 raise MemoryReadError(address)
 
     async def write_bytes(self, address: int, _bytes: bytes):
+        size = len(_bytes)
+        logger.debug(f"Writing bytes {_bytes} to address {address} with size {size}")
         try:
             await self.run_in_executor(
-                self.process.write_bytes, address, _bytes, len(_bytes),
+                self.process.write_bytes, address, _bytes, size,
             )
         except pymem.exception.MemoryWriteError:
             # see read_bytes

@@ -39,7 +39,6 @@ class CacheHandler:
 
         if not self.wad_cache:
             self.wad_cache = await self.get_wad_cache()
-            logger.debug(f"TEMP {self.wad_cache=} {type(self.wad_cache)}")
 
         res = []
         has_updated = False
@@ -49,14 +48,14 @@ class CacheHandler:
 
             if self.wad_cache[wad_file.name][file_name] != file_info.size:
                 has_updated = True
-                logger.debug(
+                logger.info(
                     f"{file_name} has updated. old: {self.wad_cache[wad_file.name][file_name]} new: {file_info.size}"
                 )
                 res.append(file_name)
                 self.wad_cache[wad_file.name][file_name] = file_info.size
 
             else:
-                logger.debug(f"{file_name} has not updated from {file_info.size}")
+                logger.info(f"{file_name} has not updated from {file_info.size}")
 
         if has_updated:
             await self.write_wad_cache()
@@ -69,7 +68,7 @@ class CacheHandler:
         """
         root_wad = Wad.from_game_data("Root")
 
-        logger.debug("Caching template if needed")
+        logger.info("Caching template if needed")
         await self._cache_template(root_wad)
 
     async def _cache_template(self, root_wad):
@@ -96,7 +95,7 @@ class CacheHandler:
         for wad_name in all_wads:
             wad_name = wad_name.name
             if not self.node_cache[wad_name]:
-                logger.debug(f"Checking {wad_name} for node data")
+                logger.info(f"Checking {wad_name} for node data")
                 wad = Wad.from_game_data(wad_name)
                 self.node_cache[wad_name] = 1
 

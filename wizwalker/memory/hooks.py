@@ -1,6 +1,7 @@
-import re
 import struct
 from typing import Any, Tuple
+
+from loguru import logger
 
 from wizwalker.memory import MemoryReader
 
@@ -81,11 +82,21 @@ class MemoryHook(MemoryReader):
         self.jump_address = await self.get_jump_address(pattern, module=module)
         self.hook_address = await self.get_hook_address(50)
 
+        logger.debug(f"Got hook address {self.hook_address} in {type(self)}")
+        logger.debug(f"Got jump address {self.jump_address} in {type(self)}")
+
         self.hook_bytecode = await self.get_hook_bytecode()
         self.jump_bytecode = await self.get_jump_bytecode()
 
+        logger.debug(f"Got hook bytecode {self.hook_bytecode} in {type(self)}")
+        logger.debug(f"Got jump bytecode {self.jump_bytecode} in {type(self)}")
+
         self.jump_original_bytecode = await self.read_bytes(
             self.jump_address, len(self.jump_bytecode)
+        )
+
+        logger.debug(
+            f"Got jump original bytecode {self.jump_original_bytecode} in {type(self)}"
         )
 
         await self.prehook()
@@ -97,9 +108,12 @@ class MemoryHook(MemoryReader):
 
     async def unhook(self):
         """
-        Deallocates hook memory and rewrites jump addr to it's origional code,
+        Deallocates hook memory and rewrites jump addr to it's original code,
         also called when a client is closed
         """
+        logger.debug(
+            f"Writing original bytecode {self.jump_original_bytecode} to {self.jump_address}"
+        )
         await self.write_bytes(self.jump_address, self.jump_original_bytecode)
         for addr in self._allocated_addresses:
             await self.free(addr)
@@ -114,8 +128,10 @@ class AutoBotBaseHook(MemoryHook):
         return await self.hook_handler._allocate_autobot_bytes(size)
 
     # TODO: tell handler those bytes are free now?
-    # This if overwritten bc we never call free
     async def unhook(self):
+        logger.debug(
+            f"Writing original bytecode {self.jump_original_bytecode} to {self.jump_address}"
+        )
         await self.write_bytes(self.jump_address, self.jump_original_bytecode)
 
 
@@ -381,11 +397,8 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
 
         return bytecode
 
-    async def get_pattern(self) -> Tuple[re.Pattern, str]:
-        return (
-            re.compile(rb"[\xBA\xE9]....\x44\x8D\x42\x7E\x48\xFF\x25"),
-            "user32.dll",
-        )
+    async def get_pattern(self) -> Tuple[bytes, str]:
+        return rb"[\xBA\xE9]....\x44\x8D\x42\x7E\x48\xFF\x25", "user32.dll"
 
     async def unhook(self):
         await super().unhook()
