@@ -48,9 +48,9 @@ class PatternFailed(WizWalkerMemoryError):
     Raised when the pattern scan fails
     """
 
-    def __init__(self):
+    def __init__(self, pattern):
         super().__init__(
-            "A search pattern failed. You most likely need to restart the client."
+            f"Pattern {pattern} failed. You most likely need to restart the client."
         )
 
 

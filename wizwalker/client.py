@@ -117,7 +117,7 @@ class Client:
         """
         utils.instance_login(self.window_handle, username, password)
 
-    async def send_key(self, key: Keycode, seconds: float):
+    async def send_key(self, key: Keycode, seconds: float = 0.5):
         await utils.timed_send_key(self.window_handle, key, seconds)
 
     async def click(

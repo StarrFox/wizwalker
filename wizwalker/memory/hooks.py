@@ -111,8 +111,9 @@ class AutoBotBaseHook(MemoryHook):
     """
 
     async def alloc(self, size: int) -> int:
-        return self.hook_handler._get_open_autobot_address(size)
+        return await self.hook_handler._allocate_autobot_bytes(size)
 
+    # TODO: tell handler those bytes are free now?
     # This if overwritten bc we never call free
     async def unhook(self):
         await self.write_bytes(self.jump_address, self.jump_original_bytecode)

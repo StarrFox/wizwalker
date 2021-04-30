@@ -36,13 +36,13 @@ class HookHandler(MemoryReader):
 
         self._autobot_address = None
         self._autobot_lock = None
-        self._original_autobot_bytes = None
+        self._original_autobot_bytes = b""
         self._autobot_pos = 0
 
         self._active_hooks = []
         self._base_addrs = {}
 
-    def _get_open_autobot_address(self, size: int) -> int:
+    async def _get_open_autobot_address(self, size: int) -> int:
         if self._autobot_pos + size > self.AUTOBOT_SIZE:
             raise RuntimeError("Somehow went over autobot size")
 
@@ -61,20 +61,39 @@ class HookHandler(MemoryReader):
         if self._autobot_address is None:
             await self._get_autobot_address()
 
-            # noinspection PyTypeChecker
+            # we only need to write back the pattern
             self._original_autobot_bytes = await self.read_bytes(
-                self._autobot_address, self.AUTOBOT_SIZE
+                self._autobot_address, len(self.AUTOBOT_PATTERN)
             )
+            await self.write_bytes(self._autobot_address, b"\x00" * self.AUTOBOT_SIZE)
 
     async def _rewrite_autobot(self):
         if self._autobot_address is not None:
-            await self.write_bytes(self._autobot_address, self._original_autobot_bytes)
+            compare_bytes = await self.read_bytes(
+                self._autobot_address, len(self.AUTOBOT_PATTERN)
+            )
+            # Give some time for execution point to leave hooks
+            await asyncio.sleep(0.5)
+
+            # Only write if the pattern isn't there
+            if compare_bytes != self._original_autobot_bytes:
+                await self.write_bytes(
+                    self._autobot_address, self._original_autobot_bytes
+                )
+
+    async def _allocate_autobot_bytes(self, size: int) -> int:
+        address = await self._get_open_autobot_address(size)
+
+        return address
 
     async def close(self):
         await self._rewrite_autobot()
 
         for hook in self._active_hooks:
             await hook.unhook()
+
+        self._active_hooks = []
+        self._autobot_pos = 0
 
     async def _check_for_autobot(self):
         if self._autobot_lock is None:

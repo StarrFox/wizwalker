@@ -102,7 +102,7 @@ class MemoryReader:
             )
 
         if (found_length := len(found_addresses)) == 0:
-            raise PatternFailed()
+            raise PatternFailed(pattern)
         elif found_length > 1 and error_on_multiple:
             raise PatternMultipleResults(f"Got {found_length} results for {pattern}")
         elif found_length > 1 and not error_on_multiple:
