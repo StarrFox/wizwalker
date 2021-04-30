@@ -73,7 +73,7 @@ class HookHandler(MemoryReader):
                 self._autobot_address, len(self.AUTOBOT_PATTERN)
             )
             # Give some time for execution point to leave hooks
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(1)
 
             # Only write if the pattern isn't there
             if compare_bytes != self._original_autobot_bytes:
@@ -87,13 +87,15 @@ class HookHandler(MemoryReader):
         return address
 
     async def close(self):
-        await self._rewrite_autobot()
-
         for hook in self._active_hooks:
             await hook.unhook()
 
+        await self._rewrite_autobot()
+
         self._active_hooks = []
         self._autobot_pos = 0
+        self._autobot_address = None
+        self._base_addrs = {}
 
     async def _check_for_autobot(self):
         if self._autobot_lock is None:
