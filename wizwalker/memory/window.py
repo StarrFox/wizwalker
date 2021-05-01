@@ -16,7 +16,7 @@ class Window(MemoryObject):
 
     async def get_windows_with_rect(self, rect: tuple):
         async def _pred(window):
-            if await window.window() == rect:
+            if await window.window_rectangle() == rect:
                 return True
 
             return False
@@ -128,7 +128,7 @@ class Window(MemoryObject):
     async def write_flags(self, flags: WindowFlags):
         await self.write_value_to_offset(156, int(flags), "unsigned long")
 
-    async def window(self) -> tuple:
+    async def window_rectangle(self) -> tuple:
         return await self.read_vector(160, 4, "int")
 
     async def write_window(self, window: tuple):
