@@ -1,3 +1,5 @@
+from typing import List, Optional
+
 from .memory_object import MemoryObject, DynamicMemoryObject
 from .enums import WindowStyle, WindowFlags
 
@@ -7,13 +9,34 @@ class Window(MemoryObject):
         raise NotImplementedError()
 
     async def name(self) -> str:
-        return await self.read_string(80)
+        try:
+            return await self.read_string(80)
+        # Sometimes they make this a pointer bc why not
+        except UnicodeDecodeError:
+            string_addr = await self.read_value_from_offset(80, "long long")
+            search_bytes = await self.read_bytes(string_addr, 20)
+            string_end = search_bytes.find(b"\x00")
+            if string_end == 0:
+                return ""
+            elif string_end == -1:
+                return ""
+            # Don't include the 0 byte
+            string_bytes = search_bytes[:string_end]
+            return string_bytes.decode("utf-8")
 
     async def write_name(self, name: str):
         await self.write_string(80, name)
 
-    # Cannot type this as List[DynamicWindow] due to scope
-    async def children(self) -> list:
+    async def get_child_by_name(self, name: str) -> Optional["DynamicWindow"]:
+        children = await self.children()
+        for child in children:
+            if await child.name() == name:
+                return child
+
+        # explict None
+        return None
+
+    async def children(self) -> List["DynamicWindow"]:
         pointers = await self.read_shared_vector(112)
 
         windows = []
