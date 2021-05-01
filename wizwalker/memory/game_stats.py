@@ -734,7 +734,7 @@ class GameStats(MemoryObject):
         await self.write_value_to_offset(984, friendly_player, "bool")
 
 
-class PlayerStats(GameStats):
+class CurrentGameStats(GameStats):
     async def read_base_address(self) -> int:
         return await self.hook_handler.read_player_stat_base()
 

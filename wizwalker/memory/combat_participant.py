@@ -1,6 +1,6 @@
 from .memory_object import MemoryObject, DynamicMemoryObject
 from .enums import PipAquiredByEnum
-from .player_stats import DynamicGameStats
+from .game_stats import DynamicGameStats
 from .spell import DynamicHand
 
 

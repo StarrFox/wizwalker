@@ -285,6 +285,30 @@ class DuelHook(SimpleHook):
         return bytecode
 
 
+class ClientHook(SimpleHook):
+    pattern = (
+        rb"\x48......\x48\x8B\x7C\x24\x40\x48\x85\xFF\x74\x29\x8B\xC6\xF0\x0F\xC1\x47\x08\x83\xF8\x01\x75\x1D"
+        rb"\x48\x8B\x07\x48\x8B\xCF\xFF\x50\x08\xF0\x0F\xC1\x77\x0C"
+    )
+    exports = [("current_client_addr", 8)]
+    instruction_length = 7
+    noops = 2
+
+    async def bytecode_generator(self, packed_exports):
+        # fmt: off
+        bytecode = (
+                # We use rax bc we're using movabs
+                b"\x50"  # push rax
+                b"\x48\x8B\xC7"  # mov rax,rdi
+                b"\x48\xA3" + packed_exports[0][1] +  # mov [current_client],rdi
+                b"\x58"  # pop rax
+                b"\x48\x8B\x9B\xB8\x01\x00\x00"  # original instruction
+        )
+        # fmt: on
+
+        return bytecode
+
+
 class User32GetClassInfoBaseHook(AutoBotBaseHook):
     """
     Subclass of MemoryHook that uses the user32.GetClassInfoExA for bytes so addresses arent huge

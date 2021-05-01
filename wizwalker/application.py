@@ -4,7 +4,6 @@ from typing import List
 
 from wizwalker import utils
 from .client import Client
-from .cache_handler import CacheHandler
 
 
 class WizWalker:
@@ -16,16 +15,8 @@ class WizWalker:
         self._managed_handles = []
         self.clients = []
 
-        self.cache_handler = CacheHandler()
-
     def __repr__(self):
         return f"<WizWalker {self.clients=}>"
-
-    async def get_template_ids(self) -> dict:
-        """
-        Get a dict of template ids mapped to their value
-        """
-        return await self.cache_handler.get_template_ids()
 
     @cached_property
     def install_location(self) -> Path:

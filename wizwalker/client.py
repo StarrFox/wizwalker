@@ -5,14 +5,22 @@ from typing import List
 
 import pymem
 
-from . import Keycode, NotInCombat, ReadingEnumFailed, utils
+from . import (
+    CacheHandler,
+    Keycode,
+    MemoryReadError,
+    NotInCombat,
+    ReadingEnumFailed,
+    utils,
+)
 from .memory import (
     DuelPhase,
     HookHandler,
-    PlayerStats,
-    PlayerActorBody,
-    PlayerDuel,
+    CurrentGameStats,
+    CurrentActorBody,
+    CurrentDuel,
     CurrentQuestPosition,
+    CurrentClientObject,
 )
 
 from .constants import user32, WIZARD_SPEED
@@ -34,8 +42,12 @@ class Client:
         self._pymem = pymem.Pymem()
         self._pymem.open_process_from_id(self.process_id)
         self.hook_handler = HookHandler(self._pymem)
+        # TODO: somehow reference the WizWalker's handler
+        self.cache_handler = CacheHandler()
 
         self.click_lock = None
+
+        self._template_ids = None
 
     def __repr__(self):
         return f"<Client {self.window_handle=} {self.process_id=}>"
@@ -61,25 +73,25 @@ class Client:
         return utils.get_pid_from_handle(self.window_handle)
 
     @cached_property
-    def stats(self) -> PlayerStats:
+    def stats(self) -> CurrentGameStats:
         """
         Client's game stats struct
         """
-        return PlayerStats(self.hook_handler)
+        return CurrentGameStats(self.hook_handler)
 
     @cached_property
-    def body(self) -> PlayerActorBody:
+    def body(self) -> CurrentActorBody:
         """
         Client's actor body struct
         """
-        return PlayerActorBody(self.hook_handler)
+        return CurrentActorBody(self.hook_handler)
 
     @cached_property
-    def duel(self) -> PlayerDuel:
+    def duel(self) -> CurrentDuel:
         """
         Client's duel struct
         """
-        return PlayerDuel(self.hook_handler)
+        return CurrentDuel(self.hook_handler)
 
     @cached_property
     def quest_position(self) -> CurrentQuestPosition:
@@ -88,14 +100,66 @@ class Client:
         """
         return CurrentQuestPosition(self.hook_handler)
 
-    # async def get_cards(self) -> List[Card]:
-    #     """
-    #     Get the client's current cards
-    #     """
-    #     if not await self.in_battle():
-    #         raise NotInCombat("Must be in combat to get cards")
-    #
-    #     spells = []
+    @cached_property
+    def client_object(self) -> CurrentClientObject:
+        """
+        Client's current client object; name is pretty confusing
+        """
+        return CurrentClientObject(self.hook_handler)
+
+    async def get_template_ids(self) -> dict:
+        """
+        Get a dict of template ids mapped to their value
+        ids are str
+        """
+        if self._template_ids:
+            return self._template_ids
+
+        self._template_ids = await self.cache_handler.get_template_ids()
+        return self._template_ids
+
+    async def get_filename_from_template_id(self, template_id: int) -> str:
+        template_ids = await self.get_template_ids()
+        try:
+            file_path = template_ids[str(template_id)]
+        except KeyError:
+            raise ValueError(f"{template_id} is not a valid template id.")
+
+        file_name = file_path.split("/")[-1].split(".")[0]
+        return file_name
+
+    async def get_cards(self) -> List[Card]:
+        """
+        Get the client's current cards
+        """
+        if not await self.in_battle():
+            raise NotInCombat("Must be in combat to get cards")
+
+        character_id = await self.client_object.character_id()
+
+        client_participant = None
+        for partipant in await self.duel.participant_list():
+            # owner id is 2 more than character id for some reason
+            if await partipant.owner_id_full() == character_id + 2:
+                client_participant = partipant
+                break
+
+        if client_participant is None:
+            raise RuntimeError("Somehow the client is not a member of the current duel")
+
+        client_hand = await client_participant.hand()
+        client_spells = await client_hand.spell_list()
+
+        # TODO: position is incorrect
+        cards = []
+        hand_position = 0
+        for spell in client_spells:
+            spell_template_id = await spell.template_id()
+            spell_name = await self.get_filename_from_template_id(spell_template_id)
+            cards.append(Card(spell_name, hand_position, spell))
+            hand_position += 1
+
+        return cards
 
     async def in_battle(self) -> bool:
         """
@@ -103,7 +167,7 @@ class Client:
         """
         try:
             duel_phase = await self.duel.duel_phase()
-        except ReadingEnumFailed:
+        except (ReadingEnumFailed, MemoryReadError):
             return False
         else:
             return duel_phase is not DuelPhase.ended

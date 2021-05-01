@@ -43,6 +43,6 @@ class ActorBody(MemoryObject):
         await self.write_value_to_offset(112, scale, "float")
 
 
-class PlayerActorBody(ActorBody):
+class CurrentActorBody(ActorBody):
     async def read_base_address(self) -> int:
         return await self.hook_handler.read_player_base()

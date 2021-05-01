@@ -6,6 +6,7 @@ from .memory_reader import MemoryReader
 from .handler import HookHandler
 from wizwalker.utils import XYZ
 from wizwalker.errors import ReadingEnumFailed
+from wizwalker.constants import type_format_dict
 
 
 # # TODO: figure out what other 8 bytes are
@@ -34,16 +35,33 @@ class MemoryObject(MemoryReader):
         base_address = await self.read_base_address()
         await self.write_typed(base_address + offset, value, data_type)
 
-    async def read_xyz(self, offset: int) -> XYZ:
+    async def read_vector(self, offset: int, size: int = 3, data_type: str = "float"):
+        type_str = type_format_dict[data_type].replace("<", "")
+        size_per_type = struct.calcsize(type_str)
+
         base_address = await self.read_base_address()
-        position_bytes = await self.read_bytes(base_address + offset, 12)
-        x, y, z = struct.unpack("<fff", position_bytes)
+        vector_bytes = await self.read_bytes(
+            base_address + offset, size_per_type * size
+        )
+
+        return struct.unpack("<" + type_str * size, vector_bytes)
+
+    async def write_vector(
+        self, offset: int, value: tuple, size: int = 3, data_type: str = "float"
+    ):
+        type_str = type_format_dict[data_type].replace("<", "")
+
+        base_address = await self.read_base_address()
+        packed_bytes = struct.pack("<" + type_str * size, *value)
+
+        await self.write_bytes(base_address + offset, packed_bytes)
+
+    async def read_xyz(self, offset: int) -> XYZ:
+        x, y, z = await self.read_vector(offset)
         return XYZ(x, y, z)
 
     async def write_xyz(self, offset: int, xyz: XYZ):
-        base_address = await self.read_base_address()
-        packed_position = struct.pack("<fff", *xyz)
-        await self.write_bytes(base_address + offset, packed_position)
+        await self.write_vector(offset, (xyz.x, xyz.y, xyz.z))
 
     async def read_enum(self, offset, enum: Type[Enum]):
         value = await self.read_value_from_offset(offset, "int")

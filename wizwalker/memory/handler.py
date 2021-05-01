@@ -14,6 +14,7 @@ from .hooks import (
     BackpackStatHook,
     DuelHook,
     MouselessCursorMoveHook,
+    ClientHook,
 )
 from .memory_reader import MemoryReader
 
@@ -130,6 +131,16 @@ class HookHandler(MemoryReader):
 
         return None
 
+    async def _read_hook_base_addr(self, addr_name: str, hook_name: str):
+        addr = self._base_addrs.get(addr_name)
+        if addr is None:
+            raise HookNotActive(hook_name)
+
+        try:
+            return await self.read_typed(addr, "long long")
+        except pymem.exception.MemoryReadError:
+            return None
+
     async def activate_all_hooks(self):
         hooks = [
             self.activate_player_hook(),
@@ -138,6 +149,7 @@ class HookHandler(MemoryReader):
             self.activate_mouseless_cursor_hook(),
             self.activate_backpack_stat_hook(),
             self.activate_player_stat_hook(),
+            self.activate_client_hook(),
         ]
 
         return await asyncio.gather(*hooks)
@@ -155,14 +167,7 @@ class HookHandler(MemoryReader):
         self._base_addrs["player_struct"] = player_hook.player_struct
 
     async def read_player_base(self) -> Optional[int]:
-        addr = self._base_addrs.get("player_struct")
-        if addr is None:
-            raise HookNotActive("Player")
-
-        try:
-            return await self.read_typed(addr, "long long")
-        except pymem.exception.MemoryReadError:
-            return None
+        return await self._read_hook_base_addr("player_struct", "Player")
 
     async def activate_duel_hook(self):
         if self._check_if_hook_active(DuelHook):
@@ -177,14 +182,7 @@ class HookHandler(MemoryReader):
         self._base_addrs["current_duel"] = duel_hook.current_duel_addr
 
     async def read_current_duel_base(self) -> Optional[int]:
-        addr = self._base_addrs.get("current_duel")
-        if addr is None:
-            raise HookNotActive("Duel")
-
-        try:
-            return await self.read_typed(addr, "long long")
-        except pymem.exception.MemoryReadError:
-            return None
+        return await self._read_hook_base_addr("current_duel", "Duel")
 
     async def activate_quest_hook(self):
         if self._check_if_hook_active(QuestHook):
@@ -199,14 +197,7 @@ class HookHandler(MemoryReader):
         self._base_addrs["quest_struct"] = quest_hook.cord_struct
 
     async def read_quest_base(self) -> Optional[int]:
-        addr = self._base_addrs.get("quest_struct")
-        if addr is None:
-            raise HookNotActive("Quest")
-
-        try:
-            return await self.read_typed(addr, "long long")
-        except pymem.exception.MemoryReadError:
-            return None
+        return await self._read_hook_base_addr("quest_struct", "Quest")
 
     async def activate_player_stat_hook(self):
         if self._check_if_hook_active(PlayerStatHook):
@@ -221,14 +212,7 @@ class HookHandler(MemoryReader):
         self._base_addrs["player_stat_struct"] = player_stat_hook.stat_addr
 
     async def read_player_stat_base(self) -> Optional[int]:
-        addr = self._base_addrs.get("player_stat_struct")
-        if addr is None:
-            raise HookNotActive("Player stat")
-
-        try:
-            return await self.read_typed(addr, "long long")
-        except pymem.exception.MemoryReadError:
-            return None
+        return await self._read_hook_base_addr("player_stat_struct", "Player stat")
 
     async def activate_backpack_stat_hook(self):
         if self._check_if_hook_active(BackpackStatHook):
@@ -253,6 +237,21 @@ class HookHandler(MemoryReader):
             return await self.read_typed(addr, "long long")
         except pymem.exception.MemoryReadError:
             return None
+
+    async def activate_client_hook(self):
+        if self._check_if_hook_active(ClientHook):
+            raise HookAlreadyActivated("Client")
+
+        await self._check_for_autobot()
+
+        client_hook = ClientHook(self)
+        await client_hook.hook()
+
+        self._active_hooks.append(client_hook)
+        self._base_addrs["current_client"] = client_hook.current_client_addr
+
+    async def read_current_client_base(self):
+        return await self._read_hook_base_addr("current_client", "Client")
 
     async def activate_mouseless_cursor_hook(self):
         if self._check_if_hook_active(MouselessCursorMoveHook):

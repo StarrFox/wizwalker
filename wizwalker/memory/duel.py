@@ -288,6 +288,6 @@ class Duel(MemoryObject):
         await self.write_value_to_offset(544, r_n0, "float")
 
 
-class PlayerDuel(Duel):
+class CurrentDuel(Duel):
     async def read_base_address(self) -> int:
         return await self.hook_handler.read_current_duel_base()

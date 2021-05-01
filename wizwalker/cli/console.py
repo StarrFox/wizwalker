@@ -133,6 +133,7 @@ class WizWalkerConsole(Monitor):
                 "read_quest_base",
                 "read_player_stat_base",
                 "read_backpack_stat_base",
+                "read_current_client_base",
             ]
             for attr in hook_handler_attrs:
                 table_data.append(
