@@ -2,7 +2,7 @@ import asyncio
 import ctypes
 import ctypes.wintypes
 from enum import IntFlag
-from typing import List, Callable
+from typing import Callable, Union
 
 import janus
 
@@ -33,7 +33,11 @@ class Hotkey:
     """
 
     def __init__(
-        self, keycode: Keycode, callback: Callable, *, modifiers: ModifierKeys = 0
+        self,
+        keycode: Keycode,
+        callback: Callable,
+        *,
+        modifiers: Union[ModifierKeys, int] = 0,
     ):
         self.keycode = keycode
         self.modifiers = modifiers
@@ -133,7 +137,9 @@ class Listener:
                     f"{hotkey.keycode} with modifers {hotkey.modifiers}"
                 )
 
-    def _register_hotkey(self, keycode: int, modifiers: ModifierKeys = 0) -> bool:
+    def _register_hotkey(
+        self, keycode: int, modifiers: Union[ModifierKeys, int] = 0
+    ) -> bool:
         res = user32.RegisterHotKey(None, self._id_counter, modifiers, keycode)
         self._id_counter += 1
 

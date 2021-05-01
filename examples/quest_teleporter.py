@@ -22,7 +22,9 @@ class Quester:
         await self.activate_hooks()
 
         quest_hotkey = Hotkey(
-            wizwalker.Keycode.Q, self.handle_e_pressed, modifiers=ModifierKeys.SHIFT
+            wizwalker.Keycode.Q,
+            self.handle_e_pressed,
+            modifiers=ModifierKeys.SHIFT | ModifierKeys.NOREPEAT,
         )
         quest_listener = Listener(quest_hotkey)
 
