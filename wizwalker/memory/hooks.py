@@ -309,6 +309,26 @@ class ClientHook(SimpleHook):
         return bytecode
 
 
+class RootWindowHook(SimpleHook):
+    pattern = rb".......\x48\x8B\x01.......\xFF\x50\x70\x84"
+    instruction_length = 7
+    noops = 2
+    exports = [("current_root_window_addr", 8)]
+
+    async def bytecode_generator(self, packed_exports):
+        # fmt: off
+        bytecode = (
+            b"\x50"  # push rax
+            b"\x49\x8B\x87\xD8\x00\x00\x00"  # mov rax,[r15+D8]
+            b"\x48\xA3" + packed_exports[0][1] +  # mov [current_root_window_addr], rax
+            b"\x58"  # pop rax
+            b"\x49\x8B\x8F\xD8\x00\x00\x00"  # original instruction
+        )
+        # fmt: on
+
+        return bytecode
+
+
 class User32GetClassInfoBaseHook(AutoBotBaseHook):
     """
     Subclass of MemoryHook that uses the user32.GetClassInfoExA for bytes so addresses arent huge

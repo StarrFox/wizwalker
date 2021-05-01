@@ -12,27 +12,11 @@ class Duel(MemoryObject):
         raise NotImplementedError()
 
     async def participant_list(self,) -> List[DynamicCombatParticipant]:
-        start_address = await self.read_value_from_offset(80, "long long")
-        end_address = await self.read_value_from_offset(80 + 8, "long long")
-        size = end_address - start_address
+        pointers = await self.read_shared_vector(80)
 
-        shared_pointers_data = await self.read_bytes(start_address, size)
         participants = []
-        data_pos = 0
-        # Shared pointers are 16 in length
-        for _ in range(size // 16):
-            # fmt: off
-            shared_pointer_data = shared_pointers_data[data_pos: data_pos + 16]
-            # fmt: on
-
-            # first 8 bytes are the address
-            participants.append(
-                DynamicCombatParticipant(
-                    self.hook_handler, struct.unpack("<q", shared_pointer_data[:8])[0]
-                )
-            )
-
-            data_pos += 16
+        for addr in pointers:
+            participants.append(DynamicCombatParticipant(self.hook_handler, addr))
 
         return participants
 

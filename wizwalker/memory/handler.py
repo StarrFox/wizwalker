@@ -15,6 +15,7 @@ from .hooks import (
     DuelHook,
     MouselessCursorMoveHook,
     ClientHook,
+    RootWindowHook,
 )
 from .memory_reader import MemoryReader
 
@@ -150,6 +151,7 @@ class HookHandler(MemoryReader):
             self.activate_backpack_stat_hook(),
             self.activate_player_stat_hook(),
             self.activate_client_hook(),
+            self.activate_root_window_hook(),
         ]
 
         return await asyncio.gather(*hooks)
@@ -252,6 +254,23 @@ class HookHandler(MemoryReader):
 
     async def read_current_client_base(self):
         return await self._read_hook_base_addr("current_client", "Client")
+
+    async def activate_root_window_hook(self):
+        if self._check_if_hook_active(RootWindowHook):
+            raise HookAlreadyActivated("Root window")
+
+        await self._check_for_autobot()
+
+        root_window_hook = RootWindowHook(self)
+        await root_window_hook.hook()
+
+        self._active_hooks.append(root_window_hook)
+        self._base_addrs[
+            "current_root_window"
+        ] = root_window_hook.current_root_window_addr
+
+    async def read_current_root_window_base(self):
+        return await self._read_hook_base_addr("current_root_window", "Root window")
 
     async def activate_mouseless_cursor_hook(self):
         if self._check_if_hook_active(MouselessCursorMoveHook):

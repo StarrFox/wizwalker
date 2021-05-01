@@ -10,3 +10,4 @@ from .combat_participant import CombatParticipant, DynamicCombatParticipant
 from .quest_position import CurrentQuestPosition
 from .spell import Hand, DynamicHand, Spell, DynamicSpell
 from .client_object import ClientObject, CurrentClientObject
+from .window import Window, DynamicWindow, CurrentRootWindow

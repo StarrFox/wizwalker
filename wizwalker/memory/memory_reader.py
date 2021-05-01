@@ -42,24 +42,6 @@ class MemoryReader:
         return await loop.run_in_executor(None, function)
 
     @staticmethod
-    def _scan_all_from(start_address: int, handle: int, pattern: bytes):
-        next_region = start_address
-        found = None
-
-        while next_region < 0x7FFFFFFF0000:
-            next_region, found = pymem.pattern.scan_pattern_page(
-                handle, next_region, pattern
-            )
-            if found:
-                break
-
-        # pattern scan expects a list
-        if found is None:
-            return []
-        else:
-            return [found]
-
-    @staticmethod
     def _scan_page_return_all(handle, address, pattern):
         mbi = pymem.memory.virtual_query(handle, address)
         next_region = mbi.BaseAddress + mbi.RegionSize
@@ -89,6 +71,28 @@ class MemoryReader:
 
         return next_region, found
 
+    def _scan_all_from(
+        self,
+        start_address: int,
+        handle: int,
+        pattern: bytes,
+        return_multiple: bool = False,
+    ):
+        next_region = start_address
+
+        found = []
+        while next_region < 0x7FFFFFFF0000:
+            next_region, page_found = self._scan_page_return_all(
+                handle, next_region, pattern
+            )
+            if page_found:
+                found += page_found
+
+            if not return_multiple and found:
+                break
+
+        return found
+
     def _scan_entire_module(self, handle, module, pattern):
         base_address = module.lpBaseOfDll
         max_address = module.lpBaseOfDll + module.SizeOfImage
@@ -96,17 +100,16 @@ class MemoryReader:
 
         found = []
         while page_address < max_address:
-            next_page, page_found = self._scan_page_return_all(
+            page_address, page_found = self._scan_page_return_all(
                 handle, page_address, pattern
             )
             if page_found:
                 found += page_found
-            page_address = next_page
 
         return found
 
     async def pattern_scan(
-        self, pattern: bytes, *, module: str = None, error_on_multiple: bool = True
+        self, pattern: bytes, *, module: str = None, return_multiple: bool = False
     ) -> Union[list, int]:
         if module:
             module = pymem.process.module_from_name(self.process.process_handle, module)
@@ -120,14 +123,15 @@ class MemoryReader:
                 self.process.process_base.lpBaseOfDll,
                 self.process.process_handle,
                 pattern,
+                return_multiple,
             )
 
         logger.debug(f"Got results {found_addresses} from pattern {pattern}")
         if (found_length := len(found_addresses)) == 0:
             raise PatternFailed(pattern)
-        elif found_length > 1 and error_on_multiple:
+        elif found_length > 1 and not return_multiple:
             raise PatternMultipleResults(f"Got {found_length} results for {pattern}")
-        elif found_length > 1 and not error_on_multiple:
+        elif return_multiple:
             return found_addresses
         else:
             return found_addresses[0]

@@ -21,6 +21,7 @@ from .memory import (
     CurrentDuel,
     CurrentQuestPosition,
     CurrentClientObject,
+    CurrentRootWindow,
 )
 
 from .constants import user32, WIZARD_SPEED
@@ -106,6 +107,13 @@ class Client:
         Client's current client object; name is pretty confusing
         """
         return CurrentClientObject(self.hook_handler)
+
+    @cached_property
+    def root_window(self) -> CurrentRootWindow:
+        """
+        Client's current root window
+        """
+        return CurrentRootWindow(self.hook_handler)
 
     async def get_template_ids(self) -> dict:
         """
