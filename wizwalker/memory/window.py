@@ -2,39 +2,95 @@ from typing import List, Optional
 
 from .memory_object import MemoryObject, DynamicMemoryObject
 from .enums import WindowStyle, WindowFlags
+from .. import MemoryReadError
 
 
 class Window(MemoryObject):
     async def read_base_address(self):
         raise NotImplementedError()
 
-    async def name(self) -> str:
-        try:
-            return await self.read_string(80)
-        # Sometimes they make this a pointer bc why not
-        except UnicodeDecodeError:
-            string_addr = await self.read_value_from_offset(80, "long long")
-            search_bytes = await self.read_bytes(string_addr, 20)
-            string_end = search_bytes.find(b"\x00")
-            if string_end == 0:
-                return ""
-            elif string_end == -1:
-                return ""
-            # Don't include the 0 byte
-            string_bytes = search_bytes[:string_end]
-            return string_bytes.decode("utf-8")
+    async def print_ui_tree(self, depth: int = 0):
+        print(f"{'-' * depth} [{await self.name()}]")
+        for child in await self.children():
+            await child.print_ui_tree(depth + 1)
 
-    async def write_name(self, name: str):
-        await self.write_string(80, name)
+    async def get_windows_with_rect(self, rect: tuple):
+        async def _pred(window):
+            if await window.window() == rect:
+                return True
 
-    async def get_child_by_name(self, name: str) -> Optional["DynamicWindow"]:
+            return False
+
+        return await self.get_windows_by_predicate(_pred)
+
+    async def _recursive_get_windows_by_predicate(self, predicate, windows):
+        for child in await self.children():
+            if await predicate(child):
+                windows.append(child)
+
+            await child._recursive_get_windows_by_predicate(predicate, windows)
+
+    async def get_windows_by_predicate(
+        self, predicate: callable
+    ) -> List["DynamicWindow"]:
+        """
+        async def my_pred(window) -> bool:
+            if await window.name() == "friend's list":
+              return True
+
+            return False
+
+        await client.root_window.get_windows_by_predicate(my_pred)
+        """
+        windows = []
+
+        # check our own children
+        children = await self.children()
+        for child in children:
+            if await predicate(child):
+                windows.append(child)
+
+        for child in children:
+            await child._recursive_get_windows_by_predicate(predicate, windows)
+
+        return windows
+
+    async def get_child_by_name(self, name: str) -> "DynamicWindow":
         children = await self.children()
         for child in children:
             if await child.name() == name:
                 return child
 
-        # explict None
-        return None
+        raise ValueError(f"No child named {name}")
+
+    async def name(self) -> str:
+        # Sometimes they make this a pointer bc why not
+        try:
+            string_addr = await self.read_value_from_offset(80, "long long")
+            search_bytes = await self.read_bytes(string_addr, 20)
+
+            string_end = search_bytes.find(b"\x00")
+            no_string = False
+            if string_end == 0:
+                no_string = True
+            elif string_end == -1:
+                no_string = True
+
+            if not no_string:
+                # Don't include the 0 byte
+                string_bytes = search_bytes[:string_end]
+                return string_bytes.decode("utf-8")
+
+        except (UnicodeDecodeError, MemoryReadError):
+            pass
+
+        try:
+            return await self.read_string(80)
+        except UnicodeDecodeError:
+            return ""
+
+    async def write_name(self, name: str):
+        await self.write_string(80, name)
 
     async def children(self) -> List["DynamicWindow"]:
         pointers = await self.read_shared_vector(112)
@@ -47,6 +103,16 @@ class Window(MemoryObject):
 
     # async def write_children(self, children: class SharedPointer<class Window>):
     #     await self.write_value_to_offset(112, children, "class SharedPointer<class Window>")
+
+    async def parent(self) -> Optional["DynamicWindow"]:
+        addr = await self.read_value_from_offset(136, "long long")
+        # the root window has no parents
+        if addr == 0:
+            return None
+
+        return DynamicWindow(self.hook_handler, addr)
+
+    # write parent
 
     async def style(self) -> WindowStyle:
         style = await self.read_value_from_offset(152, "unsigned long")
