@@ -1,8 +1,8 @@
-from .memory_object import MemoryObject
+from .memory_object import PropertyClass
 from wizwalker.utils import XYZ
 
 
-class ActorBody(MemoryObject):
+class ActorBody(PropertyClass):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 

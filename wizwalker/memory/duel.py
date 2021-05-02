@@ -1,12 +1,12 @@
 from typing import List
 
-from .memory_object import MemoryObject
+from .memory_object import PropertyClass
 from .enums import DuelPhase, DuelExecutionOrder, SigilInitiativeSwitchMode
 from .combat_participant import DynamicCombatParticipant
 from wizwalker.utils import XYZ
 
 
-class Duel(MemoryObject):
+class Duel(PropertyClass):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 

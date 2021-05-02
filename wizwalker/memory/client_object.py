@@ -1,9 +1,9 @@
 from .game_stats import DynamicGameStats
-from .memory_object import MemoryObject
+from .memory_object import PropertyClass
 from wizwalker import XYZ
 
 
-class ClientObject(MemoryObject):
+class ClientObject(PropertyClass):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 

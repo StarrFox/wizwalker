@@ -1,12 +1,12 @@
 from typing import List, Optional
 
-from .memory_object import MemoryObject, DynamicMemoryObject
+from .memory_object import DynamicMemoryObject, PropertyClass
 from .enums import WindowStyle, WindowFlags
 from .. import MemoryReadError, WizWalkerMemoryError
 
 
-class Window(MemoryObject):
-    async def read_base_address(self):
+class Window(PropertyClass):
+    async def read_base_address(self) -> int:
         raise NotImplementedError()
 
     async def debug_print_ui_tree(self, depth: int = 0):

@@ -1,7 +1,7 @@
-from .memory_object import MemoryObject, DynamicMemoryObject
+from .memory_object import DynamicMemoryObject, PropertyClass
 
 
-class GameStats(MemoryObject):
+class GameStats(PropertyClass):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 

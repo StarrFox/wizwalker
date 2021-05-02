@@ -1,10 +1,10 @@
 from typing import List
 
-from .memory_object import MemoryObject, DynamicMemoryObject
+from .memory_object import DynamicMemoryObject, PropertyClass
 from .enums import DelayOrder
 
 
-class Spell(MemoryObject):
+class Spell(PropertyClass):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 
@@ -168,7 +168,7 @@ class DynamicSpell(DynamicMemoryObject, Spell):
     pass
 
 
-class Hand(MemoryObject):
+class Hand(PropertyClass):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 

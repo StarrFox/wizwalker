@@ -1,10 +1,10 @@
-from .memory_object import MemoryObject, DynamicMemoryObject
+from .memory_object import DynamicMemoryObject, PropertyClass
 from .enums import PipAquiredByEnum
 from .game_stats import DynamicGameStats
 from .spell import DynamicHand
 
 
-class CombatParticipant(MemoryObject):
+class CombatParticipant(PropertyClass):
     def read_base_address(self) -> int:
         raise NotImplementedError()
 
