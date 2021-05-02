@@ -1,4 +1,3 @@
-import struct
 from typing import List
 
 from .memory_object import MemoryObject

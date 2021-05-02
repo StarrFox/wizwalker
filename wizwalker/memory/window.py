@@ -2,17 +2,22 @@ from typing import List, Optional
 
 from .memory_object import MemoryObject, DynamicMemoryObject
 from .enums import WindowStyle, WindowFlags
-from .. import MemoryReadError
+from .. import MemoryReadError, WizWalkerMemoryError
 
 
 class Window(MemoryObject):
     async def read_base_address(self):
         raise NotImplementedError()
 
-    async def print_ui_tree(self, depth: int = 0):
-        print(f"{'-' * depth} [{await self.name()}]")
+    async def debug_print_ui_tree(self, depth: int = 0):
+        try:
+            type_name = await self.read_type_name()
+        except WizWalkerMemoryError:
+            type_name = "Couldn't read type"
+
+        print(f"{'-' * depth} [{await self.name()}] {type_name}")
         for child in await self.children():
-            await child.print_ui_tree(depth + 1)
+            await child.debug_print_ui_tree(depth + 1)
 
     async def get_windows_with_rect(self, rect: tuple):
         async def _pred(window):
@@ -85,12 +90,12 @@ class Window(MemoryObject):
             pass
 
         try:
-            return await self.read_string(80)
+            return await self.read_string_from_offset(80)
         except UnicodeDecodeError:
             return ""
 
     async def write_name(self, name: str):
-        await self.write_string(80, name)
+        await self.write_string_to_offset(80, name)
 
     async def children(self) -> List["DynamicWindow"]:
         pointers = await self.read_shared_vector(112)
@@ -115,11 +120,11 @@ class Window(MemoryObject):
     # write parent
 
     async def style(self) -> WindowStyle:
-        style = await self.read_value_from_offset(152, "unsigned long")
+        style = await self.read_value_from_offset(152, "long")
         return WindowStyle(style)
 
     async def write_style(self, style: WindowStyle):
-        await self.write_value_to_offset(152, int(style), "unsigned long")
+        await self.write_value_to_offset(152, int(style), "long")
 
     async def flags(self) -> WindowFlags:
         flags = await self.read_value_from_offset(156, "unsigned long")
@@ -159,16 +164,16 @@ class Window(MemoryObject):
     #     await self.write_value_to_offset(232, p_window_style, "class SharedPointer<class WindowStyle>")
 
     async def help(self) -> str:
-        return await self.read_string(248)
+        return await self.read_string_from_offset(248)
 
     async def write_help(self, _help: str):
-        await self.write_string(248, _help)
+        await self.write_string_to_offset(248, _help)
 
     async def script(self) -> str:
-        return await self.read_string(352)
+        return await self.read_string_from_offset(352)
 
     async def write_script(self, script: str):
-        await self.write_string(352, script)
+        await self.write_string_to_offset(352, script)
 
     async def offset(self) -> tuple:
         return await self.read_vector(192, 2, "int")
@@ -183,10 +188,10 @@ class Window(MemoryObject):
         await self.write_vector(200, scale, 2)
 
     async def tip(self) -> str:
-        return await self.read_string(392)
+        return await self.read_string_from_offset(392)
 
     async def write_tip(self, tip: str):
-        await self.write_string(392, tip)
+        await self.write_string_to_offset(392, tip)
 
     # async def bubble_list(self) -> class WindowBubble:
     #     return await self.read_value_from_offset(424, "class WindowBubble")

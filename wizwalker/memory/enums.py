@@ -59,7 +59,7 @@ class WindowStyle(IntFlag):
 
 
 class WindowFlags(IntFlag):
-    visable = 1
+    visible = 1
     noclip = 2
     dock_outside = 131072
     dock_left = 128
