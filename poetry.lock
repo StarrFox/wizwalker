@@ -52,7 +52,7 @@ python-versions = "*"
 
 [[package]]
 name = "babel"
-version = "2.9.0"
+version = "2.9.1"
 description = "Internationalization utilities"
 category = "dev"
 optional = false
@@ -233,7 +233,7 @@ dis3 = "*"
 
 [[package]]
 name = "pymem"
-version = "1.8"
+version = "1.8.2"
 description = "pymem: python memory access made easy"
 category = "main"
 optional = false
@@ -445,7 +445,7 @@ dev = ["pytest (>=4.6.2)", "black (>=19.3b0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "d78240149326c25f817ba301572d4510c841ab3e8de1ec1bfb384f9b20efd5ec"
+content-hash = "1cf7101a04a3fa4fd0f097c2b3a2ac04ffb47ee88c59232e5d58cc6e2e1b4a81"
 
 [metadata.files]
 aioconsole = [
@@ -472,8 +472,8 @@ appdirs = [
     {file = "appdirs-1.4.4.tar.gz", hash = "sha256:7d5d0167b2b1ba821647616af46a749d1c653740dd0d2415100fe26e27afdf41"},
 ]
 babel = [
-    {file = "Babel-2.9.0-py2.py3-none-any.whl", hash = "sha256:9d35c22fcc79893c3ecc85ac4a56cde1ecf3f19c540bba0922308a6c06ca6fa5"},
-    {file = "Babel-2.9.0.tar.gz", hash = "sha256:da031ab54472314f210b0adcff1588ee5d1d1d0ba4dbd07b94dba82bde791e05"},
+    {file = "Babel-2.9.1-py2.py3-none-any.whl", hash = "sha256:ab49e12b91d937cd11f0b67cb259a57ab4ad2b59ac7a3b41d6c06c0ac5b0def9"},
+    {file = "Babel-2.9.1.tar.gz", hash = "sha256:bc0c176f9f6a994582230df350aa6e05ba2ebe4b3ac317eab29d9be5d2768da0"},
 ]
 certifi = [
     {file = "certifi-2020.12.5-py2.py3-none-any.whl", hash = "sha256:719a74fb9e33b9bd44cc7f3a8d94bc35e4049deebe19ba7d8e108280cfd59830"},
@@ -576,8 +576,8 @@ pyinstaller = [
     {file = "PyInstaller-3.6.tar.gz", hash = "sha256:3730fa80d088f8bb7084d32480eb87cbb4ddb64123363763cf8f2a1378c1c4b7"},
 ]
 pymem = [
-    {file = "Pymem-1.8-py3-none-any.whl", hash = "sha256:6e2f010adae753dfbaa188c0c5214687540e0dd6b9626def86673ac4f124e73a"},
-    {file = "Pymem-1.8.tar.gz", hash = "sha256:dd319e0896c470325d194431c29009dc0a6ee614f11faad07fb6d649ec1436c6"},
+    {file = "Pymem-1.8.2-py2.py3-none-any.whl", hash = "sha256:eaf351832cd8acc1711089fbbe1e8cd697239afaec5c7d224e7d22e12cd2fac6"},
+    {file = "Pymem-1.8.2.tar.gz", hash = "sha256:450435340f64271434926cec6387c4d455ba503cbbca579031d621b4ce9d2af2"},
 ]
 pyparsing = [
     {file = "pyparsing-2.4.7-py2.py3-none-any.whl", hash = "sha256:ef9d7589ef3c200abe66653d3f1ab1033c3c419ae9b9bdb1240a85b024efc88b"},
