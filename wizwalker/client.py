@@ -43,12 +43,11 @@ class Client:
         self._pymem.open_process_from_id(self.process_id)
         self.hook_handler = HookHandler(self._pymem)
 
-        # TODO: somehow reference the WizWalker's handler
         self.cache_handler = CacheHandler()
-
         self.mouse_handler = MouseHandler(self)
 
         self._template_ids = None
+        self._is_loading_addr = None
 
     def __repr__(self):
         return f"<Client {self.window_handle=} {self.process_id=}>"
@@ -169,6 +168,26 @@ class Client:
             return False
         else:
             return duel_phase is not DuelPhase.ended
+
+    async def is_loading(self):
+        """
+        If the client is currently in a loading screen
+        (does not apply to chacter load in)
+        """
+        if not self._is_loading_addr:
+            mov_instruction_addr = await self.hook_handler.pattern_scan(
+                b"\xC6\x05....\x00\xC6\x80.....\x48\x8B",
+                module="WizardGraphicalClient.exe",
+            )
+            # first 2 bytes are the mov instruction and mov type (C6 05)
+            rip_offset = await self.hook_handler.read_typed(
+                mov_instruction_addr + 2, "int"
+            )
+            # 7 is the length of this instruction
+            self._is_loading_addr = mov_instruction_addr + 7 + rip_offset
+
+        # 1 -> can't move (loading) 0 -> can move (not loading)
+        return await self.hook_handler.read_typed(self._is_loading_addr, "bool")
 
     async def activate_hooks(self):
         """
