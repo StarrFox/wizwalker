@@ -1,14 +1,11 @@
 import struct
 import zlib
-from collections import namedtuple
 from typing import List, Union
 from pathlib import Path
 
 import aiofiles
 
-from .utils import executor_function, get_wiz_install
-
-wad_file_info = namedtuple("wad_file_info", "offset, size, is_zip, crc, unzipped_size")
+from wizwalker.utils import executor_function, get_wiz_install
 
 
 class WadFileInfo:
@@ -83,6 +80,7 @@ class Wad:
         self._file_pointer.close()
         self._open = False
 
+    # TODO: remove executor_function and delete from utils
     @executor_function
     def _refresh_journal(self):
         if self._refreshed_once:
@@ -153,7 +151,7 @@ class Wad:
 
         return data
 
-    async def get_file_info(self, name: str) -> wad_file_info:
+    async def get_file_info(self, name: str) -> WadFileInfo:
         """
         Gets a WadFileInfo for a named file
 

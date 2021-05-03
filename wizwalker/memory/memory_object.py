@@ -57,7 +57,11 @@ class MemoryObject(MemoryReader):
         else:
             string_address = address
 
-        return (await self.read_bytes(string_address, string_len)).decode(encoding)
+        # TODO: properly handle pointer strings that get written back to less than 15
+        try:
+            return (await self.read_bytes(string_address, string_len)).decode(encoding)
+        except UnicodeDecodeError:
+            return ""
 
     async def read_string_from_offset(
         self, offset: int, encoding: str = "utf-8"

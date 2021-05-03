@@ -72,6 +72,12 @@ class Client:
         """
         return utils.get_pid_from_handle(self.window_handle)
 
+    async def activate_hooks(self):
+        """
+        Activate all memory hooks but mouseless
+        """
+        await self.hook_handler.activate_all_hooks()
+
     @cached_property
     def stats(self) -> CurrentGameStats:
         """
@@ -125,39 +131,6 @@ class Client:
         self._template_ids = await self.cache_handler.get_template_ids()
         return self._template_ids
 
-    async def get_cards(self) -> List[Card]:
-        """
-        Get the client's current cards
-        """
-        if not await self.in_battle():
-            raise NotInCombat("Must be in combat to get cards")
-
-        character_id = await self.client_object.character_id()
-
-        client_participant = None
-        for partipant in await self.duel.participant_list():
-            # owner id is 2 more than character id for some reason
-            if await partipant.owner_id_full() == character_id + 2:
-                client_participant = partipant
-                break
-
-        if client_participant is None:
-            raise RuntimeError("Somehow the client is not a member of the current duel")
-
-        client_hand = await client_participant.hand()
-        client_spells = await client_hand.spell_list()
-
-        # TODO: position is incorrect
-        cards = []
-        hand_position = 0
-        for spell in client_spells:
-            spell_template_id = await spell.template_id()
-            spell_name = await self.get_filename_from_template_id(spell_template_id)
-            cards.append(Card(spell_name, hand_position, spell))
-            hand_position += 1
-
-        return cards
-
     async def in_battle(self) -> bool:
         """
         If the client is in battle or not
@@ -169,7 +142,7 @@ class Client:
         else:
             return duel_phase is not DuelPhase.ended
 
-    async def is_loading(self):
+    async def is_loading(self) -> bool:
         """
         If the client is currently in a loading screen
         (does not apply to chacter load in)
@@ -188,12 +161,6 @@ class Client:
 
         # 1 -> can't move (loading) 0 -> can move (not loading)
         return await self.hook_handler.read_typed(self._is_loading_addr, "bool")
-
-    async def activate_hooks(self):
-        """
-        Activate all memory hooks but mouseless
-        """
-        await self.hook_handler.activate_all_hooks()
 
     def login(self, username: str, password: str):
         """

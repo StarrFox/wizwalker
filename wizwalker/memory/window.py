@@ -9,22 +9,6 @@ class Window(PropertyClass):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 
-    # TODO: this doesn't work
-    async def window_to_screen(self, x: int, y: int) -> tuple:
-        parent = self
-        while parent is not None:
-            rect = await parent.window_rectangle()
-            window_x = rect[0]
-            window_y = rect[1]
-
-            offset_x, offset_y = await parent.offset()
-
-            x += window_x - offset_x
-            y += window_y - offset_y
-            parent = await parent.parent()
-
-        return x, y
-
     async def debug_print_ui_tree(self, depth: int = 0):
         print(
             f"{'-' * depth} [{await self.name()}] {await self.maybe_read_type_name()}"

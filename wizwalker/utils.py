@@ -117,7 +117,7 @@ def get_wiz_install() -> Path:
             winreg.KEY_READ,
         )
     except OSError:
-        raise Exception("Wizard101 install not found, do you have it installed?")
+        raise Exception("Wizard101 install not found.")
 
     install_location = Path(winreg.QueryValueEx(key, "InstallLocation")[0]).absolute()
     return install_location
