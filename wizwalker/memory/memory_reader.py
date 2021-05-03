@@ -22,7 +22,7 @@ from wizwalker import (
 
 class MemoryReader:
     """
-    Represents anything that needs to read from memory
+    Represents anything that needs to read/write from/to memory
     """
 
     def __init__(self, process: pymem.Pymem):
@@ -30,7 +30,7 @@ class MemoryReader:
 
     def is_running(self) -> bool:
         """
-        Bool if the process we're reading/writing to/from is running
+        If the process we're reading/writing to/from is running
         """
         return utils.check_if_process_running(self.process.process_handle)
 

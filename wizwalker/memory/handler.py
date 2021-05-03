@@ -143,11 +143,13 @@ class HookHandler(MemoryReader):
             return None
 
     async def activate_all_hooks(self):
+        """
+        Activate all hooks but mouseless
+        """
         hooks = [
             self.activate_player_hook(),
             self.activate_duel_hook(),
             self.activate_quest_hook(),
-            self.activate_mouseless_cursor_hook(),
             self.activate_backpack_stat_hook(),
             self.activate_player_stat_hook(),
             self.activate_client_hook(),

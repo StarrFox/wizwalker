@@ -164,7 +164,16 @@ class Spell(PropertyClass):
         await self.write_value_to_offset(324, round_added_t_c, "int")
 
 
+class GraphicalSpell(Spell):
+    async def read_base_address(self) -> int:
+        raise NotImplementedError()
+
+
 class DynamicSpell(DynamicMemoryObject, Spell):
+    pass
+
+
+class DynamicGraphicalSpell(DynamicMemoryObject, GraphicalSpell):
     pass
 
 

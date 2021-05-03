@@ -246,6 +246,7 @@ class QuestHook(SimpleHook):
         return bytecode
 
 
+# TODO: remove
 class BackpackStatHook(SimpleHook):
     pattern = rb"\x01............\x48\x85\xC9\x74\x0B\xE8....\x01.....\x48\x83"
     instruction_length = 6

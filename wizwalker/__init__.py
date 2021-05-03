@@ -8,6 +8,7 @@ from .nif import NifMap
 from .errors import *
 from .utils import XYZ
 from . import utils, cli, memory, combat
+from .mouse_handler import MouseHandler
 from .cache_handler import CacheHandler
 from .client import Client
 from .application import WizWalker

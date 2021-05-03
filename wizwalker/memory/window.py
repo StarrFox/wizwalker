@@ -2,31 +2,48 @@ from typing import List, Optional
 
 from .memory_object import DynamicMemoryObject, PropertyClass
 from .enums import WindowStyle, WindowFlags
-from .. import MemoryReadError, WizWalkerMemoryError
+from .spell import DynamicGraphicalSpell
 
 
 class Window(PropertyClass):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 
-    async def debug_print_ui_tree(self, depth: int = 0):
-        try:
-            type_name = await self.read_type_name()
-        except WizWalkerMemoryError:
-            type_name = "Couldn't read type"
+    # TODO: this doesn't work
+    async def window_to_screen(self, x: int, y: int) -> tuple:
+        parent = self
+        while parent is not None:
+            rect = await parent.window_rectangle()
+            window_x = rect[0]
+            window_y = rect[1]
 
-        print(f"{'-' * depth} [{await self.name()}] {type_name}")
+            offset_x, offset_y = await parent.offset()
+
+            x += window_x - offset_x
+            y += window_y - offset_y
+            parent = await parent.parent()
+
+        return x, y
+
+    async def debug_print_ui_tree(self, depth: int = 0):
+        print(
+            f"{'-' * depth} [{await self.name()}] {await self.maybe_read_type_name()}"
+        )
+
         for child in await self.children():
             await child.debug_print_ui_tree(depth + 1)
 
-    async def get_windows_with_rect(self, rect: tuple):
+    async def get_windows_with_type(self, type_name: str) -> List["DynamicWindow"]:
         async def _pred(window):
-            if await window.window_rectangle() == rect:
-                return True
+            return await window.maybe_read_type_name() == type_name
 
-            return False
+        return await self.get_windows_with_predicate(_pred)
 
-        return await self.get_windows_by_predicate(_pred)
+    async def get_windows_with_name(self, name: str) -> List["DynamicWindow"]:
+        async def _pred(window):
+            return await window.name() == name
+
+        return await self.get_windows_with_predicate(_pred)
 
     async def _recursive_get_windows_by_predicate(self, predicate, windows):
         for child in await self.children():
@@ -35,7 +52,7 @@ class Window(PropertyClass):
 
             await child._recursive_get_windows_by_predicate(predicate, windows)
 
-    async def get_windows_by_predicate(
+    async def get_windows_with_predicate(
         self, predicate: callable
     ) -> List["DynamicWindow"]:
         """
@@ -68,31 +85,29 @@ class Window(PropertyClass):
 
         raise ValueError(f"No child named {name}")
 
+    # This is here because checking in .children slows down window filtering majorly
+    async def maybe_graphical_spell(self) -> DynamicGraphicalSpell:
+        type_name = await self.maybe_read_type_name()
+        if type_name != "SpellCheckBox":
+            raise ValueError("This object is not a SpellCheckBox")
+
+        addr = await self.read_value_from_offset(952, "long long")
+        return DynamicGraphicalSpell(self.hook_handler, addr)
+
+    # See above
+    async def maybe_text(self) -> str:
+        # TODO: see if all types with .text have Control prefix
+        #  and if so check that they have it
+        return await self.read_string_from_offset(584)
+
+    async def write_maybe_text(self, text: str):
+        """
+        Writing to this when there isn't actually a .text could crash
+        """
+        await self.write_string_to_offset(584, text)
+
     async def name(self) -> str:
-        # Sometimes they make this a pointer bc why not
-        try:
-            string_addr = await self.read_value_from_offset(80, "long long")
-            search_bytes = await self.read_bytes(string_addr, 20)
-
-            string_end = search_bytes.find(b"\x00")
-            no_string = False
-            if string_end == 0:
-                no_string = True
-            elif string_end == -1:
-                no_string = True
-
-            if not no_string:
-                # Don't include the 0 byte
-                string_bytes = search_bytes[:string_end]
-                return string_bytes.decode("utf-8")
-
-        except (UnicodeDecodeError, MemoryReadError):
-            pass
-
-        try:
-            return await self.read_string_from_offset(80)
-        except UnicodeDecodeError:
-            return ""
+        return await self.read_string_from_offset(80)
 
     async def write_name(self, name: str):
         await self.write_string_to_offset(80, name)
@@ -136,8 +151,8 @@ class Window(PropertyClass):
     async def window_rectangle(self) -> tuple:
         return await self.read_vector(160, 4, "int")
 
-    async def write_window(self, window: tuple):
-        await self.write_vector(160, window, 4, "int")
+    async def write_window_rectangle(self, window_rectangle: tuple):
+        await self.write_vector(160, window_rectangle, 4, "int")
 
     async def target_alpha(self) -> float:
         return await self.read_value_from_offset(212, "float")

@@ -5,7 +5,7 @@ from typing import Any, List, Type
 from .memory_reader import MemoryReader
 from .handler import HookHandler
 from wizwalker.utils import XYZ
-from wizwalker.errors import ReadingEnumFailed, WizWalkerMemoryError
+from wizwalker.errors import MemoryReadError, ReadingEnumFailed, WizWalkerMemoryError
 from wizwalker.constants import type_format_dict
 
 
@@ -29,29 +29,69 @@ class MemoryObject(MemoryReader):
         base_address = await self.read_base_address()
         await self.write_typed(base_address + offset, value, data_type)
 
-    async def read_string(
+    async def read_null_terminated_string(
         self, address: int, max_size: int = 20, encoding: str = "utf-8"
     ):
         search_bytes = await self.read_bytes(address, max_size)
         string_end = search_bytes.find(b"\x00")
+
         if string_end == 0:
             return ""
         elif string_end == -1:
             raise WizWalkerMemoryError(
                 f"Couldn't read string at {address}; no end byte."
             )
+
         # Don't include the 0 byte
         string_bytes = search_bytes[:string_end]
         return string_bytes.decode(encoding)
 
+    async def read_string(self, address: int, encoding: str = "utf-8") -> str:
+        string_len = await self.read_typed(address + 16, "int")
+        if string_len == 0:
+            return ""
+
+        # strings larger than 16 bytes are pointers
+        if string_len >= 16:
+            string_address = await self.read_typed(address, "long long")
+        else:
+            string_address = address
+
+        return (await self.read_bytes(string_address, string_len)).decode(encoding)
+
     async def read_string_from_offset(
-        self, offset: int, max_size: int = 20, encoding: str = "utf-8"
+        self, offset: int, encoding: str = "utf-8"
     ) -> str:
         base_address = await self.read_base_address()
-        return await self.read_string(base_address + offset, max_size, encoding)
+        return await self.read_string(base_address + offset, encoding)
 
     async def write_string(self, address: int, string: str, encoding: str = "utf-8"):
-        await self.write_bytes(address, string.encode(encoding))
+        string_len_addr = address + 16
+        encoded = string.encode(encoding)
+        # len(encoded) instead of string bc it can be larger in some encodings
+        string_len = len(encoded)
+
+        current_string_len = await self.read_typed(address + 16, "int")
+
+        # we need to create a pointer to the string data
+        if string_len >= 15 > current_string_len:
+            # +1 for 0 byte after
+            pointer_address = await self.allocate(string_len + 1)
+
+            # need 0 byte for some c++ null termination standard
+            await self.write_bytes(pointer_address, encoded + b"\x00")
+            await self.write_typed(address, pointer_address, "long long")
+
+        # string is already a pointer
+        elif string_len >= 15 and current_string_len >= 15:
+            pointer_address = await self.read_typed(address, "long long")
+            await self.write_bytes(pointer_address, encoded + b"\x00")
+
+        # normal buffer string
+        else:
+            await self.write_bytes(address, encoded + b"\x00")
+
+        await self.write_typed(string_len_addr, string_len, "int")
 
     async def write_string_to_offset(
         self, offset: int, string: str, encoding: str = "utf-8"
@@ -129,10 +169,19 @@ class DynamicMemoryObject(MemoryObject):
     async def read_base_address(self) -> int:
         return self.base_address
 
+    def __repr__(self):
+        return f"<{type(self).__name__} {self.base_address=}>"
+
 
 class PropertyClass(MemoryObject):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
+
+    async def maybe_read_type_name(self) -> str:
+        try:
+            return await self.read_type_name()
+        except (MemoryReadError, UnicodeDecodeError):
+            return ""
 
     async def read_type_name(self) -> str:
         vtable = await self.read_value_from_offset(0, "long long")
@@ -157,4 +206,5 @@ class PropertyClass(MemoryObject):
         # 7 is the size of this line (rip is set at the next instruction when this one is executed)
         type_name_addr = lea_instruction + rip_offset + 7
 
-        return await self.read_string(type_name_addr)
+        # some of the class names can be quite long
+        return await self.read_null_terminated_string(type_name_addr, 50)
