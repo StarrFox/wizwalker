@@ -156,6 +156,16 @@ def instance_login(window_handle: int, username: str, password: str):
     user32.SendMessageW(window_handle, 0x102, 13, 0)
 
 
+# TODO: use login window for this
+# -- [LoginWindow] GameLoginWindow
+# --- [title1 shadow] ControlText
+# --- [loginPassword] ControlEdit
+# --- [passwordText] ControlText
+# --- [accountText] ControlText
+# --- [okButton] ControlButton
+# --- [cancelButton] ControlButton
+# --- [title1] ControlText
+# --- [loginName] ControlEdit
 async def start_instances_with_login(instance_number: int, logins: Iterable):
     """
     Start a number of instances and login to them with logins

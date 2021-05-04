@@ -7,7 +7,8 @@ from typing import List, Union
 import aiofiles
 from loguru import logger
 
-from wizwalker import Wad, utils
+from wizwalker import utils
+from .wad import Wad
 
 
 class CacheHandler:

@@ -6,12 +6,11 @@ import pymem
 import pymem.exception
 from loguru import logger
 
-from wizwalker import HookAlreadyActivated, HookNotActive
+from wizwalker import HookAlreadyActivated, HookNotActive, HookNotReady
 from .hooks import (
     PlayerHook,
     QuestHook,
     PlayerStatHook,
-    BackpackStatHook,
     DuelHook,
     MouselessCursorMoveHook,
     ClientHook,
@@ -140,25 +139,45 @@ class HookHandler(MemoryReader):
         try:
             return await self.read_typed(addr, "long long")
         except pymem.exception.MemoryReadError:
-            return None
+            raise HookNotReady(hook_name)
 
-    async def activate_all_hooks(self):
+    # wait for an addr to be set and not 0
+    async def _wait_for_value(self, address: int, timeout: int = 2):
+        async def _wait_for_value_task():
+            while True:
+                try:
+                    value = await self.read_typed(address, "long long")
+                except pymem.exception.MemoryReadError:
+                    pass
+                else:
+                    if value != 0:
+                        break
+                finally:
+                    await asyncio.sleep(0.5)
+
+        try:
+            await asyncio.wait_for(_wait_for_value_task(), timeout)
+        except TimeoutError:
+            # TODO: replace error
+            raise TimeoutError("Hook value took too long")
+
+    async def activate_all_hooks(self, *, wait_for_ready: bool = True):
         """
         Activate all hooks but mouseless
         """
         hooks = [
-            self.activate_player_hook(),
-            self.activate_duel_hook(),
-            self.activate_quest_hook(),
-            self.activate_backpack_stat_hook(),
-            self.activate_player_stat_hook(),
-            self.activate_client_hook(),
-            self.activate_root_window_hook(),
+            self.activate_player_hook(wait_for_ready=wait_for_ready),
+            # duel is only written to on battle join
+            self.activate_duel_hook(wait_for_ready=False),
+            self.activate_quest_hook(wait_for_ready=wait_for_ready),
+            self.activate_player_stat_hook(wait_for_ready=wait_for_ready),
+            self.activate_client_hook(wait_for_ready=wait_for_ready),
+            self.activate_root_window_hook(wait_for_ready=wait_for_ready),
         ]
 
         return await asyncio.gather(*hooks)
 
-    async def activate_player_hook(self):
+    async def activate_player_hook(self, *, wait_for_ready: bool = True):
         if self._check_if_hook_active(PlayerHook):
             raise HookAlreadyActivated("Player")
 
@@ -170,10 +189,13 @@ class HookHandler(MemoryReader):
         self._active_hooks.append(player_hook)
         self._base_addrs["player_struct"] = player_hook.player_struct
 
-    async def read_player_base(self) -> Optional[int]:
+        if wait_for_ready:
+            await self._wait_for_value(player_hook.player_struct)
+
+    async def read_player_base(self) -> int:
         return await self._read_hook_base_addr("player_struct", "Player")
 
-    async def activate_duel_hook(self):
+    async def activate_duel_hook(self, *, wait_for_ready: bool = False):
         if self._check_if_hook_active(DuelHook):
             raise HookAlreadyActivated("Duel")
 
@@ -185,10 +207,13 @@ class HookHandler(MemoryReader):
         self._active_hooks.append(duel_hook)
         self._base_addrs["current_duel"] = duel_hook.current_duel_addr
 
-    async def read_current_duel_base(self) -> Optional[int]:
+        if wait_for_ready:
+            await self._wait_for_value(duel_hook.current_duel_addr)
+
+    async def read_current_duel_base(self) -> int:
         return await self._read_hook_base_addr("current_duel", "Duel")
 
-    async def activate_quest_hook(self):
+    async def activate_quest_hook(self, *, wait_for_ready: bool = True):
         if self._check_if_hook_active(QuestHook):
             raise HookAlreadyActivated("Quest")
 
@@ -200,10 +225,13 @@ class HookHandler(MemoryReader):
         self._active_hooks.append(quest_hook)
         self._base_addrs["quest_struct"] = quest_hook.cord_struct
 
-    async def read_quest_base(self) -> Optional[int]:
+        if wait_for_ready:
+            await self._wait_for_value(quest_hook.cord_struct)
+
+    async def read_quest_base(self) -> int:
         return await self._read_hook_base_addr("quest_struct", "Quest")
 
-    async def activate_player_stat_hook(self):
+    async def activate_player_stat_hook(self, *, wait_for_ready: bool = True):
         if self._check_if_hook_active(PlayerStatHook):
             raise HookAlreadyActivated("Player stat")
 
@@ -215,34 +243,13 @@ class HookHandler(MemoryReader):
         self._active_hooks.append(player_stat_hook)
         self._base_addrs["player_stat_struct"] = player_stat_hook.stat_addr
 
-    async def read_player_stat_base(self) -> Optional[int]:
+        if wait_for_ready:
+            await self._wait_for_value(player_stat_hook.stat_addr)
+
+    async def read_player_stat_base(self) -> int:
         return await self._read_hook_base_addr("player_stat_struct", "Player stat")
 
-    async def activate_backpack_stat_hook(self):
-        if self._check_if_hook_active(BackpackStatHook):
-            raise HookAlreadyActivated("Backpack stat")
-
-        await self._check_for_autobot()
-
-        backpack_stat_hook = BackpackStatHook(self)
-        await backpack_stat_hook.hook()
-
-        self._active_hooks.append(backpack_stat_hook)
-        self._base_addrs[
-            "backpack_stat_struct"
-        ] = backpack_stat_hook.backpack_struct_addr
-
-    async def read_backpack_stat_base(self) -> Optional[int]:
-        addr = self._base_addrs.get("backpack_stat_struct")
-        if addr is None:
-            raise HookNotActive("Backpack stat")
-
-        try:
-            return await self.read_typed(addr, "long long")
-        except pymem.exception.MemoryReadError:
-            return None
-
-    async def activate_client_hook(self):
+    async def activate_client_hook(self, *, wait_for_ready: bool = True):
         if self._check_if_hook_active(ClientHook):
             raise HookAlreadyActivated("Client")
 
@@ -254,10 +261,13 @@ class HookHandler(MemoryReader):
         self._active_hooks.append(client_hook)
         self._base_addrs["current_client"] = client_hook.current_client_addr
 
-    async def read_current_client_base(self):
+        if wait_for_ready:
+            await self._wait_for_value(client_hook.current_client_addr)
+
+    async def read_current_client_base(self) -> int:
         return await self._read_hook_base_addr("current_client", "Client")
 
-    async def activate_root_window_hook(self):
+    async def activate_root_window_hook(self, *, wait_for_ready: bool = True):
         if self._check_if_hook_active(RootWindowHook):
             raise HookAlreadyActivated("Root window")
 
@@ -271,9 +281,13 @@ class HookHandler(MemoryReader):
             "current_root_window"
         ] = root_window_hook.current_root_window_addr
 
-    async def read_current_root_window_base(self):
+        if wait_for_ready:
+            await self._wait_for_value(root_window_hook.current_root_window_addr)
+
+    async def read_current_root_window_base(self) -> int:
         return await self._read_hook_base_addr("current_root_window", "Root window")
 
+    # nothing to wait for in this hook
     async def activate_mouseless_cursor_hook(self):
         if self._check_if_hook_active(MouselessCursorMoveHook):
             raise HookAlreadyActivated("Mouseless cursor")

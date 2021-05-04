@@ -144,6 +144,13 @@ class WizWalkerConsole(Monitor):
             table = terminaltables.AsciiTable(table_data, f"client-{idx}")
             self.write(table.table)
 
+    def do_position(self):
+        """Print out each client's body position"""
+        walker = self.get_local("walker")
+
+        for idx, client in enumerate(walker.clients):
+            self.write(f"client-{idx}: {self.run_coro(client.body.position())}")
+
     def do_cache(self):
         """Cache data"""
         walker = self.get_local("walker")
@@ -157,7 +164,7 @@ class WizWalkerConsole(Monitor):
         """
         walker = self.get_local("walker")
         for client in walker.clients:
-            current_position = self.run_coro(client.body.position)
+            current_position = self.run_coro(client.body.position())
             new_position = XYZ(x, y, z or current_position.z)
             self.run_coro(client.teleport(new_position, yaw))
 

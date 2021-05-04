@@ -46,6 +46,31 @@ class MemoryObject(MemoryReader):
         string_bytes = search_bytes[:string_end]
         return string_bytes.decode(encoding)
 
+    async def read_wide_string(self, address: int, encoding: str = "utf-16") -> str:
+        string_len = await self.read_typed(address + 16, "int")
+        if string_len == 0:
+            return ""
+
+        # wide chars take 2 bytes
+        string_len *= 2
+
+        # wide strings larger than 16 bytes are pointers
+        if string_len >= 16:
+            string_address = await self.read_typed(address, "long long")
+        else:
+            string_address = address
+
+        try:
+            return (await self.read_bytes(string_address, string_len)).decode(encoding)
+        except UnicodeDecodeError:
+            return ""
+
+    async def read_wide_string_from_offset(
+        self, offset: int, encoding: str = "utf-16"
+    ) -> str:
+        base_address = await self.read_base_address()
+        return await self.read_wide_string(base_address + offset, encoding)
+
     async def read_string(self, address: int, encoding: str = "utf-8") -> str:
         string_len = await self.read_typed(address + 16, "int")
         if string_len == 0:
@@ -57,7 +82,6 @@ class MemoryObject(MemoryReader):
         else:
             string_address = address
 
-        # TODO: properly handle pointer strings that get written back to less than 15
         try:
             return (await self.read_bytes(string_address, string_len)).decode(encoding)
         except UnicodeDecodeError:
@@ -68,6 +92,8 @@ class MemoryObject(MemoryReader):
     ) -> str:
         base_address = await self.read_base_address()
         return await self.read_string(base_address + offset, encoding)
+
+    # TODO: write wide string
 
     async def write_string(self, address: int, string: str, encoding: str = "utf-8"):
         string_len_addr = address + 16

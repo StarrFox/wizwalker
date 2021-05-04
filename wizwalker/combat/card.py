@@ -1,61 +1,110 @@
-from wizwalker.memory import Spell
+from typing import Union
+
+import wizwalker
+from wizwalker.memory.enums import WindowFlags
 
 
-class Card:
+class CombatCard:
     """
     Represents a spell card
     """
 
-    def __init__(self, name: str, position: int, spell: Spell):
-        self.name = name
-        self.position = position
-        self._spell = spell
+    def __init__(
+        self, combat_handler, spell_window: "wizwalker.memory.window.DynamicWindow",
+    ):
+        self.combat_handler = combat_handler
+
+        self._spell_window = spell_window
+
+    async def cast(self, target: Union["CombatCard", "wizwalker.combat.CombatMember"]):
+        # handle the combat card and combat member types
+        # check they're able to enchant/cast
+        raise NotImplementedError(
+            "This method hasn't yet been added, use mouse_handler.click directly for now"
+        )
+
+    async def active(self) -> bool:
+        """
+        If this card is currently active
+        """
+        return WindowFlags.visible in await self._spell_window.flags()
+
+    async def get_graphical_spell(
+        self,
+    ) -> "wizwalker.memory.spell.DynamicGraphicalSpell":
+        """
+        The GraphicalSpell with information about this card
+        """
+        return await self._spell_window.maybe_graphical_spell()
+
+    async def name(self) -> str:
+        """
+        The name of this card (display)
+        """
+        graphical_spell = await self.get_graphical_spell()
+        spell_template = await graphical_spell.spell_template()
+        return await spell_template.display_name()
+
+    async def template_id(self) -> int:
+        """
+        This card's template id
+        """
+        graphical_spell = await self.get_graphical_spell()
+        return await graphical_spell.template_id()
 
     async def spell_id(self) -> int:
         """
         This card's spell id
         """
-        return await self._spell.spell_id()
+        graphical_spell = await self.get_graphical_spell()
+        return await graphical_spell.spell_id()
 
     # TODO: test with accuracy enchants
     async def accuracy(self) -> int:
         """
         Current accuracy of this card
         """
-        return await self._spell.accuracy()
+        graphical_spell = await self.get_graphical_spell()
+        return await graphical_spell.accuracy()
 
     async def is_treasure_card(self) -> bool:
         """
         If this card is a treasure card
         """
-        return await self._spell.treasure_card()
+        graphical_spell = await self.get_graphical_spell()
+        return await graphical_spell.treasure_card()
 
     async def is_item_card(self) -> bool:
         """
         If this card is an item card
         """
-        return await self._spell.item_card()
+        graphical_spell = await self.get_graphical_spell()
+        return await graphical_spell.item_card()
 
     async def is_side_board(self) -> bool:
         """
         If this card is from the side deck
         """
-        return await self._spell.side_board()
+        graphical_spell = await self.get_graphical_spell()
+        return await graphical_spell.side_board()
 
     async def is_cloaked(self) -> bool:
         """
         If this card is cloaked
         """
-        return await self._spell.cloaked()
+        graphical_spell = await self.get_graphical_spell()
+        return await graphical_spell.cloaked()
 
     async def is_enchanted_from_item_card(self) -> bool:
         """
         If this card was enchanted from an item card
         """
-        return await self._spell.enchantment_spell_is_item_card()
+        graphical_spell = await self.get_graphical_spell()
+        return await graphical_spell.enchantment_spell_is_item_card()
 
     async def is_pve_only(self) -> bool:
         """
         If this card can only be used in pve
         """
-        return await self._spell.pve()
+        graphical_spell = await self.get_graphical_spell()
+        return await graphical_spell.pve()

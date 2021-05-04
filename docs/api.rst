@@ -18,12 +18,6 @@ Client
 .. autoclass:: Client
    :members:
 
-Wad
-===
-
-.. autoclass:: Wad
-   :members:
-
 Constants
 =========
 

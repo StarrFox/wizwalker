@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 from .memory_object import DynamicMemoryObject, PropertyClass
 from .enums import WindowStyle, WindowFlags
@@ -37,7 +37,7 @@ class Window(PropertyClass):
             await child._recursive_get_windows_by_predicate(predicate, windows)
 
     async def get_windows_with_predicate(
-        self, predicate: callable
+        self, predicate: Callable
     ) -> List["DynamicWindow"]:
         """
         async def my_pred(window) -> bool:
@@ -82,13 +82,14 @@ class Window(PropertyClass):
     async def maybe_text(self) -> str:
         # TODO: see if all types with .text have Control prefix
         #  and if so check that they have it
-        return await self.read_string_from_offset(584)
+        return await self.read_wide_string_from_offset(584)
 
-    async def write_maybe_text(self, text: str):
-        """
-        Writing to this when there isn't actually a .text could crash
-        """
-        await self.write_string_to_offset(584, text)
+    # TODO: add back
+    # async def write_maybe_text(self, text: str):
+    #     """
+    #     Writing to this when there isn't actually a .text could crash
+    #     """
+    #     await self.write_string_to_offset(584, text)
 
     async def name(self) -> str:
         return await self.read_string_from_offset(80)

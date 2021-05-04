@@ -1,5 +1,4 @@
 from functools import cached_property
-from typing import List
 
 import pymem
 
@@ -7,7 +6,6 @@ from . import (
     CacheHandler,
     Keycode,
     MemoryReadError,
-    NotInCombat,
     ReadingEnumFailed,
     utils,
 )
@@ -24,7 +22,6 @@ from .memory import (
 
 from .constants import WIZARD_SPEED
 from .utils import XYZ, check_if_process_running
-from .combat import Card
 from .mouse_handler import MouseHandler
 
 
@@ -46,14 +43,40 @@ class Client:
         self.cache_handler = CacheHandler()
         self.mouse_handler = MouseHandler(self)
 
+        self.stats = CurrentGameStats(self.hook_handler)
+        self.body = CurrentActorBody(self.hook_handler)
+        self.duel = CurrentDuel(self.hook_handler)
+        self.quest_position = CurrentQuestPosition(self.hook_handler)
+        self.client_object = CurrentClientObject(self.hook_handler)
+        self.root_window = CurrentRootWindow(self.hook_handler)
+
         self._template_ids = None
         self._is_loading_addr = None
 
     def __repr__(self):
         return f"<Client {self.window_handle=} {self.process_id=}>"
 
+    @cached_property
+    def process_id(self) -> int:
+        """
+        Client's process id
+        """
+        return utils.get_pid_from_handle(self.window_handle)
+
     def is_running(self):
+        """
+        If this client is still running
+        """
         return check_if_process_running(self._pymem.process_handle)
+
+    async def activate_hooks(self, *, wait_for_ready: bool = True):
+        """
+        Activate all memory hooks but mouseless
+
+        Arguments:
+            wait_for_ready: If this should wait for hooks to be ready to use (duel exempt)
+        """
+        await self.hook_handler.activate_all_hooks(wait_for_ready=wait_for_ready)
 
     async def close(self):
         """
@@ -64,61 +87,6 @@ class Client:
             return
 
         await self.hook_handler.close()
-
-    @cached_property
-    def process_id(self) -> int:
-        """
-        Client's process id
-        """
-        return utils.get_pid_from_handle(self.window_handle)
-
-    async def activate_hooks(self):
-        """
-        Activate all memory hooks but mouseless
-        """
-        await self.hook_handler.activate_all_hooks()
-
-    @cached_property
-    def stats(self) -> CurrentGameStats:
-        """
-        Client's game stats struct
-        """
-        return CurrentGameStats(self.hook_handler)
-
-    @cached_property
-    def body(self) -> CurrentActorBody:
-        """
-        Client's actor body struct
-        """
-        return CurrentActorBody(self.hook_handler)
-
-    @cached_property
-    def duel(self) -> CurrentDuel:
-        """
-        Client's duel struct
-        """
-        return CurrentDuel(self.hook_handler)
-
-    @cached_property
-    def quest_position(self) -> CurrentQuestPosition:
-        """
-        Client's quest position struct
-        """
-        return CurrentQuestPosition(self.hook_handler)
-
-    @cached_property
-    def client_object(self) -> CurrentClientObject:
-        """
-        Client's current client object; name is pretty confusing
-        """
-        return CurrentClientObject(self.hook_handler)
-
-    @cached_property
-    def root_window(self) -> CurrentRootWindow:
-        """
-        Client's current root window
-        """
-        return CurrentRootWindow(self.hook_handler)
 
     async def get_template_ids(self) -> dict:
         """
@@ -162,9 +130,49 @@ class Client:
         # 1 -> can't move (loading) 0 -> can move (not loading)
         return await self.hook_handler.read_typed(self._is_loading_addr, "bool")
 
+    async def is_in_dialog(self) -> bool:
+        """
+        If the client is in dialong
+        """
+        return bool(await self.root_window.get_windows_with_name("wndDialogMain"))
+
+    async def backpack_space(self) -> tuple:
+        """
+        This client's backpack space used and max
+        must be on inventory page to use
+        """
+        maybe_space_window = await self.root_window.get_windows_with_name(
+            "inventorySpace"
+        )
+
+        if not maybe_space_window:
+            # TODO: replace error
+            raise ValueError("must open inventory screen to get")
+
+        text = await maybe_space_window[0].maybe_text()
+        text = text.replace("<center>", "")
+        used, total = text.split("/")
+        return int(used), int(total)
+
+    async def current_energy(self) -> int:
+        """
+        Client's current energy
+        energy globe must be visible to use
+        """
+        maybe_energy_text = await self.root_window.get_windows_with_name("textEnergy")
+
+        if not maybe_energy_text:
+            # TODO: replace error
+            raise ValueError("Energy globe not on screen")
+
+        text = await maybe_energy_text[0].maybe_text()
+        text = text.replace("<center>", "")
+        text = text.replace("</center>", "")
+        return int(text)
+
     def login(self, username: str, password: str):
         """
-        Login to a client that is at the login screen
+        Login this client
 
         Args:
             username: The username to login with
@@ -175,18 +183,17 @@ class Client:
     async def send_key(self, key: Keycode, seconds: float = 0.5):
         await utils.timed_send_key(self.window_handle, key, seconds)
 
-    async def goto(
-        self, x: float, y: float, *, speed_multiplier: float = 1.0,
-    ):
+    async def goto(self, x: float, y: float):
         """
         Moves the player to a specific x and y
 
         Args:
             x: X to move to
             y: Y to move to
-            speed_multiplier: Multiplier for speed (for mounts) i.e. 1.4 for 40%
         """
         current_xyz = await self.body.position()
+        # (40 / 100) + 1 = 1.4
+        speed_multiplier = ((await self.client_object.speed_multiplier()) / 100) + 1
         target_xyz = utils.XYZ(x, y, current_xyz.z)
         distance = current_xyz - target_xyz
         move_seconds = distance / (WIZARD_SPEED * speed_multiplier)

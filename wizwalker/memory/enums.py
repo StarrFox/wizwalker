@@ -72,3 +72,11 @@ class WindowFlags(IntFlag):
     hcenter = 32768
     vcenter = 65536
     disabled = -2147483648
+
+
+class SpellSourceType(IntFlag):
+    caster = 0
+    pet = 1
+    shadow_creature = 2
+    weapon = 3
+    equipment = 4

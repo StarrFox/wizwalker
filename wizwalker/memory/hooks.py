@@ -246,26 +246,6 @@ class QuestHook(SimpleHook):
         return bytecode
 
 
-# TODO: remove
-class BackpackStatHook(SimpleHook):
-    pattern = rb"\x01............\x48\x85\xC9\x74\x0B\xE8....\x01.....\x48\x83"
-    instruction_length = 6
-    exports = [("backpack_struct_addr", 8)]
-    noops = 1
-
-    async def bytecode_generator(self, packed_exports):
-        # fmt: off
-        bytecode = (
-                b"\x50"  # push rax
-                b"\x48\x8D\x83\x38\x05\x00\x00"  # lea rax,[rbx+538]
-                b"\x48\xA3" + packed_exports[0][1] +  # mov [export],rax
-                b"\x58"  # pop rax
-                b"\x01\x83\x38\x05\x00\x00"  # original code
-        )
-        # fmt: on
-        return bytecode
-
-
 class DuelHook(SimpleHook):
     pattern = rb"\x48\x89\x4C\x24\x50\x4C\x89\x74\x24\x48"
     exports = [("current_duel_addr", 8)]
