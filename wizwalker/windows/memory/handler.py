@@ -270,6 +270,9 @@ class MemoryHandler:
                 # TODO: error here
                 pass
 
+        # give time for execution point to leave
+        await asyncio.sleep(1)
+
         self.hook_handler.close()
         self.active_hooks = defaultdict(lambda: False)
 
