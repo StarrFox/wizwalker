@@ -1,3 +1,5 @@
+import logging
+
 from loguru import logger
 
 from .constants import *
@@ -10,3 +12,4 @@ from .client import Client
 from .application import WizWalker
 
 logger.disable("wizwalker")
+logging.getLogger("pymem").setLevel(logging.FATAL)

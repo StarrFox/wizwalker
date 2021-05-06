@@ -210,9 +210,10 @@ class PlayerHook(SimpleHook):
 
 
 class PlayerStatHook(SimpleHook):
-    pattern = rb"\x03\x59\x54\x0F\x29\x74\x24\x20\x0F\x57\xF6\xC7\x44......\x66\x0F\x6E\xC3\x0F\x5B\xC0"
-    instruction_length = 8
+    pattern = rb"\x2B\xD8\xB8....\x0F\x49\xC3\x48\x83\xC4\x20\x5B\xC3"
+    instruction_length = 7
     exports = [("stat_addr", 8)]
+    noops = 2
 
     async def bytecode_generator(self, packed_exports):
         # fmt: off
@@ -222,8 +223,8 @@ class PlayerStatHook(SimpleHook):
                 b"\x48\xA3" + packed_exports[0][1] +  # mov qword ptr [stat_export], rax
                 b"\x58"  # pop rax
                 # original code
-                b"\x03\x59\x54"  # add ebx, dword ptr [rcx+0x54]
-                b"\x0F\x29\x74\x24\x20"  # movabs [rsp+20],xmm6
+                b"\x2B\xD8"  # sub ebx, eax
+                b"\xB8\x00\x00\x00\x00"  # mov eax, 0
         )
         # fmt: on
         return bytecode

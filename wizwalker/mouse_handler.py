@@ -22,6 +22,12 @@ class MouseHandler:
         # this will error if already active for us
         await self.client.hook_handler.activate_mouseless_cursor_hook()
 
+    async def click_window(self, window: "wizwalker.memory.window.DynamicWindow"):
+        """
+        Clicks a Window
+        """
+        raise NotImplementedError("method has not yet been implimented")
+
     # TODO: add errors (HookNotActive)
     async def click(
         self,

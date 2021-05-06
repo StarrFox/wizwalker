@@ -131,7 +131,6 @@ class WizWalkerConsole(Monitor):
                 "read_current_duel_base",
                 "read_quest_base",
                 "read_player_stat_base",
-                "read_backpack_stat_base",
                 "read_current_client_base",
                 "read_current_root_window_base",
             ]
