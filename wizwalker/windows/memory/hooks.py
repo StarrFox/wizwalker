@@ -280,18 +280,19 @@ def player_stat_hook_bytecode_gen(_, packed_exports):
         b"\x48\xA3" + packed_exports[0][1] +  # mov qword ptr [stat_export], rax
         b"\x58"  # pop rax
         # original code
-        b"\x03\x59\x54"  # add ebx, dword ptr [rcx+0x54]
-        b"\x0F\x29\x74\x24\x20"  # movaps [rsp+20],xmm6
+        b"\x2B\xD8"  # sub ebx, eax
+        b"\xB8\x00\x00\x00\x00"  # mov eax, 0
     )
     # fmt: on
     return bytecode
 
 
 PlayerStatHook = simple_hook(
-    pattern=rb"\x03\x59\x54\x0F\x29\x74\x24\x20\x0F\x57\xF6\xC7\x44......\x66\x0F\x6E\xC3\x0F\x5B\xC0",
+    pattern=rb"\x2B\xD8\xB8....\x0F\x49\xC3\x48\x83\xC4\x20\x5B\xC3",
     bytecode_generator=player_stat_hook_bytecode_gen,
-    instruction_length=8,
+    instruction_length=7,
     exports=[("stat_addr", 8)],
+    noops=2,
 )
 
 
@@ -428,7 +429,7 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
             rb"\x00\xFF\x50\x18\x66\xC7", module="WizardGraphicalClient.exe"
         )
         bool_two_address = self.pattern_scan(
-            rb"\xC6\x86.....\x33\xFF", module="WizardGraphicalClient.exe",
+            rb"\xC6\x86...\x00.\x33\xFF", module="WizardGraphicalClient.exe",
         )
 
         if bool_one_address is None or bool_two_address is None:

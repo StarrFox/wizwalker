@@ -1,5 +1,6 @@
 import asyncio
 import functools
+import time
 from collections import defaultdict
 
 import pymem
@@ -271,7 +272,7 @@ class MemoryHandler:
                 pass
 
         # give time for execution point to leave
-        await asyncio.sleep(1)
+        time.sleep(1)
 
         self.hook_handler.close()
         self.active_hooks = defaultdict(lambda: False)
