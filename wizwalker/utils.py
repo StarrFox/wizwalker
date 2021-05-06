@@ -411,3 +411,96 @@ async def _send_keydown_forever(window_handle: int, key: Keycode):
     while True:
         user32.SendMessageW(window_handle, 0x100, key.value, 0)
         await asyncio.sleep(0.05)
+
+
+# TODO: comment and rename vars for all these
+# def scale_val(v, o, n):
+#     (rmin, rmax) = o
+#     rd = rmax - rmin
+#     (tmin, tmax) = n
+#     td = tmax - tmin
+#     return (((v - rmin) / rd) * (td)) + tmin
+#
+#
+# def scale_rel_val(v, o, n):
+#     (rmin, rmax) = o
+#     (tmin, tmax) = n
+#     return scale_val(v, (0, rmax - rmin), (0, tmax - tmin)) + rmin - tmin
+#
+#
+# def map_rect(rect, f, t):
+#     return (
+#         scale_rel_val(rect.x1, (f.x1, f.x2), (t.x1, t.x2)),
+#         scale_rel_val(rect.y1, (f.y1, f.y2), (t.y1, t.y2)),
+#         scale_rel_val(rect.x2, (f.x1, f.x2), (t.x1, t.x2)),
+#         scale_rel_val(rect.y2, (f.y1, f.y2), (t.y1, t.y2)),
+#     )
+#
+#
+# # TODO: split transformations to funcs
+# def untransform_rect_tree(rects):
+#     for i in range(len(rects) - 1, -1, -1):
+#         (rect, trans) = rects[i]
+#         for t in trans:
+#             if t is RectTransform.parent_width:
+#                 (p, _) = rects[i + 1]
+#                 d1 = rect.x2 - rect.x1
+#                 dp = p.x2 - p.x1
+#                 d = dp - d1
+#                 if d != 0:
+#                     print("parent_width applied incorrectly. Trying to fix naively:", d)
+#                     rects[i][0].x2 += d
+#             elif t is RectTransform.parent_height:
+#                 (p, _) = rects[i + 1]
+#                 d1 = rect.y2 - rect.y1
+#                 dp = p.y2 - p.y1
+#                 d = dp - d1
+#                 if d != 0:
+#                     print(
+#                         "parent_height applied incorrectly. Trying to fix naively:", d
+#                     )
+#                     rects[i][0].y2 += d
+#             elif t is RectTransform.parent_size:
+#                 (p, _) = rects[i + 1]
+#                 dr1 = rect.x2 - rect.x1
+#                 dr2 = rect.y2 - rect.y1
+#                 dp1 = p.x2 - p.x1
+#                 dp2 = p.y2 - p.y1
+#                 d1 = dp1 - dr1
+#                 d2 = dp2 - dr2
+#                 if d1 != 0:
+#                     print(
+#                         "parent_size(width) applied incorrectly. Trying to fix naively",
+#                         d1,
+#                     )
+#                     rects[i][0].x2 += d1
+#                 if d2 != 0:
+#                     print(
+#                         "parent_size(height) applied incorrectly. Trying to fix naively:",
+#                         d2,
+#                     )
+#                     rects[i][0].y2 += d2
+#             elif t is RectTransform.vcenter:
+#                 (p, _) = rects[i + 1]
+#                 pcv = (p.y1 + p.y2) / 2
+#                 d = (rects[i][0].y1 + rects[i][0].y2) / 2
+#                 rects[i][0].y1 = pcv - (d)
+#                 rects[i][0].y2 = pcv + (d)
+#             elif t is RectTransform.hcenter:
+#                 (p, _) = rects[i + 1]
+#                 pch = (p.x1 + p.x2) / 2
+#                 d = (rects[i][0].x1 + rects[i][0].x2) / 2
+#                 rects[i][0].x1 = pch - (d)
+#                 rects[i][0].x2 = pch + (d)
+#             else:
+#                 print("Unhandled transform:", t)
+#
+#     return rects
+#
+#
+# def lift_rects_to_program(rects):
+#     v = rects[0]
+#     for i in range(len(rects) - 2):
+#         v = map_rect(v, rects[i + 1], rects[i + 2])
+#         print(v)
+#     return v

@@ -100,10 +100,6 @@ class Listener:
         keycode, modifiers = message.split("|")
         keycode = int(keycode)
         modifiers = int(modifiers)
-        if modifiers == 0:
-            pass
-        else:
-            modifiers = ModifierKeys(modifiers)
 
         # TODO: add to self._tasks and cancel in self.close
         self._loop.create_task(self._callbacks[keycode + modifiers]())
@@ -128,18 +124,16 @@ class Listener:
 
     def _add_hotkeys(self):
         for hotkey in self._hotkeys:
-            if self._register_hotkey(hotkey.keycode.value, hotkey.modifiers):
-                self._callbacks[
-                    hotkey.keycode.value + hotkey.modifiers
-                ] = hotkey.callback
+            if self._register_hotkey(hotkey.keycode.value, hotkey.modifiers.value):
+                # No repeat is not included in the return message
+                no_norepeat = hotkey.modifiers & ~ModifierKeys.NOREPEAT
+                self._callbacks[hotkey.keycode.value + no_norepeat] = hotkey.callback
             else:
                 raise HotkeyAlreadyRegistered(
                     f"{hotkey.keycode} with modifers {hotkey.modifiers}"
                 )
 
-    def _register_hotkey(
-        self, keycode: int, modifiers: Union[ModifierKeys, int] = 0
-    ) -> bool:
+    def _register_hotkey(self, keycode: int, modifiers: int = 0) -> bool:
         res = user32.RegisterHotKey(None, self._id_counter, modifiers, keycode)
         self._id_counter += 1
 
