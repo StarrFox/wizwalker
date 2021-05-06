@@ -149,13 +149,18 @@ class HookHandler(MemoryReader):
             while True:
                 try:
                     value = await self.read_typed(address, "long long")
+                    logger.debug(
+                        f"Waiting for address {hex(address)}; got value {value}"
+                    )
                 except pymem.exception.MemoryReadError:
                     pass
                 else:
                     if value != 0:
+                        logger.debug(f"Address {hex(address)} is set")
                         break
-                finally:
-                    await asyncio.sleep(0.5)
+                    else:
+                        logger.debug(f"Address {hex(address)} is not set yet; sleeping")
+                        await asyncio.sleep(0.5)
 
         try:
             await asyncio.wait_for(_wait_for_value_task(), timeout)

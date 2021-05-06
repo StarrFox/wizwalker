@@ -61,6 +61,15 @@ class Window(PropertyClass):
 
         return windows
 
+    async def get_parents(self) -> List["DynamicWindow"]:
+        parents = []
+        current = self
+        while (parent := await current.parent()) is not None:
+            parents.append(parent)
+            current = parent
+
+        return parents
+
     async def get_child_by_name(self, name: str) -> "DynamicWindow":
         children = await self.children()
         for child in children:
