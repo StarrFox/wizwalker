@@ -1,9 +1,9 @@
 from typing import List
 
-from .memory_object import PropertyClass
-from .enums import DuelPhase, DuelExecutionOrder, SigilInitiativeSwitchMode
-from .combat_participant import DynamicCombatParticipant
 from wizwalker.utils import XYZ
+from .combat_participant import DynamicCombatParticipant
+from .enums import DuelExecutionOrder, DuelPhase, SigilInitiativeSwitchMode
+from .memory_object import PropertyClass
 
 
 class Duel(PropertyClass):

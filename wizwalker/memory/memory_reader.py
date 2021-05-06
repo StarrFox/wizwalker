@@ -1,7 +1,7 @@
 import asyncio
 import functools
-import struct
 import re
+import struct
 from typing import Any, Union
 
 import pymem
@@ -10,13 +10,13 @@ import pymem.ressources.structure
 from loguru import logger
 
 from wizwalker import (
+    ClientClosedError,
+    MemoryReadError,
+    MemoryWriteError,
     PatternFailed,
     PatternMultipleResults,
     type_format_dict,
     utils,
-    MemoryReadError,
-    MemoryWriteError,
-    ClientClosedError,
 )
 
 

@@ -1,6 +1,6 @@
 import asyncio
 import struct
-from typing import Any, Optional
+from typing import Any
 
 import pymem
 import pymem.exception
@@ -8,17 +8,18 @@ from loguru import logger
 
 from wizwalker import HookAlreadyActivated, HookNotActive, HookNotReady
 from .hooks import (
-    PlayerHook,
-    QuestHook,
-    PlayerStatHook,
+    ClientHook,
     DuelHook,
     MouselessCursorMoveHook,
-    ClientHook,
+    PlayerHook,
+    PlayerStatHook,
+    QuestHook,
     RootWindowHook,
 )
 from .memory_reader import MemoryReader
 
 
+# noinspection PyUnresolvedReferences
 class HookHandler(MemoryReader):
     """
     Manages hooks
@@ -63,6 +64,7 @@ class HookHandler(MemoryReader):
 
         self._autobot_address = addr
 
+    # noinspection PyTypeChecker
     async def _prepare_autobot(self):
         if self._autobot_address is None:
             await self._get_autobot_address()
@@ -168,7 +170,7 @@ class HookHandler(MemoryReader):
         hooks = [
             self.activate_player_hook(wait_for_ready=wait_for_ready),
             # duel is only written to on battle join
-            self.activate_duel_hook(wait_for_ready=False),
+            self.activate_duel_hook(),
             self.activate_quest_hook(wait_for_ready=wait_for_ready),
             self.activate_player_stat_hook(wait_for_ready=wait_for_ready),
             self.activate_client_hook(wait_for_ready=wait_for_ready),

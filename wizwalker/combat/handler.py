@@ -1,7 +1,6 @@
 from typing import Callable, List
 
 from .card import CombatCard
-from wizwalker.memory.enums import WindowFlags
 
 
 class CombatHandler:

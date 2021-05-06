@@ -1,7 +1,7 @@
 import struct
 import zlib
-from typing import List, Union
 from pathlib import Path
+from typing import List, Union
 
 import aiofiles
 

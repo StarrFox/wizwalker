@@ -1,7 +1,7 @@
 from typing import List
 
-from .memory_object import DynamicMemoryObject, PropertyClass
 from .enums import DelayOrder, SpellSourceType
+from .memory_object import DynamicMemoryObject, PropertyClass
 
 
 class Spell(PropertyClass):
@@ -14,7 +14,7 @@ class Spell(PropertyClass):
     async def write_template_id(self, template_id: int):
         await self.write_value_to_offset(128, template_id, "unsigned int")
 
-    # note: not defed
+    # note: not defined
     async def spell_template(self) -> "SpellTemplate":
         addr = await self.read_value_from_offset(120, "long long")
         return DynamicSpellTemplate(self.hook_handler, addr)

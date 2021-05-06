@@ -2,11 +2,11 @@ import struct
 from enum import Enum
 from typing import Any, List, Type
 
-from .memory_reader import MemoryReader
-from .handler import HookHandler
-from wizwalker.utils import XYZ
-from wizwalker.errors import MemoryReadError, ReadingEnumFailed, WizWalkerMemoryError
 from wizwalker.constants import type_format_dict
+from wizwalker.errors import MemoryReadError, ReadingEnumFailed, WizWalkerMemoryError
+from wizwalker.utils import XYZ
+from .handler import HookHandler
+from .memory_reader import MemoryReader
 
 
 class MemoryObject(MemoryReader):

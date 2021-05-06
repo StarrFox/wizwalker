@@ -2,12 +2,12 @@ import asyncio
 import sys
 from pathlib import Path
 
-import click
 import aiofiles
+import click
 from click_default_group import DefaultGroup
 from loguru import logger
 
-from wizwalker import WizWalker, utils, Wad
+from wizwalker import Wad, WizWalker, utils
 from wizwalker.cli import start_console
 
 logger.enable("wizwalker")

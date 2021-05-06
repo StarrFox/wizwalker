@@ -1,13 +1,12 @@
 import asyncio
 import re
-import threading
 import sys
+import threading
 from typing import Any, Coroutine, Union
 
-
-import terminaltables
 import aioconsole
-from aiomonitor import Monitor, start_monitor, cli
+import terminaltables
+from aiomonitor import Monitor, cli, start_monitor
 from aiomonitor.utils import close_server, console_proxy
 
 from wizwalker import XYZ

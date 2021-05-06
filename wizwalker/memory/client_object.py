@@ -1,6 +1,6 @@
+from wizwalker import XYZ
 from .game_stats import DynamicGameStats
 from .memory_object import PropertyClass
-from wizwalker import XYZ
 
 
 class ClientObject(PropertyClass):

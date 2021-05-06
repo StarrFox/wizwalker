@@ -213,7 +213,7 @@ future = "*"
 
 [[package]]
 name = "pygments"
-version = "2.8.1"
+version = "2.9.0"
 description = "Pygments is a syntax highlighting package written in Python."
 category = "dev"
 optional = false
@@ -233,7 +233,7 @@ dis3 = "*"
 
 [[package]]
 name = "pymem"
-version = "1.8.2"
+version = "1.8.3"
 description = "pymem: python memory access made easy"
 category = "main"
 optional = false
@@ -445,7 +445,7 @@ dev = ["pytest (>=4.6.2)", "black (>=19.3b0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "1cf7101a04a3fa4fd0f097c2b3a2ac04ffb47ee88c59232e5d58cc6e2e1b4a81"
+content-hash = "9ea8268d4e07207c69561f74bcfbe5c5d5318aa3d3bef03f08b39637eb13e58a"
 
 [metadata.files]
 aioconsole = [
@@ -569,15 +569,15 @@ pefile = [
     {file = "pefile-2019.4.18.tar.gz", hash = "sha256:a5d6e8305c6b210849b47a6174ddf9c452b2888340b8177874b862ba6c207645"},
 ]
 pygments = [
-    {file = "Pygments-2.8.1-py3-none-any.whl", hash = "sha256:534ef71d539ae97d4c3a4cf7d6f110f214b0e687e92f9cb9d2a3b0d3101289c8"},
-    {file = "Pygments-2.8.1.tar.gz", hash = "sha256:2656e1a6edcdabf4275f9a3640db59fd5de107d88e8663c5d4e9a0fa62f77f94"},
+    {file = "Pygments-2.9.0-py3-none-any.whl", hash = "sha256:d66e804411278594d764fc69ec36ec13d9ae9147193a1740cd34d272ca383b8e"},
+    {file = "Pygments-2.9.0.tar.gz", hash = "sha256:a18f47b506a429f6f4b9df81bb02beab9ca21d0a5fee38ed15aef65f0545519f"},
 ]
 pyinstaller = [
     {file = "PyInstaller-3.6.tar.gz", hash = "sha256:3730fa80d088f8bb7084d32480eb87cbb4ddb64123363763cf8f2a1378c1c4b7"},
 ]
 pymem = [
-    {file = "Pymem-1.8.2-py2.py3-none-any.whl", hash = "sha256:eaf351832cd8acc1711089fbbe1e8cd697239afaec5c7d224e7d22e12cd2fac6"},
-    {file = "Pymem-1.8.2.tar.gz", hash = "sha256:450435340f64271434926cec6387c4d455ba503cbbca579031d621b4ce9d2af2"},
+    {file = "Pymem-1.8.3-py2.py3-none-any.whl", hash = "sha256:b739e861a3ce69e4c1647d25d1db17eaf72d1eb8695542660824cc11a98e850e"},
+    {file = "Pymem-1.8.3.tar.gz", hash = "sha256:664b41b6a5be6635ded4b611cc834cb65d4268a1510acdddbf26317758f51146"},
 ]
 pyparsing = [
     {file = "pyparsing-2.4.7-py2.py3-none-any.whl", hash = "sha256:ef9d7589ef3c200abe66653d3f1ab1033c3c419ae9b9bdb1240a85b024efc88b"},

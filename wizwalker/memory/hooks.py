@@ -3,7 +3,7 @@ from typing import Any, Tuple
 
 from loguru import logger
 
-from wizwalker.memory import MemoryReader
+from .memory_reader import MemoryReader
 
 
 def pack_to_int_or_longlong(num: int) -> bytes:
@@ -125,6 +125,7 @@ class AutoBotBaseHook(MemoryHook):
     """
 
     async def alloc(self, size: int) -> int:
+        # noinspection PyProtectedMember
         return await self.hook_handler._allocate_autobot_bytes(size)
 
     # TODO: tell handler those bytes are free now?
@@ -222,7 +223,7 @@ class PlayerStatHook(SimpleHook):
                 b"\x58"  # pop rax
                 # original code
                 b"\x03\x59\x54"  # add ebx, dword ptr [rcx+0x54]
-                b"\x0F\x29\x74\x24\x20"  # movaps [rsp+20],xmm6
+                b"\x0F\x29\x74\x24\x20"  # movabs [rsp+20],xmm6
         )
         # fmt: on
         return bytecode

@@ -1,7 +1,7 @@
 from typing import Callable, List, Optional
 
+from .enums import WindowFlags, WindowStyle
 from .memory_object import DynamicMemoryObject, PropertyClass
-from .enums import WindowStyle, WindowFlags
 from .spell import DynamicGraphicalSpell
 
 

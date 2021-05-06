@@ -9,20 +9,19 @@ from . import (
     ReadingEnumFailed,
     utils,
 )
+from .constants import WIZARD_SPEED
 from .memory import (
+    CurrentActorBody,
+    CurrentClientObject,
+    CurrentDuel,
+    CurrentGameStats,
+    CurrentQuestPosition,
+    CurrentRootWindow,
     DuelPhase,
     HookHandler,
-    CurrentGameStats,
-    CurrentActorBody,
-    CurrentDuel,
-    CurrentQuestPosition,
-    CurrentClientObject,
-    CurrentRootWindow,
 )
-
-from .constants import WIZARD_SPEED
-from .utils import XYZ, check_if_process_running
 from .mouse_handler import MouseHandler
+from .utils import XYZ, check_if_process_running
 
 
 class Client:

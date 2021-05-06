@@ -6,6 +6,8 @@ import io
 import math
 import struct
 import subprocess
+
+# noinspection PyCompatibility
 import winreg
 import zlib
 from concurrent.futures.thread import ThreadPoolExecutor
@@ -14,7 +16,7 @@ from typing import Callable, Iterable
 
 import appdirs
 
-from wizwalker.constants import Keycode, user32, kernel32
+from wizwalker.constants import Keycode, kernel32, user32
 
 
 class XYZ:
@@ -86,7 +88,7 @@ class XYZ:
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
