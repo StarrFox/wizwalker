@@ -237,4 +237,5 @@ class PropertyClass(MemoryObject):
         type_name_addr = lea_instruction + rip_offset + 7
 
         # some of the class names can be quite long
-        return await self.read_null_terminated_string(type_name_addr, 50)
+        # i.e ClientShadowCreatureLevelTransitionCinematicAction
+        return await self.read_null_terminated_string(type_name_addr, 60)

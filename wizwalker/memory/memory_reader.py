@@ -71,6 +71,7 @@ class MemoryReader:
 
         return next_region, found
 
+    # TODO: test with 0 default
     def _scan_all_from(
         self,
         start_address: int,

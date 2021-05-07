@@ -22,11 +22,49 @@ class MouseHandler:
         # this will error if already active for us
         await self.client.hook_handler.activate_mouseless_cursor_hook()
 
-    async def click_window(self, window: "wizwalker.memory.window.DynamicWindow"):
+    async def click_window(
+        self, window: "wizwalker.memory.window.DynamicWindow", **kwargs
+    ):
         """
-        Clicks a Window
+        Click a window
+        kwargs are passed to .click
+
+        Args:
+            window: The window to click
         """
-        raise NotImplementedError("method has not yet been implimented")
+        ui_scale = await self.client.render_context.ui_scale()
+
+        base = await window.window_rectangle()
+
+        parent_rects = []
+        for parent in await window.get_parents():
+            parent_rects.append(await parent.window_rectangle())
+
+        scaled_rect = wizwalker.utils.scale_rect_to_client(base, parent_rects, ui_scale)
+        center = wizwalker.utils.get_rect_center(scaled_rect)
+
+        await self.click(*center, **kwargs)
+
+    async def click_window_with_name(self, name: str, **kwargs):
+        """
+        Click a window with a name
+        kwargs are passed to .click
+
+        Args:
+            name: The name of the window to click
+
+        Raises:
+            ValueError: If no or too many windows where found
+        """
+        possible_window = await self.client.root_window.get_windows_with_name(name)
+
+        if not possible_window:
+            raise ValueError(f"Window with name {name} not found.")
+
+        elif len(possible_window) > 1:
+            raise ValueError(f"Multiple windows with name {name}.")
+
+        await self.click_window(possible_window[0], **kwargs)
 
     # TODO: add errors (HookNotActive)
     async def click(

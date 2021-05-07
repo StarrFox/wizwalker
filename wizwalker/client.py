@@ -19,6 +19,7 @@ from .memory import (
     CurrentRootWindow,
     DuelPhase,
     HookHandler,
+    CurrentRenderContext,
 )
 from .mouse_handler import MouseHandler
 from .utils import XYZ, check_if_process_running
@@ -48,6 +49,7 @@ class Client:
         self.quest_position = CurrentQuestPosition(self.hook_handler)
         self.client_object = CurrentClientObject(self.hook_handler)
         self.root_window = CurrentRootWindow(self.hook_handler)
+        self.render_context = CurrentRenderContext(self.hook_handler)
 
         self._template_ids = None
         self._is_loading_addr = None

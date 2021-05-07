@@ -133,6 +133,7 @@ class WizWalkerConsole(Monitor):
                 "read_player_stat_base",
                 "read_current_client_base",
                 "read_current_root_window_base",
+                "read_current_render_context_base",
             ]
             for attr in hook_handler_attrs:
                 table_data.append(
@@ -210,6 +211,7 @@ class WizWalkerConsole(Monitor):
 
         self.write("Completed click")
 
+    # TODO: fix
     def do_onehook(self, name: str):
         """Get clients and activate one hook"""
         walker = self.get_local("walker")

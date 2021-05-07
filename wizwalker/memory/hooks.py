@@ -312,6 +312,26 @@ class RootWindowHook(SimpleHook):
         return bytecode
 
 
+class RenderContextHook(SimpleHook):
+    pattern = rb"..................\xF3\x41\x0F\x10\x28\xF3\x0F\x10\x56\x04\x48\x63\xC1"
+    instruction_length = 9
+    noops = 4
+    exports = [("current_render_context_addr", 8)]
+
+    async def bytecode_generator(self, packed_exports):
+        # fmt: off
+        bytecode = (
+            b"\x50"  # push rax
+            b"\x48\x89\xd8"  # mov rax,rbx
+            b"\x48\xA3" + packed_exports[0][1] +  # mov [current_ui_scale_addr],rax
+            b"\x58"  # pop rax
+            b"\xF3\x44\x0F\x10\x8B\x98\x00\x00\x00"  # original instruction
+        )
+        # fmt: on
+
+        return bytecode
+
+
 class User32GetClassInfoBaseHook(AutoBotBaseHook):
     """
     Subclass of MemoryHook that uses the user32.GetClassInfoExA for bytes so addresses arent huge

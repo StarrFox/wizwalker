@@ -15,6 +15,7 @@ from .hooks import (
     PlayerStatHook,
     QuestHook,
     RootWindowHook,
+    RenderContextHook,
 )
 from .memory_reader import MemoryReader
 
@@ -53,7 +54,7 @@ class HookHandler(MemoryReader):
         self._autobot_pos += size
 
         logger.debug(
-            f"Allocating autobot address {addr}; autobto position is now {self._autobot_pos}"
+            f"Allocating autobot address {addr}; autobot position is now {self._autobot_pos}"
         )
         return addr
 
@@ -180,6 +181,7 @@ class HookHandler(MemoryReader):
             self.activate_player_stat_hook(wait_for_ready=wait_for_ready),
             self.activate_client_hook(wait_for_ready=wait_for_ready),
             self.activate_root_window_hook(wait_for_ready=wait_for_ready),
+            self.activate_render_context_hook(wait_for_ready=wait_for_ready),
         ]
 
         return await asyncio.gather(*hooks)
@@ -293,6 +295,28 @@ class HookHandler(MemoryReader):
 
     async def read_current_root_window_base(self) -> int:
         return await self._read_hook_base_addr("current_root_window", "Root window")
+
+    async def activate_render_context_hook(self, *, wait_for_ready: bool = True):
+        if self._check_if_hook_active(RenderContextHook):
+            raise HookAlreadyActivated("Render context")
+
+        await self._check_for_autobot()
+
+        render_context_hook = RenderContextHook(self)
+        await render_context_hook.hook()
+
+        self._active_hooks.append(render_context_hook)
+        self._base_addrs[
+            "current_render_context"
+        ] = render_context_hook.current_render_context_addr
+
+        if wait_for_ready:
+            await self._wait_for_value(render_context_hook.current_render_context_addr)
+
+    async def read_current_render_context_base(self) -> int:
+        return await self._read_hook_base_addr(
+            "current_render_context", "Render context"
+        )
 
     # nothing to wait for in this hook
     async def activate_mouseless_cursor_hook(self):
