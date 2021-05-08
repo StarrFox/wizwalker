@@ -16,13 +16,28 @@ class CombatCard:
 
         self._spell_window = spell_window
 
-    async def cast(self, target: Union["CombatCard", "wizwalker.combat.CombatMember"]):
-        # handle the combat card and combat member types
-        # check they're able to enchant/cast
+    async def cast(
+        self, target: Union["CombatCard", "wizwalker.combat.CombatMember", None]
+    ):
+        """
+        Cast this Card on another Card; a Member or with no target
 
-        # TODO enchants
+        Args:
+            target: Card, Member, or None if there is no target
+        """
+        # TODO checks
         if isinstance(target, CombatCard):
-            pass
+            await self.combat_handler.client.mouse_handler.click_window(
+                self._spell_window
+            )
+            await self.combat_handler.client.mouse_handler.click_window(
+                target._spell_window
+            )
+
+        elif target is None:
+            await self.combat_handler.client.mouse_handler.click_window(
+                self._spell_window
+            )
 
         else:
             # TODO: checks

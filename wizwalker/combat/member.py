@@ -72,6 +72,11 @@ class CombatMember:
         part = await self.get_particpant()
         return await part.num_power_pips()
 
+    async def total_pips(self) -> int:
+        normal = await self.normal_pips()
+        power = await self.power_pips()
+        return normal + (power * 2)
+
     async def shadow_pips(self) -> int:
         part = await self.get_particpant()
         return await part.num_shadow_pips()
