@@ -47,7 +47,8 @@ class CombatCard:
         """
         graphical_spell = await self.get_graphical_spell()
         spell_template = await graphical_spell.spell_template()
-        return await spell_template.display_name()
+        # name is the actual name; display name is some wack stuff
+        return await spell_template.name()
 
     async def template_id(self) -> int:
         """

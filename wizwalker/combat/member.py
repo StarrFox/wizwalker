@@ -24,7 +24,7 @@ class CombatMember:
         """
         owner_id = await self.owner_id()
         character_id = await self.combat_handler.client.client_object.character_id()
-        return owner_id + 2 == character_id
+        return owner_id - 2 == character_id
 
     async def is_player(self) -> bool:
         """
@@ -35,10 +35,9 @@ class CombatMember:
 
     async def is_monster(self) -> bool:
         """
-        If this member is a mob
+        If this member is not a player and not a minion
         """
-        part = await self.get_particpant()
-        return bool(await part.is_monster())
+        return not await self.is_player() and not await self.is_minion()
 
     async def is_minion(self) -> bool:
         """

@@ -21,6 +21,8 @@ class CombatHandler:
 
     async def handle_combat(self):
         while await self.in_combat():
+            # give game time to prepare combat
+            await asyncio.sleep(1)
             round_number = await self.round_number()
             await self.handle_round()
             await self.wait_until_next_round(round_number)
@@ -60,18 +62,12 @@ class CombatHandler:
         """
         spell_checkbox_windows = await self._get_card_windows()
 
-        highest_visible = 0
+        cards = []
         # cards are ordered right to left so we need to flip them
         for spell_checkbox in spell_checkbox_windows[::-1]:
             if WindowFlags.visible in await spell_checkbox.flags():
-                highest_visible += 1
-            else:
-                break
-
-        cards = []
-        for spell_checkbox in spell_checkbox_windows[::-1][:highest_visible]:
-            card = CombatCard(self, spell_checkbox)
-            cards.append(card)
+                card = CombatCard(self, spell_checkbox)
+                cards.append(card)
 
         return cards
 

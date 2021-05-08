@@ -169,22 +169,19 @@ class HookHandler(MemoryReader):
             # TODO: replace error
             raise TimeoutError("Hook value took too long")
 
+    # TODO: make this faster
     async def activate_all_hooks(self, *, wait_for_ready: bool = True):
         """
         Activate all hooks but mouseless
         """
-        hooks = [
-            self.activate_player_hook(wait_for_ready=wait_for_ready),
-            # duel is only written to on battle join
-            self.activate_duel_hook(),
-            self.activate_quest_hook(wait_for_ready=wait_for_ready),
-            self.activate_player_stat_hook(wait_for_ready=wait_for_ready),
-            self.activate_client_hook(wait_for_ready=wait_for_ready),
-            self.activate_root_window_hook(wait_for_ready=wait_for_ready),
-            self.activate_render_context_hook(wait_for_ready=wait_for_ready),
-        ]
-
-        return await asyncio.gather(*hooks)
+        await self.activate_player_hook(wait_for_ready=wait_for_ready),
+        # duel is only written to on battle join
+        await self.activate_duel_hook(),
+        await self.activate_quest_hook(wait_for_ready=wait_for_ready),
+        await self.activate_player_stat_hook(wait_for_ready=wait_for_ready),
+        await self.activate_client_hook(wait_for_ready=wait_for_ready),
+        await self.activate_root_window_hook(wait_for_ready=wait_for_ready),
+        await self.activate_render_context_hook(wait_for_ready=wait_for_ready),
 
     async def activate_player_hook(self, *, wait_for_ready: bool = True):
         if self._check_if_hook_active(PlayerHook):
