@@ -3,6 +3,7 @@ from typing import Callable, List, Optional
 from .enums import WindowFlags, WindowStyle
 from .memory_object import DynamicMemoryObject, PropertyClass
 from .spell import DynamicGraphicalSpell
+from .combat_participant import DynamicCombatParticipant
 
 
 class Window(PropertyClass):
@@ -82,10 +83,19 @@ class Window(PropertyClass):
     async def maybe_graphical_spell(self) -> DynamicGraphicalSpell:
         type_name = await self.maybe_read_type_name()
         if type_name != "SpellCheckBox":
-            raise ValueError("This object is not a SpellCheckBox")
+            raise ValueError("This object is not a SpellCheckBox.")
 
         addr = await self.read_value_from_offset(952, "long long")
         return DynamicGraphicalSpell(self.hook_handler, addr)
+
+    # See above
+    async def maybe_combat_participant(self) -> DynamicCombatParticipant:
+        type_name = await self.maybe_read_type_name()
+        if type_name != "CombatantDataControl":
+            raise ValueError("This object is not a CombatantDataControl.")
+
+        addr = await self.read_value_from_offset(1592, "long long")
+        return DynamicCombatParticipant(self.hook_handler, addr)
 
     # See above
     async def maybe_text(self) -> str:

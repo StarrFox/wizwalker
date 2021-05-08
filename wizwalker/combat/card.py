@@ -1,9 +1,9 @@
 from typing import Union
 
 import wizwalker
-from wizwalker.memory.enums import WindowFlags
 
 
+# TODO: add way to cast spells like pixie
 class CombatCard:
     """
     Represents a spell card
@@ -19,15 +19,19 @@ class CombatCard:
     async def cast(self, target: Union["CombatCard", "wizwalker.combat.CombatMember"]):
         # handle the combat card and combat member types
         # check they're able to enchant/cast
-        raise NotImplementedError(
-            "This method hasn't yet been added, use mouse_handler.click directly for now"
-        )
 
-    async def active(self) -> bool:
-        """
-        If this card is currently active
-        """
-        return WindowFlags.visible in await self._spell_window.flags()
+        # TODO enchants
+        if isinstance(target, CombatCard):
+            pass
+
+        else:
+            # TODO: checks
+            await self.combat_handler.client.mouse_handler.click_window(
+                self._spell_window
+            )
+            await self.combat_handler.client.mouse_handler.click_window(
+                target._combatant_control
+            )
 
     async def get_graphical_spell(
         self,

@@ -226,6 +226,7 @@ def calculate_perfect_yaw(current_xyz: XYZ, target_xyz: XYZ) -> float:
     return perfect_yaw
 
 
+# TODO: move to class Rectangle i.e Rectangle.to_client() -> Rectangle
 def scale_rect_to_client(base, parent_rects, ui_scale) -> tuple:
     x1_sum = base[0]
     y1_sum = base[1]
@@ -235,8 +236,8 @@ def scale_rect_to_client(base, parent_rects, ui_scale) -> tuple:
         y1_sum += rect[1]
 
     converted = (
-        int(x1_sum * 0.8),
-        int(y1_sum * 0.8),
+        int(x1_sum * ui_scale),
+        int(y1_sum * ui_scale),
         int(((base[2] - base[0]) * ui_scale) + (x1_sum * ui_scale)),
         int(((base[3] - base[1]) * ui_scale) + (y1_sum * ui_scale)),
     )

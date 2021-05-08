@@ -116,7 +116,7 @@ class HookHandler(MemoryReader):
         if self._autobot_lock is None:
             self._autobot_lock = asyncio.Lock()
 
-        # this is so it isn't prepared more than once
+        # this is so it isn't prepared more than once at the same time
         async with self._autobot_lock:
             await self._prepare_autobot()
 
