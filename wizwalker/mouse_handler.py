@@ -40,8 +40,8 @@ class MouseHandler:
         for parent in await window.get_parents():
             parent_rects.append(await parent.window_rectangle())
 
-        scaled_rect = wizwalker.utils.scale_rect_to_client(base, parent_rects, ui_scale)
-        center = wizwalker.utils.get_rect_center(scaled_rect)
+        scaled_rect = base.scale_to_client(parent_rects, ui_scale)
+        center = scaled_rect.center()
 
         await self.click(*center, **kwargs)
 

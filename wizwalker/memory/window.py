@@ -5,6 +5,8 @@ from .memory_object import DynamicMemoryObject, PropertyClass
 from .spell import DynamicGraphicalSpell
 from .combat_participant import DynamicCombatParticipant
 
+from wizwalker import Rectangle
+
 
 class Window(PropertyClass):
     async def read_base_address(self) -> int:
@@ -161,11 +163,12 @@ class Window(PropertyClass):
     async def write_flags(self, flags: WindowFlags):
         await self.write_value_to_offset(156, int(flags), "unsigned long")
 
-    async def window_rectangle(self) -> tuple:
-        return await self.read_vector(160, 4, "int")
+    async def window_rectangle(self) -> Rectangle:
+        rect = await self.read_vector(160, 4, "int")
+        return Rectangle(*rect)
 
-    async def write_window_rectangle(self, window_rectangle: tuple):
-        await self.write_vector(160, window_rectangle, 4, "int")
+    async def write_window_rectangle(self, window_rectangle: Rectangle):
+        await self.write_vector(160, tuple(window_rectangle), 4, "int")
 
     async def target_alpha(self) -> float:
         return await self.read_value_from_offset(212, "float")

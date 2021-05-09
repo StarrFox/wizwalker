@@ -4,7 +4,7 @@ from loguru import logger
 
 from .constants import *
 from .errors import *
-from .utils import XYZ
+from .utils import XYZ, Rectangle
 from . import cli, combat, memory, utils
 from .file_readers import CacheHandler, NifMap, Wad
 from .mouse_handler import MouseHandler

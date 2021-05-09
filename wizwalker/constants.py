@@ -4,8 +4,10 @@ from enum import Enum
 
 user32 = ctypes.windll.user32
 kernel32 = ctypes.windll.kernel32
+gdi32 = ctypes.windll.gdi32
 
 
+# Number of units covered in 1 second
 WIZARD_SPEED = 580
 
 
