@@ -1,4 +1,4 @@
-from .memory_object import MemoryObject
+from wizwalker.memory.memory_object import MemoryObject
 
 
 class RenderContext(MemoryObject):

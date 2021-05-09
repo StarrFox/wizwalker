@@ -1,7 +1,7 @@
 from typing import List
 
-from .enums import DelayOrder, SpellSourceType
-from .memory_object import DynamicMemoryObject, PropertyClass
+from wizwalker.memory.memory_objects.enums import DelayOrder, SpellSourceType
+from wizwalker.memory.memory_object import DynamicMemoryObject, PropertyClass
 
 
 class Spell(PropertyClass):

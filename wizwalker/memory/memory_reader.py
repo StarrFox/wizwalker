@@ -64,10 +64,6 @@ class MemoryReader:
         for match in re.finditer(pattern, page_bytes):
             found_address = address + match.span()[0]
             found.append(found_address)
-            logger.debug(
-                f"Found address {found_address} from pattern {pattern} within "
-                f"address {address} and size {mbi.RegionSize}"
-            )
 
         return next_region, found
 

@@ -1,9 +1,9 @@
 from typing import Callable, List, Optional
 
-from .enums import WindowFlags, WindowStyle
-from .memory_object import DynamicMemoryObject, PropertyClass
-from .spell import DynamicGraphicalSpell
-from .combat_participant import DynamicCombatParticipant
+from wizwalker.memory.memory_objects.enums import WindowFlags, WindowStyle
+from wizwalker.memory.memory_object import DynamicMemoryObject, PropertyClass
+from wizwalker.memory.memory_objects.spell import DynamicGraphicalSpell
+from wizwalker.memory.memory_objects.combat_participant import DynamicCombatParticipant
 
 from wizwalker import Rectangle
 

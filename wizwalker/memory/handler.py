@@ -172,19 +172,36 @@ class HookHandler(MemoryReader):
             raise TimeoutError("Hook value took too long")
 
     # TODO: make this faster
-    # TODO: wait for values after hooking
     async def activate_all_hooks(self, *, wait_for_ready: bool = True):
         """
         Activate all hooks but mouseless
         """
-        await self.activate_player_hook(wait_for_ready=wait_for_ready),
+        await self.activate_player_hook(wait_for_ready=False)
         # duel is only written to on battle join
-        await self.activate_duel_hook(),
-        await self.activate_quest_hook(wait_for_ready=wait_for_ready),
-        await self.activate_player_stat_hook(wait_for_ready=wait_for_ready),
-        await self.activate_client_hook(wait_for_ready=wait_for_ready),
-        await self.activate_root_window_hook(wait_for_ready=wait_for_ready),
-        await self.activate_render_context_hook(wait_for_ready=wait_for_ready),
+        await self.activate_duel_hook()
+        await self.activate_quest_hook(wait_for_ready=False)
+        await self.activate_player_stat_hook(wait_for_ready=False)
+        await self.activate_client_hook(wait_for_ready=False)
+        await self.activate_root_window_hook(wait_for_ready=False)
+        await self.activate_render_context_hook(wait_for_ready=False)
+
+        if wait_for_ready:
+            wait_tasks = []
+            for atter_name in [
+                "player_struct",
+                "player_stat_struct",
+                "current_client",
+                "current_root_window",
+                "current_render_context",
+            ]:
+                value = self._base_addrs[atter_name]
+                wait_tasks.append(asyncio.create_task(self._wait_for_value(value)))
+
+            # quest hook is really slow
+            quest_addr = self._base_addrs["quest_struct"]
+            wait_tasks.append(asyncio.create_task(self._wait_for_value(quest_addr, 5)))
+
+            await asyncio.gather(*wait_tasks)
 
     async def activate_player_hook(self, *, wait_for_ready: bool = True):
         if self._check_if_hook_active(PlayerHook):
@@ -235,7 +252,7 @@ class HookHandler(MemoryReader):
         self._base_addrs["quest_struct"] = quest_hook.cord_struct
 
         if wait_for_ready:
-            await self._wait_for_value(quest_hook.cord_struct)
+            await self._wait_for_value(quest_hook.cord_struct, timeout=5)
 
     async def read_quest_base(self) -> int:
         return await self._read_hook_base_addr("quest_struct", "Quest")

@@ -3,7 +3,6 @@ from typing import Union
 import wizwalker
 
 
-# TODO: add way to cast spells like pixie
 class CombatCard:
     """
     Represents a spell card
@@ -25,7 +24,6 @@ class CombatCard:
         Args:
             target: Card, Member, or None if there is no target
         """
-        # TODO checks
         if isinstance(target, CombatCard):
             await self.combat_handler.client.mouse_handler.click_window(
                 self._spell_window
@@ -40,7 +38,6 @@ class CombatCard:
             )
 
         else:
-            # TODO: checks
             await self.combat_handler.client.mouse_handler.click_window(
                 self._spell_window
             )
@@ -58,7 +55,7 @@ class CombatCard:
 
     async def name(self) -> str:
         """
-        The name of this card (display)
+        The name of this card
         """
         graphical_spell = await self.get_graphical_spell()
         spell_template = await graphical_spell.spell_template()

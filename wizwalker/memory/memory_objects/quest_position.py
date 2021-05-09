@@ -1,5 +1,5 @@
 from wizwalker import XYZ
-from .memory_object import MemoryObject
+from wizwalker.memory.memory_object import MemoryObject
 
 
 class CurrentQuestPosition(MemoryObject):

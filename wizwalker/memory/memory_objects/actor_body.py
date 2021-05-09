@@ -1,5 +1,5 @@
 from wizwalker.utils import XYZ
-from .memory_object import PropertyClass
+from wizwalker.memory.memory_object import PropertyClass
 
 
 class ActorBody(PropertyClass):

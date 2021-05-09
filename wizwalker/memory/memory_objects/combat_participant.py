@@ -1,7 +1,7 @@
-from .enums import PipAquiredByEnum
-from .game_stats import DynamicGameStats
-from .memory_object import DynamicMemoryObject, PropertyClass
-from .spell import DynamicHand
+from wizwalker.memory.memory_objects.enums import PipAquiredByEnum
+from wizwalker.memory.memory_objects.game_stats import DynamicGameStats
+from wizwalker.memory.memory_object import DynamicMemoryObject, PropertyClass
+from wizwalker.memory.memory_objects.spell import DynamicHand
 
 
 class CombatParticipant(PropertyClass):

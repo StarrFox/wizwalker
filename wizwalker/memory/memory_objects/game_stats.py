@@ -1,4 +1,4 @@
-from .memory_object import DynamicMemoryObject, PropertyClass
+from wizwalker.memory.memory_object import DynamicMemoryObject, PropertyClass
 
 
 class GameStats(PropertyClass):
