@@ -2,7 +2,7 @@
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-Wizard101 quest bot scripting api and application
+Wizard101 scripting library
 
 ## documentation
 you can find the documentation [here](https://starrfox.github.io/wizwalker/)

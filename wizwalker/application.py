@@ -1,3 +1,4 @@
+from copy import copy
 from functools import cached_property
 from pathlib import Path
 from typing import List
@@ -48,6 +49,24 @@ class WizWalker:
                 new_clients.append(new_client)
 
         return new_clients
+
+    def remove_dead_clients(self) -> List[Client]:
+        """
+        Remove and return clients that are no longer running
+
+        Returns:
+             List of the dead clients removed
+        """
+        # so we can remove from self.clients
+        clients_proxy = copy(self.clients)
+
+        dead_clients = []
+        for client in clients_proxy:
+            if not client.is_running():
+                dead_clients.append(client)
+                self.clients.remove(client)
+
+        return dead_clients
 
     async def close(self):
         """

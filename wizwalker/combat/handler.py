@@ -20,12 +20,26 @@ class CombatHandler:
         raise NotImplementedError()
 
     async def handle_combat(self):
+        # give game time to prepare combat
+        await self.wait_for_hand_visible()
+
         while await self.in_combat():
-            # give game time to prepare combat
-            await asyncio.sleep(1)
             round_number = await self.round_number()
             await self.handle_round()
             await self.wait_until_next_round(round_number)
+
+    async def wait_for_hand_visible(self, sleep_time: float = 0.5):
+        hand = await self.client.root_window.get_windows_with_name("Hand")
+        # this window is always in ui tree
+        hand = hand[0]
+        while WindowFlags.visible not in await hand.flags():
+            await asyncio.sleep(sleep_time)
+
+    async def wait_for_combat(self, sleep_time: float = 0.5):
+        while not await self.in_combat():
+            await asyncio.sleep(sleep_time)
+
+        await self.handle_combat()
 
     async def wait_until_next_round(self, current_round: int, sleep_time: float = 0.5):
         """
@@ -86,15 +100,42 @@ class CombatHandler:
 
         return members
 
-    # async def get_cards_with(
-    #     self, *, name: str = None, enchanted: bool = None, template_id: int = None
-    # ):
-    #     # filter cards
-    #     pass
+    async def get_client_member(self) -> CombatMember:
+        """
+        Get the client's CombatMember
+        """
+        members = await self.get_members()
 
-    # async def get_members_with(self):
-    #     # filter members
-    #     pass
+        for member in members:
+            if await member.is_client():
+                return member
+
+        # this shouldn't be possible
+        raise ValueError("Couldn't find client's CombatMember")
+
+    async def get_card_named(self, name: str) -> CombatCard:
+        """
+        Returns the first Card with name
+        """
+        cards = await self.get_cards()
+
+        for card in cards:
+            if name.lower() in (await card.name()).lower():
+                return card
+
+        raise ValueError(f"Couldn't find a card named {name}")
+
+    async def get_member_named(self, name: str) -> CombatMember:
+        """
+        Returns the first Member with name
+        """
+        members = await self.get_members()
+
+        for member in members:
+            if name.lower() in (await member.name()).lower():
+                return member
+
+        raise ValueError(f"Couldn't find a member named {name}")
 
     async def round_number(self) -> int:
         return await self.client.duel.round_num()

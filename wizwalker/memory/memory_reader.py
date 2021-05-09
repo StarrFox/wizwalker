@@ -71,15 +71,10 @@ class MemoryReader:
 
         return next_region, found
 
-    # TODO: test with 0 default
-    def _scan_all_from(
-        self,
-        start_address: int,
-        handle: int,
-        pattern: bytes,
-        return_multiple: bool = False,
+    def _scan_all(
+        self, handle: int, pattern: bytes, return_multiple: bool = False,
     ):
-        next_region = start_address
+        next_region = 0
 
         found = []
         while next_region < 0x7FFFFFFF0000:
@@ -120,11 +115,7 @@ class MemoryReader:
 
         else:
             found_addresses = await self.run_in_executor(
-                self._scan_all_from,
-                self.process.process_base.lpBaseOfDll,
-                self.process.process_handle,
-                pattern,
-                return_multiple,
+                self._scan_all, self.process.process_handle, pattern, return_multiple,
             )
 
         logger.debug(f"Got results {found_addresses} from pattern {pattern}")

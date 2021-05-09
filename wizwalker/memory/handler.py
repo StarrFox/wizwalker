@@ -170,6 +170,7 @@ class HookHandler(MemoryReader):
             raise TimeoutError("Hook value took too long")
 
     # TODO: make this faster
+    # TODO: wait for values after hooking
     async def activate_all_hooks(self, *, wait_for_ready: bool = True):
         """
         Activate all hooks but mouseless

@@ -18,6 +18,20 @@ class CombatMember:
         part = await self.get_particpant()
         return await part.game_stats()
 
+    async def get_health_text_window(self) -> "wizwalker.memory.DynamicWindow":
+        possible = await self._combatant_control.get_windows_with_name("Health")
+        if possible:
+            return possible[0]
+
+        raise ValueError("Couldn't find health child")
+
+    async def get_name_text_window(self) -> "wizwalker.memory.DynamicWindow":
+        possible = await self._combatant_control.get_windows_with_name("Name")
+        if possible:
+            return possible[0]
+
+        raise ValueError("Couldn't find name child")
+
     async def is_client(self) -> bool:
         """
         If this member is the local client
@@ -53,6 +67,10 @@ class CombatMember:
         part = await self.get_particpant()
         return await part.boss_mob()
 
+    async def name(self) -> str:
+        name_window = await self.get_name_text_window()
+        return await name_window.maybe_text()
+
     async def owner_id(self) -> int:
         """
         This member's owner id
@@ -71,11 +89,6 @@ class CombatMember:
     async def power_pips(self) -> int:
         part = await self.get_particpant()
         return await part.num_power_pips()
-
-    async def total_pips(self) -> int:
-        normal = await self.normal_pips()
-        power = await self.power_pips()
-        return normal + (power * 2)
 
     async def shadow_pips(self) -> int:
         part = await self.get_particpant()

@@ -88,7 +88,16 @@ class Window(PropertyClass):
         addr = await self.read_value_from_offset(952, "long long")
         return DynamicGraphicalSpell(self.hook_handler, addr)
 
-    # See above
+    # see maybe_graphical_spell
+    # note: not defined
+    async def maybe_spell_grayed(self) -> bool:
+        type_name = await self.maybe_read_type_name()
+        if type_name != "SpellCheckBox":
+            raise ValueError("This object is not a SpellCheckBox")
+
+        return await self.read_value_from_offset(1024, "bool")
+
+    # See maybe_graphical_spell
     async def maybe_combat_participant(self) -> DynamicCombatParticipant:
         type_name = await self.maybe_read_type_name()
         if type_name != "CombatantDataControl":
@@ -97,7 +106,7 @@ class Window(PropertyClass):
         addr = await self.read_value_from_offset(1592, "long long")
         return DynamicCombatParticipant(self.hook_handler, addr)
 
-    # See above
+    # See maybe_graphical_spell
     async def maybe_text(self) -> str:
         # TODO: see if all types with .text have Control prefix
         #  and if so check that they have it
@@ -215,8 +224,8 @@ class Window(PropertyClass):
     # async def bubble_list(self) -> class WindowBubble:
     #     return await self.read_value_from_offset(424, "class WindowBubble")
     #
-    # async def write__bubble_list(self, _bubble_list: class WindowBubble):
-    #     await self.write_value_to_offset(424, _bubble_list, "class WindowBubble")
+    # async def write_bubble_list(self, bubble_list: class WindowBubble):
+    #     await self.write_value_to_offset(424, bubble_list, "class WindowBubble")
 
     async def parent_offset(self) -> tuple:
         return await self.read_vector(176, 4, "int")

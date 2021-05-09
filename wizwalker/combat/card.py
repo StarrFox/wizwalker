@@ -45,7 +45,7 @@ class CombatCard:
                 self._spell_window
             )
             await self.combat_handler.client.mouse_handler.click_window(
-                target._combatant_control
+                await target.get_health_text_window()
             )
 
     async def get_graphical_spell(
