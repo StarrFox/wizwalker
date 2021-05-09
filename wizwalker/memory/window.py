@@ -20,6 +20,21 @@ class Window(PropertyClass):
         for child in await self.children():
             await child.debug_print_ui_tree(depth + 1)
 
+    async def debug_paint(self):
+        rect = await self.scale_to_client()
+        rect.paint_on_screen(self.hook_handler.client.window_handle)
+
+    async def scale_to_client(self):
+        rect = await self.window_rectangle()
+
+        parent_rects = []
+        for parent in await self.get_parents():
+            parent_rects.append(await parent.window_rectangle())
+
+        ui_scale = await self.hook_handler.client.render_context.ui_scale()
+
+        return rect.scale_to_client(parent_rects, ui_scale)
+
     async def get_windows_with_type(self, type_name: str) -> List["DynamicWindow"]:
         async def _pred(window):
             return await window.maybe_read_type_name() == type_name

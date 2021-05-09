@@ -38,7 +38,7 @@ class Client:
 
         self._pymem = pymem.Pymem()
         self._pymem.open_process_from_id(self.process_id)
-        self.hook_handler = HookHandler(self._pymem)
+        self.hook_handler = HookHandler(self._pymem, self)
 
         self.cache_handler = CacheHandler()
         self.mouse_handler = MouseHandler(self)

@@ -32,15 +32,7 @@ class MouseHandler:
         Args:
             window: The window to click
         """
-        ui_scale = await self.client.render_context.ui_scale()
-
-        base = await window.window_rectangle()
-
-        parent_rects = []
-        for parent in await window.get_parents():
-            parent_rects.append(await parent.window_rectangle())
-
-        scaled_rect = base.scale_to_client(parent_rects, ui_scale)
+        scaled_rect = await window.scale_to_client()
         center = scaled_rect.center()
 
         await self.click(*center, **kwargs)

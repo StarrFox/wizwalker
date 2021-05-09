@@ -35,8 +35,10 @@ class HookHandler(MemoryReader):
     # rounded down
     AUTOBOT_SIZE = 3900
 
-    def __init__(self, process: pymem.Pymem):
+    def __init__(self, process: pymem.Pymem, client):
         super().__init__(process)
+
+        self.client = client
 
         self._autobot_address = None
         self._autobot_lock = None
