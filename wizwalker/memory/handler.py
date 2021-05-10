@@ -196,7 +196,8 @@ class HookHandler(MemoryReader):
             for atter_name in [
                 "player_struct",
                 "player_stat_struct",
-                "quest_struct" "current_client",
+                "quest_struct",
+                "current_client",
                 "current_root_window",
                 "current_render_context",
             ]:

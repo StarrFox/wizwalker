@@ -180,7 +180,6 @@ class MemoryReader:
             ClientClosedError: If the client is closed
             MemoryReadError: If there was an error reading memory
         """
-        logger.debug(f"Reading bytes from address {address} with size {size}")
         try:
             return await self.run_in_executor(self.process.read_bytes, address, size)
         except pymem.exception.MemoryReadError:

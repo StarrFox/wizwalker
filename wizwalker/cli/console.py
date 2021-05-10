@@ -112,7 +112,7 @@ class WizWalkerConsole(Monitor):
         walker.get_new_clients()
         self.write(f"Attached to {len(walker.clients)} clients")
         for idx, client in enumerate(walker.clients):
-            self.run_coro(client.activate_hooks())
+            self.run_coro(client.activate_hooks(), None)
             self.write(f"client-{idx}: hooked all")
 
     def do_exit(self) -> None:
@@ -217,7 +217,7 @@ class WizWalkerConsole(Monitor):
         """Find instances of a class"""
         pm = Pymem("WizardGraphicalClient.exe")
         finder = InstanceFinder(pm, class_name)
-        instances = self.run_coro(finder.get_instances())
+        instances = self.run_coro(finder.get_instances(), None)
 
         self.write(str(instances))
 
