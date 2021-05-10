@@ -3,7 +3,7 @@ from typing import List
 
 from .member import CombatMember
 from .card import CombatCard
-from ..memory import WindowFlags
+from ..memory import DuelPhase, WindowFlags
 
 
 class CombatHandler:
@@ -26,17 +26,14 @@ class CombatHandler:
         """
         Handles an entire combat interaction
         """
-        # give game time to prepare combat
-        await self.wait_for_hand_visible()
-        await asyncio.sleep(1)
-
         while await self.in_combat():
+            await self.wait_for_planning_phase()
             round_number = await self.round_number()
             # TODO: handle this taking longer than planning timer time
             await self.handle_round()
             await self.wait_until_next_round(round_number)
-            await asyncio.sleep(1)
 
+    # TODO: remove in 2.0?
     async def wait_for_hand_visible(self, sleep_time: float = 0.5):
         """
         Wait for the hand window to be visible
@@ -45,6 +42,16 @@ class CombatHandler:
         # this window is always in ui tree
         hand = hand[0]
         while WindowFlags.visible not in await hand.flags():
+            await asyncio.sleep(sleep_time)
+
+    async def wait_for_planning_phase(self, sleep_time: float = 0.5):
+        """
+        Wait for the duel to enter the planning phase
+
+        Args:
+            sleep_time: Time to sleep between checks
+        """
+        while await self.client.duel.duel_phase() != DuelPhase.planning:
             await asyncio.sleep(sleep_time)
 
     async def wait_for_combat(self, sleep_time: float = 0.5):

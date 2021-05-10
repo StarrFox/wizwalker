@@ -185,7 +185,8 @@ class WizWalkerConsole(Monitor):
         cache command must be run first
         """
         walker = self.get_local("walker")
-        template_ids: dict = self.run_coro(walker.get_template_ids())
+        client = walker.clients[0]
+        template_ids: dict = self.run_coro(client.get_template_ids())
 
         regex = re.compile(pattern, re.IGNORECASE)
         for tid, name in template_ids.items():
@@ -198,7 +199,8 @@ class WizWalkerConsole(Monitor):
         cache command must be run first
         """
         walker = self.get_local("walker")
-        template_ids: dict = self.run_coro(walker.get_template_ids())
+        client = walker.clients[0]
+        template_ids: dict = self.run_coro(client.get_template_ids())
 
         try:
             self.write(f"{tid} => {template_ids[tid]}")

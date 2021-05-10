@@ -100,7 +100,7 @@ class Window(PropertyClass):
     async def maybe_graphical_spell(self) -> DynamicGraphicalSpell:
         type_name = await self.maybe_read_type_name()
         if type_name != "SpellCheckBox":
-            raise ValueError("This object is not a SpellCheckBox.")
+            raise ValueError(f"This object is a {type_name} not a SpellCheckBox.")
 
         addr = await self.read_value_from_offset(952, "long long")
         return DynamicGraphicalSpell(self.hook_handler, addr)
@@ -110,7 +110,7 @@ class Window(PropertyClass):
     async def maybe_spell_grayed(self) -> bool:
         type_name = await self.maybe_read_type_name()
         if type_name != "SpellCheckBox":
-            raise ValueError("This object is not a SpellCheckBox")
+            raise ValueError(f"This object is a {type_name} not a SpellCheckBox")
 
         return await self.read_value_from_offset(1024, "bool")
 
@@ -118,7 +118,9 @@ class Window(PropertyClass):
     async def maybe_combat_participant(self) -> DynamicCombatParticipant:
         type_name = await self.maybe_read_type_name()
         if type_name != "CombatantDataControl":
-            raise ValueError("This object is not a CombatantDataControl.")
+            raise ValueError(
+                f"This object is a {type_name} not a CombatantDataControl."
+            )
 
         addr = await self.read_value_from_offset(1592, "long long")
         return DynamicCombatParticipant(self.hook_handler, addr)

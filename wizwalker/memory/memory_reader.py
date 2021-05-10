@@ -137,7 +137,9 @@ class MemoryReader:
                 self._scan_all, self.process.process_handle, pattern, return_multiple,
             )
 
-        logger.debug(f"Got results {found_addresses} from pattern {pattern}")
+        logger.debug(
+            f"Got results (first 10) {found_addresses[:10]} from pattern {pattern}"
+        )
         if (found_length := len(found_addresses)) == 0:
             raise PatternFailed(pattern)
         elif found_length > 1 and not return_multiple:

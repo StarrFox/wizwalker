@@ -54,8 +54,8 @@ class MemoryObject(MemoryReader):
         # wide chars take 2 bytes
         string_len *= 2
 
-        # wide strings larger than 16 bytes are pointers
-        if string_len >= 16:
+        # wide strings larger than 8 bytes are pointers
+        if string_len >= 8:
             string_address = await self.read_typed(address, "long long")
         else:
             string_address = address
