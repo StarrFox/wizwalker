@@ -7,20 +7,51 @@ class ActorBody(PropertyClass):
         raise NotImplementedError()
 
     async def position(self) -> XYZ:
+        """
+        This body's position
+
+        Returns:
+            An XYZ representing the position
+        """
         return await self.read_xyz(88)
 
     async def write_position(self, position: XYZ):
+        """
+        Write this body's position
+
+        Args:
+            position: The position to write
+        """
         await self.write_xyz(88, position)
 
     async def pitch(self) -> float:
+        """
+        This body's pitch
+
+        Returns:
+            Float representing pitch
+        """
         return await self.read_value_from_offset(100, "float")
 
     async def write_pitch(self, pitch: float):
+        """
+        Write this body's pitch
+
+        Args:
+            pitch: The pitch to write
+        """
         await self.write_value_to_offset(100, pitch, "float")
 
     async def roll(self) -> float:
+        """
+        This body's roll
+
+        Returns:
+            Float representing roll
+        """
         return await self.read_value_from_offset(104, "float")
 
+    # TODO: finish docs
     async def write_roll(self, roll: float):
         await self.write_value_to_offset(104, roll, "float")
 

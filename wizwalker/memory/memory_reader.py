@@ -36,6 +36,14 @@ class MemoryReader:
 
     @staticmethod
     async def run_in_executor(func, *args, **kwargs):
+        """
+        Run a function within an executor
+
+        Args:
+            func: The function to run
+            args: Args to pass to the function
+            kwargs: Kwargs to pass to the function
+        """
         loop = asyncio.get_event_loop()
         function = functools.partial(func, *args, **kwargs)
 
@@ -103,6 +111,21 @@ class MemoryReader:
     async def pattern_scan(
         self, pattern: bytes, *, module: str = None, return_multiple: bool = False
     ) -> Union[list, int]:
+        """
+        Scan for a pattern
+
+        Args:
+            pattern: The byte pattern to search for
+            module: What module to search or None to search all
+            return_multiple: If multiple results should be returned
+
+        Raises:
+            PatternFailed: If the pattern returned no results
+            PatternMultipleResults: If the pattern returned multiple results and return_multple is False
+
+        Returns:
+            A list of results if return_multple is True otherwise one result
+        """
         if module:
             module = pymem.process.module_from_name(self.process.process_handle, module)
             found_addresses = await self.run_in_executor(
@@ -125,12 +148,38 @@ class MemoryReader:
             return found_addresses[0]
 
     async def allocate(self, size: int) -> int:
+        """
+        Allocate some bytes
+
+        Args:
+            size: The number of bytes to allocate
+
+        Returns:
+            The allocated address
+        """
         return await self.run_in_executor(self.process.allocate, size)
 
     async def free(self, address: int):
+        """
+        Free some bytes
+
+        Args:
+             address: The address to free
+        """
         await self.run_in_executor(self.process.free, address)
 
     async def read_bytes(self, address: int, size: int) -> bytes:
+        """
+        Read some bytes from memory
+
+        Args:
+            address: The address to read from
+            size: The number of bytes to read
+
+        Raises:
+            ClientClosedError: If the client is closed
+            MemoryReadError: If there was an error reading memory
+        """
         logger.debug(f"Reading bytes from address {address} with size {size}")
         try:
             return await self.run_in_executor(self.process.read_bytes, address, size)
@@ -142,12 +191,19 @@ class MemoryReader:
             else:
                 raise MemoryReadError(address)
 
-    async def write_bytes(self, address: int, _bytes: bytes):
-        size = len(_bytes)
-        logger.debug(f"Writing bytes {_bytes} to address {address} with size {size}")
+    async def write_bytes(self, address: int, value: bytes):
+        """
+        Write bytes to memory
+
+        Args:
+            address: The address to write to
+            value: The bytes to write
+        """
+        size = len(value)
+        logger.debug(f"Writing bytes {value} to address {address} with size {size}")
         try:
             await self.run_in_executor(
-                self.process.write_bytes, address, _bytes, size,
+                self.process.write_bytes, address, value, size,
             )
         except pymem.exception.MemoryWriteError:
             # see read_bytes
@@ -157,6 +213,16 @@ class MemoryReader:
                 raise MemoryWriteError(address)
 
     async def read_typed(self, address: int, data_type: str) -> Any:
+        """
+        Read typed bytes from memory
+
+        Args:
+            address: The address to read from
+            data_type: The type to read (defined in constants)
+
+        Returns:
+            The converted data type
+        """
         type_format = type_format_dict.get(data_type)
         if type_format is None:
             raise ValueError(f"{data_type} is not a valid data type")
@@ -165,6 +231,14 @@ class MemoryReader:
         return struct.unpack(type_format, data)[0]
 
     async def write_typed(self, address: int, value: Any, data_type: str):
+        """
+        Write typed bytes to memory
+
+        Args:
+            address: The address to write to
+            value: The value to convert and then write
+            data_type: The data type to convert to
+        """
         type_format = type_format_dict.get(data_type)
         if type_format is None:
             raise ValueError(f"{data_type} is not a valid data type")

@@ -49,6 +49,14 @@ class CombatCard:
                 await target.get_health_text_window()
             )
 
+    async def discard(self):
+        """
+        Discard this Card
+        """
+        await self.combat_handler.client.mouse_handler.click_window(
+            self._spell_window, right_click=True
+        )
+
     async def get_graphical_spell(
         self,
     ) -> "wizwalker.memory.spell.DynamicGraphicalSpell":

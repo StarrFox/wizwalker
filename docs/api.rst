@@ -1,10 +1,7 @@
-API
-===
-
 .. module:: wizwalker
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 5
 
 WizWalker
 =========
@@ -18,26 +15,91 @@ Client
 .. autoclass:: Client
    :members:
 
+MouseHandler
+============
+
+.. autoclass:: MouseHandler
+    :members:
+
 Constants
 =========
 
-.. automodule:: wizwalker.constants
+.. autoclass:: Keycode
    :members:
 
 Hotkey
 ======
 
-.. automodule:: wizwalker.hotkey
+ModifierKeys
+~~~~~~~~~~~~
+
+.. autoclass:: ModifierKeys
+    :members:
+
+Hotkey
+~~~~~~
+
+.. autoclass:: Hotkey
+    :members:
+
+Listener
+~~~~~~~~
+
+.. autoclass:: Listener
    :members:
 
-Utils
-=====
+Memory
+======
 
-.. automodule:: wizwalker.utils
-   :members:
+HookHandler
+~~~~~~~~~~~
+
+.. autoclass:: wizwalker.memory.HookHandler
+    :members:
+
+MemoryReader
+~~~~~~~~~~~~
+
+.. autoclass:: wizwalker.memory.MemoryReader
+    :members:
+
+MemoryObjects
+=============
+
 
 Errors
 ======
 
-.. automodule:: wizwalker.errors
-   :members:
+.. autoexception:: WizWalkerError
+
+.. autoexception:: ClientClosedError
+
+.. autoexception:: HookNotActive
+
+.. autoexception:: HookAlreadyActivated
+
+.. autoexception:: WizWalkerMemoryError
+
+.. autoexception:: PatternMultipleResults
+
+.. autoexception:: PatternFailed
+
+.. autoexception:: MemoryReadError
+
+.. autoexception:: MemoryWriteError
+
+.. autoexception:: ReadingEnumFailed
+
+.. autoexception:: HookNotReady
+
+.. autoexception:: WizWalkerCombatError
+
+.. autoexception:: NotInCombat
+
+.. autoexception:: NotEnoughPips
+
+.. autoexception:: NotEnoughMana
+
+.. autoexception:: CardAlreadyEnchanted
+
+.. autoexception:: HotkeyAlreadyRegistered

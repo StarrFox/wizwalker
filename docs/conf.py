@@ -25,7 +25,7 @@ import re
 
 with open("../pyproject.toml") as fp:
     version = re.search(
-        r'\[tool.poetry\]\nname = "\w+"\n(version ?= ?"(\d+\.\d+\.\d+)")', fp.read()
+        r'\[tool.poetry]\nname = "\w+"\n(version ?= ?"([^"]+)")', fp.read()
     ).group(2)
 
 # -- General configuration ---------------------------------------------------

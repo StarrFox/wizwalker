@@ -17,9 +17,15 @@ class CombatHandler:
         self._spell_check_boxes = None
 
     async def handle_round(self):
+        """
+        Called at the start of each round
+        """
         raise NotImplementedError()
 
     async def handle_combat(self):
+        """
+        Handles an entire combat interaction
+        """
         # give game time to prepare combat
         await self.wait_for_hand_visible()
         await asyncio.sleep(1)
@@ -32,6 +38,9 @@ class CombatHandler:
             await asyncio.sleep(1)
 
     async def wait_for_hand_visible(self, sleep_time: float = 0.5):
+        """
+        Wait for the hand window to be visible
+        """
         hand = await self.client.root_window.get_windows_with_name("Hand")
         # this window is always in ui tree
         hand = hand[0]
@@ -39,6 +48,9 @@ class CombatHandler:
             await asyncio.sleep(sleep_time)
 
     async def wait_for_combat(self, sleep_time: float = 0.5):
+        """
+        Wait until in combat
+        """
         while not await self.in_combat():
             await asyncio.sleep(sleep_time)
 
@@ -57,6 +69,9 @@ class CombatHandler:
             await asyncio.sleep(sleep_time)
 
     async def in_combat(self) -> bool:
+        """
+        If the client is in combat or not
+        """
         return await self.client.in_battle()
 
     async def _get_card_windows(self):
@@ -117,6 +132,9 @@ class CombatHandler:
         raise ValueError("Couldn't find client's CombatMember")
 
     async def get_all_monster_members(self) -> List[CombatMember]:
+        """
+        Get all members who are monsters
+        """
         members = await self.get_members()
 
         monsters = []
@@ -127,6 +145,9 @@ class CombatHandler:
         return monsters
 
     async def get_all_player_members(self) -> List[CombatMember]:
+        """
+        Get all members who are players
+        """
         members = await self.get_members()
 
         players = []
@@ -161,13 +182,16 @@ class CombatHandler:
         raise ValueError(f"Couldn't find a member named {name}")
 
     async def round_number(self) -> int:
+        """
+        Current round number
+        """
         return await self.client.duel.round_num()
 
-    async def pass_button(self):
-        pass
-
-    async def draw_button(self):
-        pass
-
-    async def flee_button(self):
-        pass
+    # async def pass_button(self):
+    #     pass
+    #
+    # async def draw_button(self):
+    #     pass
+    #
+    # async def flee_button(self):
+    #     pass
