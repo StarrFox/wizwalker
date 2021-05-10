@@ -86,6 +86,16 @@ class Rectangle:
         return iter((self.x1, self.x2, self.y1, self.y2))
 
     def scale_to_client(self, parents: List["Rectangle"], factor: float) -> "Rectangle":
+        """
+        Scale this rectangle base on parents and a scale factor
+
+        Args:
+            parents: List of other rectangles
+            factor: Factor to scale by
+
+        Returns:
+            The scaled rectangle
+        """
         x1_sum = self.x1
         y1_sum = self.y1
 
@@ -103,6 +113,12 @@ class Rectangle:
         return converted
 
     def center(self):
+        """
+        Get the center point of this rectangle
+
+        Returns:
+            The center point
+        """
         center_x = ((self.x2 - self.x1) // 2) + self.x1
         center_y = ((self.y2 - self.y1) // 2) + self.y1
 
@@ -110,7 +126,11 @@ class Rectangle:
 
     def paint_on_screen(self, window_handle: int, *, rgb: tuple = (255, 0, 0)):
         """
-        Paint this rectangle to the screen
+        Paint this rectangle to the screen for debugging
+
+        Args:
+            rgb: Red, green, blue tuple to define the color of the rectangle
+            window_handle: Handle to the window to paint the rectangle on
         """
         paint_struct = PAINTSTRUCT()
         # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdc

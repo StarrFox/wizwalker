@@ -15,6 +15,18 @@ Client
 .. autoclass:: Client
    :members:
 
+XYZ
+===
+
+.. autoclass:: XYZ
+    :members:
+
+Rectangle
+=========
+
+.. autoclass:: Rectangle
+    :members:
+
 MouseHandler
 ============
 
