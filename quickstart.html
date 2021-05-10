@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Welcome to WizWalker’s documentation &mdash; WizWalker  documentation</title>
+  <title>Quickstart &mdash; WizWalker  documentation</title>
   
 
   
@@ -38,7 +38,8 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Quickstart" href="quickstart.html" /> 
+    <link rel="next" title="WizWalker" href="api.html" />
+    <link rel="prev" title="Welcome to WizWalker’s documentation" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -52,7 +53,7 @@
           
 
           
-            <a href="#" class="icon icon-home"> WizWalker
+            <a href="index.html" class="icon icon-home"> WizWalker
           
 
           
@@ -87,8 +88,8 @@
               
             
             
-              <ul>
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Quickstart</a></li>
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="api.html">WizWalker</a></li>
@@ -116,7 +117,7 @@
       <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">WizWalker</a>
+          <a href="index.html">WizWalker</a>
         
       </nav>
 
@@ -147,15 +148,15 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>Welcome to WizWalker’s documentation</li>
+      <li>Quickstart</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
           
-            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/quickstart.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -168,54 +169,35 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="welcome-to-wizwalker-s-documentation">
-<h1>Welcome to WizWalker’s documentation<a class="headerlink" href="#welcome-to-wizwalker-s-documentation" title="Permalink to this headline">¶</a></h1>
-<p>To install simply do</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip install wizwalker
+  <div class="section" id="quickstart">
+<h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline">¶</a></h1>
+<p>Simple application for reading position</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">asyncio</span>
+
+<span class="kn">from</span> <span class="nn">wizwalker</span> <span class="kn">import</span> <span class="n">WizWalker</span>
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">print_position</span><span class="p">(</span><span class="n">client</span><span class="p">):</span>
+    <span class="c1"># position requires memory hooks</span>
+    <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">activate_hooks</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">position</span><span class="p">())</span>
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">walker</span> <span class="o">=</span> <span class="n">WizWalker</span><span class="p">()</span>
+
+    <span class="c1"># we want to ensure walker is closed if there is an error</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># must have at least one instance open</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="n">walker</span><span class="o">.</span><span class="n">get_new_clients</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">await</span> <span class="n">print_position</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="c1"># client can only be used once if not closed</span>
+        <span class="k">await</span> <span class="n">walker</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="guides">
-<h1>Guides<a class="headerlink" href="#guides" title="Permalink to this headline">¶</a></h1>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
-</ul>
-</div>
-</div>
-<div class="section" id="api-reference">
-<h1>Api Reference<a class="headerlink" href="#api-reference" title="Permalink to this headline">¶</a></h1>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="api.html">WizWalker</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api.html#client">Client</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api.html#xyz">XYZ</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api.html#rectangle">Rectangle</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api.html#mousehandler">MouseHandler</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api.html#constants">Constants</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api.html#hotkey">Hotkey</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api.html#modifierkeys">ModifierKeys</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#id1">Hotkey</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#listener">Listener</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="api.html#memory">Memory</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api.html#hookhandler">HookHandler</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#memoryreader">MemoryReader</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="api.html#memoryobjects">MemoryObjects</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api.html#errors">Errors</a></li>
-</ul>
-</div>
-</div>
-<div class="section" id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
-<ul class="simple">
-<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
-<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
-<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
-</ul>
 </div>
 
 
@@ -224,7 +206,8 @@
           </div>
           <footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="quickstart.html" class="btn btn-neutral float-right" title="Quickstart" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="api.html" class="btn btn-neutral float-right" title="WizWalker" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to WizWalker’s documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>
