@@ -736,7 +736,7 @@ class GameStats(PropertyClass):
 
 class CurrentGameStats(GameStats):
     async def read_base_address(self) -> int:
-        return await self.hook_handler.read_player_stat_base()
+        return await self.hook_handler.read_current_player_stat_base()
 
 
 class DynamicGameStats(DynamicMemoryObject, GameStats):

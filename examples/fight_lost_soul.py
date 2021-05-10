@@ -27,8 +27,8 @@ async def main():
 
     try:
         print("Preparing")
-        await client.hook_handler.activate_all_hooks()
-        await client.hook_handler.activate_mouseless_cursor_hook()
+        await client.activate_hooks()
+        await client.mouse_handler.activate_mouseless()
         print("Ready for battle")
 
         await LostSoulDestroyer(client).wait_for_combat()

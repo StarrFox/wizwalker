@@ -70,14 +70,19 @@ class Client:
         """
         return check_if_process_running(self._pymem.process_handle)
 
-    async def activate_hooks(self, *, wait_for_ready: bool = True):
+    async def activate_hooks(
+        self, *, wait_for_ready: bool = True, timeout: float = None
+    ):
         """
         Activate all memory hooks but mouseless
 
-        Arguments:
+        Keyword Args:
             wait_for_ready: If this should wait for hooks to be ready to use (duel exempt)
+            timeout: How long to wait for hook values to be witten (None for no timeout)
         """
-        await self.hook_handler.activate_all_hooks(wait_for_ready=wait_for_ready)
+        await self.hook_handler.activate_all_hooks(
+            wait_for_ready=wait_for_ready, timeout=timeout
+        )
 
     async def close(self):
         """

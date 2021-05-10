@@ -147,7 +147,7 @@ class HookHandler(MemoryReader):
             raise HookNotReady(hook_name)
 
     # wait for an addr to be set and not 0
-    async def _wait_for_value(self, address: int, timeout: int = 2):
+    async def _wait_for_value(self, address: int, timeout: int = None):
         async def _wait_for_value_task():
             while True:
                 try:
@@ -172,9 +172,15 @@ class HookHandler(MemoryReader):
             raise TimeoutError("Hook value took too long")
 
     # TODO: make this faster
-    async def activate_all_hooks(self, *, wait_for_ready: bool = True):
+    async def activate_all_hooks(
+        self, *, wait_for_ready: bool = True, timeout: float = None
+    ):
         """
         Activate all hooks but mouseless
+
+        Keyword Args:
+            wait_for_ready: Wait for hook values to be written
+            timeout: How long to wait for hook values to be witten (None for no timeout)
         """
         await self.activate_player_hook(wait_for_ready=False)
         # duel is only written to on battle join
@@ -190,20 +196,27 @@ class HookHandler(MemoryReader):
             for atter_name in [
                 "player_struct",
                 "player_stat_struct",
-                "current_client",
+                "quest_struct" "current_client",
                 "current_root_window",
                 "current_render_context",
             ]:
                 value = self._base_addrs[atter_name]
-                wait_tasks.append(asyncio.create_task(self._wait_for_value(value)))
-
-            # quest hook is really slow
-            quest_addr = self._base_addrs["quest_struct"]
-            wait_tasks.append(asyncio.create_task(self._wait_for_value(quest_addr, 5)))
+                wait_tasks.append(
+                    asyncio.create_task(self._wait_for_value(value, timeout))
+                )
 
             await asyncio.gather(*wait_tasks)
 
-    async def activate_player_hook(self, *, wait_for_ready: bool = True):
+    async def activate_player_hook(
+        self, *, wait_for_ready: bool = True, timeout: float = None
+    ):
+        """
+        Activate player hook
+
+        Keyword Args:
+            wait_for_ready: Wait for hook values to be written
+            timeout: How long to wait for hook values to be witten (None for no timeout)
+        """
         if self._check_if_hook_active(PlayerHook):
             raise HookAlreadyActivated("Player")
 
@@ -216,12 +229,27 @@ class HookHandler(MemoryReader):
         self._base_addrs["player_struct"] = player_hook.player_struct
 
         if wait_for_ready:
-            await self._wait_for_value(player_hook.player_struct)
+            await self._wait_for_value(player_hook.player_struct, timeout)
 
-    async def read_player_base(self) -> int:
+    async def read_current_player_base(self) -> int:
+        """
+        Read player base address
+
+        Returns:
+            The player base address
+        """
         return await self._read_hook_base_addr("player_struct", "Player")
 
-    async def activate_duel_hook(self, *, wait_for_ready: bool = False):
+    async def activate_duel_hook(
+        self, *, wait_for_ready: bool = False, timeout: float = None
+    ):
+        """
+        Activate duel hook
+
+        Keyword Args:
+            wait_for_ready: Wait for hook values to be written
+            timeout: How long to wait for hook values to be witten (None for no timeout)
+        """
         if self._check_if_hook_active(DuelHook):
             raise HookAlreadyActivated("Duel")
 
@@ -234,12 +262,27 @@ class HookHandler(MemoryReader):
         self._base_addrs["current_duel"] = duel_hook.current_duel_addr
 
         if wait_for_ready:
-            await self._wait_for_value(duel_hook.current_duel_addr)
+            await self._wait_for_value(duel_hook.current_duel_addr, timeout)
 
     async def read_current_duel_base(self) -> int:
+        """
+        Read current duel base address
+
+        Returns:
+            The current duel base address
+        """
         return await self._read_hook_base_addr("current_duel", "Duel")
 
-    async def activate_quest_hook(self, *, wait_for_ready: bool = True):
+    async def activate_quest_hook(
+        self, *, wait_for_ready: bool = True, timeout: float = None
+    ):
+        """
+        Activate quest hook
+
+        Keyword Args:
+            wait_for_ready: Wait for hook values to be written
+            timeout: How long to wait for hook values to be witten (None for no timeout)
+        """
         if self._check_if_hook_active(QuestHook):
             raise HookAlreadyActivated("Quest")
 
@@ -252,12 +295,27 @@ class HookHandler(MemoryReader):
         self._base_addrs["quest_struct"] = quest_hook.cord_struct
 
         if wait_for_ready:
-            await self._wait_for_value(quest_hook.cord_struct, timeout=5)
+            await self._wait_for_value(quest_hook.cord_struct, timeout)
 
-    async def read_quest_base(self) -> int:
+    async def read_current_quest_base(self) -> int:
+        """
+        Read quest base address
+
+        Returns:
+            The quest base address
+        """
         return await self._read_hook_base_addr("quest_struct", "Quest")
 
-    async def activate_player_stat_hook(self, *, wait_for_ready: bool = True):
+    async def activate_player_stat_hook(
+        self, *, wait_for_ready: bool = True, timeout: float = None
+    ):
+        """
+        Activate player stat hook
+
+        Keyword Args:
+            wait_for_ready: Wait for hook values to be written
+            timeout: How long to wait for hook values to be witten (None for no timeout)
+        """
         if self._check_if_hook_active(PlayerStatHook):
             raise HookAlreadyActivated("Player stat")
 
@@ -270,12 +328,27 @@ class HookHandler(MemoryReader):
         self._base_addrs["player_stat_struct"] = player_stat_hook.stat_addr
 
         if wait_for_ready:
-            await self._wait_for_value(player_stat_hook.stat_addr)
+            await self._wait_for_value(player_stat_hook.stat_addr, timeout)
 
-    async def read_player_stat_base(self) -> int:
+    async def read_current_player_stat_base(self) -> int:
+        """
+        Read player stat base address
+
+        Returns:
+            The player stat base address
+        """
         return await self._read_hook_base_addr("player_stat_struct", "Player stat")
 
-    async def activate_client_hook(self, *, wait_for_ready: bool = True):
+    async def activate_client_hook(
+        self, *, wait_for_ready: bool = True, timeout: float = None
+    ):
+        """
+        Activate client hook
+
+        Keyword Args:
+            wait_for_ready: Wait for hook values to be written
+            timeout: How long to wait for hook values to be witten (None for no timeout)
+        """
         if self._check_if_hook_active(ClientHook):
             raise HookAlreadyActivated("Client")
 
@@ -288,12 +361,27 @@ class HookHandler(MemoryReader):
         self._base_addrs["current_client"] = client_hook.current_client_addr
 
         if wait_for_ready:
-            await self._wait_for_value(client_hook.current_client_addr)
+            await self._wait_for_value(client_hook.current_client_addr, timeout)
 
     async def read_current_client_base(self) -> int:
+        """
+        Read cureent client base address
+
+        Returns:
+            The current client base address
+        """
         return await self._read_hook_base_addr("current_client", "Client")
 
-    async def activate_root_window_hook(self, *, wait_for_ready: bool = True):
+    async def activate_root_window_hook(
+        self, *, wait_for_ready: bool = True, timeout: float = None
+    ):
+        """
+        Activate root window hook
+
+        Keyword Args:
+            wait_for_ready: Wait for hook values to be written
+            timeout: How long to wait for hook values to be witten (None for no timeout)
+        """
         if self._check_if_hook_active(RootWindowHook):
             raise HookAlreadyActivated("Root window")
 
@@ -308,12 +396,29 @@ class HookHandler(MemoryReader):
         ] = root_window_hook.current_root_window_addr
 
         if wait_for_ready:
-            await self._wait_for_value(root_window_hook.current_root_window_addr)
+            await self._wait_for_value(
+                root_window_hook.current_root_window_addr, timeout
+            )
 
     async def read_current_root_window_base(self) -> int:
+        """
+        Read current root window base address
+
+        Returns:
+            The current root window base address
+        """
         return await self._read_hook_base_addr("current_root_window", "Root window")
 
-    async def activate_render_context_hook(self, *, wait_for_ready: bool = True):
+    async def activate_render_context_hook(
+        self, *, wait_for_ready: bool = True, timeout: float = None
+    ):
+        """
+        Activate render context hook
+
+        Keyword Args:
+            wait_for_ready: Wait for hook values to be written
+            timeout: How long to wait for hook values to be witten (None for no timeout)
+        """
         if self._check_if_hook_active(RenderContextHook):
             raise HookAlreadyActivated("Render context")
 
@@ -328,15 +433,26 @@ class HookHandler(MemoryReader):
         ] = render_context_hook.current_render_context_addr
 
         if wait_for_ready:
-            await self._wait_for_value(render_context_hook.current_render_context_addr)
+            await self._wait_for_value(
+                render_context_hook.current_render_context_addr, timeout
+            )
 
     async def read_current_render_context_base(self) -> int:
+        """
+        Read current render context base address
+
+        Returns:
+            The current render context base address
+        """
         return await self._read_hook_base_addr(
             "current_render_context", "Render context"
         )
 
     # nothing to wait for in this hook
     async def activate_mouseless_cursor_hook(self):
+        """
+        Activate mouseless cursor hook
+        """
         if self._check_if_hook_active(MouselessCursorMoveHook):
             raise HookAlreadyActivated("Mouseless cursor")
 
@@ -351,6 +467,13 @@ class HookHandler(MemoryReader):
         await self.write_mouse_position(0, 0)
 
     async def write_mouse_position(self, x: int, y: int):
+        """
+        Write mouse position to memory
+
+        Args:
+            x: x position of mouse
+            y: y position of mouse
+        """
         addr = self._base_addrs.get("mouse_position")
         if addr is None:
             raise HookNotActive("Mouseless cursor")
