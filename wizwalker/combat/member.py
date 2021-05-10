@@ -71,6 +71,9 @@ class CombatMember:
         name_window = await self.get_name_text_window()
         return await name_window.maybe_text()
 
+    async def school_name(self) -> str:
+        pass
+
     async def owner_id(self) -> int:
         """
         This member's owner id

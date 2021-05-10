@@ -22,11 +22,14 @@ class CombatHandler:
     async def handle_combat(self):
         # give game time to prepare combat
         await self.wait_for_hand_visible()
+        await asyncio.sleep(1)
 
         while await self.in_combat():
             round_number = await self.round_number()
+            # TODO: handle this taking longer than planning timer time
             await self.handle_round()
             await self.wait_until_next_round(round_number)
+            await asyncio.sleep(1)
 
     async def wait_for_hand_visible(self, sleep_time: float = 0.5):
         hand = await self.client.root_window.get_windows_with_name("Hand")
@@ -112,6 +115,26 @@ class CombatHandler:
 
         # this shouldn't be possible
         raise ValueError("Couldn't find client's CombatMember")
+
+    async def get_all_monster_members(self) -> List[CombatMember]:
+        members = await self.get_members()
+
+        monsters = []
+        for member in members:
+            if await member.is_monster():
+                monsters.append(member)
+
+        return monsters
+
+    async def get_all_player_members(self) -> List[CombatMember]:
+        members = await self.get_members()
+
+        players = []
+        for member in members:
+            if await member.is_player():
+                players.append(member)
+
+        return players
 
     async def get_card_named(self, name: str) -> CombatCard:
         """

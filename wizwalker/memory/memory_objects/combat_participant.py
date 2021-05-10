@@ -284,11 +284,11 @@ class CombatParticipant(PropertyClass):
             568, polymorph_spell_template_id, "unsigned int"
         )
 
-    # async def side(self) -> std::string:
-    #     return await self.read_value_from_offset(592, "std::string")
-    #
-    # async def write_side(self, side: std::string):
-    #     await self.write_value_to_offset(592, side, "std::string")
+    async def side(self) -> str:
+        return await self.read_string_from_offset(592)
+
+    async def write_side(self, side: str):
+        await self.write_string_to_offset(592, side)
 
     async def shadow_spells_disabled(self) -> bool:
         return await self.read_value_from_offset(637, "bool")

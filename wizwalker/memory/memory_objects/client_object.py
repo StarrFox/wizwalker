@@ -49,17 +49,17 @@ class ClientObject(PropertyClass):
     async def write_template_id_full(self, template_id_full: int):
         await self.write_value_to_offset(96, template_id_full, "unsigned long long")
 
-    # async def debug_name(self) -> std::string:
-    #     return await self.read_value_from_offset(104, "std::string")
-    #
-    # async def write_debug_name(self, debug_name: std::string):
-    #     await self.write_value_to_offset(104, debug_name, "std::string")
+    async def debug_name(self) -> str:
+        return await self.read_string_from_offset(104)
 
-    # async def display_key(self) -> std::string:
-    #     return await self.read_value_from_offset(136, "std::string")
-    #
-    # async def write_display_key(self, display_key: std::string):
-    #     await self.write_value_to_offset(136, display_key, "std::string")
+    async def write_debug_name(self, debug_name: str):
+        await self.write_value_to_offset(104, debug_name)
+
+    async def display_key(self) -> str:
+        return await self.read_string_from_offset(136)
+
+    async def write_display_key(self, display_key: str):
+        await self.write_string_to_offset(136, display_key)
 
     async def zone_tag_id(self) -> int:
         return await self.read_value_from_offset(344, "unsigned int")

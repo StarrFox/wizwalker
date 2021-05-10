@@ -206,8 +206,8 @@ class Window(PropertyClass):
     # async def window_style(self) -> class SharedPointer<class WindowStyle>:
     #     return await self.read_value_from_offset(232, "class SharedPointer<class WindowStyle>")
     #
-    # async def write_p_window_style(self, p_window_style: class SharedPointer<class WindowStyle>):
-    #     await self.write_value_to_offset(232, p_window_style, "class SharedPointer<class WindowStyle>")
+    # async def write_window_style(self, window_style: class SharedPointer<class WindowStyle>):
+    #     await self.write_value_to_offset(232, window_style, "class SharedPointer<class WindowStyle>")
 
     async def help(self) -> str:
         return await self.read_string_from_offset(248)

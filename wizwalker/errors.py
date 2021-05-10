@@ -119,28 +119,14 @@ class NotEnoughPips(WizWalkerCombatError):
     """
     Raised when trying to use a card that costs more pips then
     are available
-
-    Attributes:
-        missing: The amount of missing pips
     """
-
-    def __init__(self, missing: int):
-        super().__init__(f"Missing {missing} pips needed.")
-        self.missing = missing
 
 
 class NotEnoughMana(WizWalkerCombatError):
     """
     Raised when trying to use a card that cost more mana than
     is available
-
-    Attributes:
-        missing: The amount of missing mana
     """
-
-    def __init__(self, missing: int):
-        super().__init__(f"Missing {missing} mana needed.")
-        self.missing = missing
 
 
 class CardAlreadyEnchanted(WizWalkerError):

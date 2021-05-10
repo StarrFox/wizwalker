@@ -8,8 +8,10 @@ import aioconsole
 import terminaltables
 from aiomonitor import Monitor, cli, start_monitor
 from aiomonitor.utils import close_server, console_proxy
+from pymem import Pymem
 
 from wizwalker import XYZ
+from wizwalker.memory import InstanceFinder
 
 
 def init_console_server(host: str, port: int, _locals, loop):
@@ -211,17 +213,13 @@ class WizWalkerConsole(Monitor):
 
         self.write("Completed click")
 
-    # TODO: fix
-    def do_onehook(self, name: str):
-        """Get clients and activate one hook"""
-        walker = self.get_local("walker")
-        walker.get_new_clients()
-        self.write(f"Attached to {len(walker.clients)} clients")
+    def do_findinstances(self, class_name: str):
+        """Find instances of a class"""
+        pm = Pymem("WizardGraphicalClient.exe")
+        finder = InstanceFinder(pm, class_name)
+        instances = self.run_coro(finder.get_instances())
 
-        for client in walker.clients:
-            self.run_coro(client.activate_hooks(name))
-
-        self.write(f"Hooked {name} on all clients")
+        self.write(str(instances))
 
 
 def test_monitor():

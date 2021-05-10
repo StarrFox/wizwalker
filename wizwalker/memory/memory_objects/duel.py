@@ -187,8 +187,8 @@ class Duel(PropertyClass):
     async def spell_truncation(self) -> bool:
         return await self.read_value_from_offset(461, "bool")
 
-    async def write_spell_truncation(self, _spell_truncation: bool):
-        await self.write_value_to_offset(461, _spell_truncation, "bool")
+    async def write_spell_truncation(self, spell_truncation: bool):
+        await self.write_value_to_offset(461, spell_truncation, "bool")
 
     async def shadow_threshold_factor(self) -> float:
         return await self.read_value_from_offset(468, "float")

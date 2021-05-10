@@ -305,32 +305,6 @@ def calculate_perfect_yaw(current_xyz: XYZ, target_xyz: XYZ) -> float:
     return perfect_yaw
 
 
-# TODO: move to class Rectangle i.e Rectangle.to_client() -> Rectangle
-def scale_rect_to_client(base, parent_rects, ui_scale) -> tuple:
-    x1_sum = base[0]
-    y1_sum = base[1]
-
-    for rect in parent_rects:
-        x1_sum += rect[0]
-        y1_sum += rect[1]
-
-    converted = (
-        int(x1_sum * ui_scale),
-        int(y1_sum * ui_scale),
-        int(((base[2] - base[0]) * ui_scale) + (x1_sum * ui_scale)),
-        int(((base[3] - base[1]) * ui_scale) + (y1_sum * ui_scale)),
-    )
-
-    return converted
-
-
-def get_rect_center(rect) -> tuple:
-    center_x = ((rect[2] - rect[0]) // 2) + rect[0]
-    center_y = ((rect[3] - rect[1]) // 2) + rect[1]
-
-    return center_x, center_y
-
-
 def get_cache_folder() -> Path:
     """
     Get the wizwalker cache folder

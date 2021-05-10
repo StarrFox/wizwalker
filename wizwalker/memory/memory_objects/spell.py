@@ -45,13 +45,6 @@ class Spell(PropertyClass):
     async def write_shadow_adjust(self, shadow_adjust: int):
         await self.write_value_to_offset(260, shadow_adjust, "int")
 
-    # note for future: not defined in class def
-    async def school_name(self) -> str:
-        return await self.read_string_from_offset(144)
-
-    async def write_school_name(self, school_name: str):
-        await self.write_string_to_offset(144, school_name)
-
     async def magic_school_id(self) -> int:
         return await self.read_value_from_offset(136, "unsigned int")
 

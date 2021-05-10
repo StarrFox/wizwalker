@@ -15,6 +15,7 @@ class CombatCard:
 
         self._spell_window = spell_window
 
+    # TODO: add checks before casting
     async def cast(
         self, target: Union["CombatCard", "wizwalker.combat.CombatMember", None]
     ):
@@ -23,6 +24,9 @@ class CombatCard:
 
         Args:
             target: Card, Member, or None if there is no target
+
+        Raises:
+            NotEnoughPips: If you don't have enough pips to cast
         """
         if isinstance(target, CombatCard):
             await self.combat_handler.client.mouse_handler.click_window(
