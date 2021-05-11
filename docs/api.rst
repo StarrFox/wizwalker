@@ -15,6 +15,27 @@ Client
 .. autoclass:: Client
    :members:
 
+Combat
+======
+
+CombatHandler
+~~~~~~~~~~~~~
+
+.. autoclass:: wizwalker.combat.CombatHandler
+    :members:
+
+CombatMember
+~~~~~~~~~~~~
+
+.. autoclass:: wizwalker.combat.CombatMember
+    :members:
+
+CombatCard
+~~~~~~~~~~
+
+.. autoclass:: wizwalker.combat.CombatCard
+    :members:
+
 XYZ
 ===
 
@@ -74,10 +95,6 @@ MemoryReader
 
 .. autoclass:: wizwalker.memory.MemoryReader
     :members:
-
-MemoryObjects
-=============
-
 
 Errors
 ======

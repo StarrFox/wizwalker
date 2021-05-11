@@ -22,13 +22,23 @@ class CombatMember:
         return await self.get_participant()
 
     async def get_participant(self):
+        """
+        Get the underlying participant object
+        """
         return await self._combatant_control.maybe_combat_participant()
 
     async def get_stats(self):
+        """
+        Get the underlying game stats object
+        """
         part = await self.get_participant()
         return await part.game_stats()
 
     async def get_health_text_window(self) -> "wizwalker.memory.DynamicWindow":
+        """
+        Get the health text window
+        Useful for targeting
+        """
         possible = await self._combatant_control.get_windows_with_name("Health")
         if possible:
             return possible[0]
@@ -36,6 +46,9 @@ class CombatMember:
         raise ValueError("Couldn't find health child")
 
     async def get_name_text_window(self) -> "wizwalker.memory.DynamicWindow":
+        """
+        Get the name text window
+        """
         possible = await self._combatant_control.get_windows_with_name("Name")
         if possible:
             return possible[0]
@@ -77,12 +90,23 @@ class CombatMember:
         part = await self.get_participant()
         return await part.boss_mob()
 
+    async def is_stunned(self) -> bool:
+        """
+        If this member is stunned
+        """
+        part = await self.get_participant()
+        return await part.stunned() != 0
+
     async def name(self) -> str:
+        """
+        Name of this member
+        """
         name_window = await self.get_name_text_window()
         return await name_window.maybe_text()
 
-    async def school_name(self) -> str:
-        pass
+    # TODO: finish
+    # async def school_name(self) -> str:
+    #     pass
 
     async def owner_id(self) -> int:
         """
@@ -92,37 +116,64 @@ class CombatMember:
         return await part.owner_id_full()
 
     async def template_id(self) -> int:
+        """
+        This member's template id
+        """
         part = await self.get_participant()
         return await part.template_id_full()
 
     async def normal_pips(self) -> int:
+        """
+        The number of normal pips this member has
+        """
         part = await self.get_participant()
         return await part.num_pips()
 
     async def power_pips(self) -> int:
+        """
+        The number of power pips this member has
+        """
         part = await self.get_participant()
         return await part.num_power_pips()
 
     async def shadow_pips(self) -> int:
+        """
+        The number of shadow pips this member has
+        """
         part = await self.get_participant()
         return await part.num_shadow_pips()
 
     async def health(self) -> int:
+        """
+        The amount of health this member has
+        """
         stats = await self.get_stats()
         return await stats.current_hitpoints()
 
     async def max_health(self) -> int:
+        """
+        This member's max health
+        """
         stats = await self.get_stats()
         return await stats.max_hitpoints()
 
     async def mana(self) -> int:
+        """
+        The amount of mana this member has
+        """
         stats = await self.get_stats()
         return await stats.current_mana()
 
     async def max_mana(self) -> int:
+        """
+        This member's max mana
+        """
         stats = await self.get_stats()
         return await stats.max_mana()
 
     async def level(self) -> int:
+        """
+        This member's level
+        """
         stats = await self.get_stats()
         return await stats.reference_level()
