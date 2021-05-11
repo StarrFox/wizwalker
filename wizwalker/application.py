@@ -68,6 +68,16 @@ class WizWalker:
 
         return dead_clients
 
+    # imagine using this method; cringe
+    def get_ordered_clients(self) -> List[Client]:
+        """
+        Get client's ordered by their position on the screen
+
+        Returns:
+            List of the ordered clients
+        """
+        return utils.order_clients(self.clients)
+
     async def close(self):
         """
         Closes the application and all clients

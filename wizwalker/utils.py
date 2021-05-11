@@ -168,40 +168,12 @@ class PAINTSTRUCT(ctypes.Structure):
     ]
 
 
-# Modified from
-# https://github.com/Gorialis/jishaku/blob/f18b40d39c1700e1739b799450b8dc4532c273a5/jishaku/functools.py#L19-L64
-# This license covers the below function
-# MIT License
-#
-# Copyright (c) 2020 Devon (Gorialis) R
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-def executor_function(sync_function: Callable):
-    @functools.wraps(sync_function)
-    async def sync_wrapper(*args, **kwargs):
-        loop = asyncio.get_event_loop()
-        internal_function = functools.partial(sync_function, *args, **kwargs)
+def order_clients(clients):
+    def sort_clients(client):
+        rect = client.window_rectangle
+        return rect.y1, rect.x1
 
-        with ThreadPoolExecutor() as pool:
-            return await loop.run_in_executor(pool, internal_function)
-
-    return sync_wrapper
+    return sorted(clients, key=sort_clients)
 
 
 def get_wiz_install() -> Path:
@@ -380,6 +352,23 @@ def set_window_title(handle: int, window_title: str):
     """
     # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowtextw
     user32.SetWindowTextW(handle, window_title)
+
+
+def get_window_rectangle(handle: int) -> Rectangle:
+    """
+    Get a window's Rectangle
+
+    Args:
+        handle: Handle to the window
+
+    Returns:
+        The window's Rectangle
+    """
+    # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowrect
+    rect = ctypes.wintypes.RECT()
+    user32.GetWindowRect(handle, ctypes.byref(rect))
+
+    return Rectangle(rect.right, rect.top, rect.left, rect.bottom)
 
 
 def check_if_process_running(handle: int) -> bool:

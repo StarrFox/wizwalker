@@ -1,3 +1,5 @@
+import asyncio
+import functools
 import struct
 import zlib
 from pathlib import Path
@@ -5,7 +7,7 @@ from typing import List, Union
 
 import aiofiles
 
-from wizwalker.utils import executor_function, get_wiz_install
+from wizwalker.utils import get_wiz_install
 
 
 class WadFileInfo:
@@ -73,15 +75,28 @@ class Wad:
         # noinspection PyTypeChecker
         # TODO: why is this stored but not used in half the methods
         self._file_pointer = open(self.file_path, "rb")
-        await self._refresh_journal()
+        await self._run_in_executor(self._refresh_journal)
         self._open = True
 
     def close(self):
         self._file_pointer.close()
         self._open = False
 
-    # TODO: remove executor_function and delete from utils
-    @executor_function
+    @staticmethod
+    async def _run_in_executor(func, *args, **kwargs):
+        """
+        Run a function within an executor
+
+        Args:
+            func: The function to run
+            args: Args to pass to the function
+            kwargs: Kwargs to pass to the function
+        """
+        loop = asyncio.get_event_loop()
+        function = functools.partial(func, *args, **kwargs)
+
+        return await loop.run_in_executor(None, function)
+
     def _refresh_journal(self):
         if self._refreshed_once:
             return
