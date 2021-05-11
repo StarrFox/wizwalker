@@ -103,13 +103,19 @@ class CombatCard:
         graphical_spell = await self.get_graphical_spell()
         return await graphical_spell.spell_id()
 
-    # TODO: test with accuracy enchants
     async def accuracy(self) -> int:
         """
         Current accuracy of this card
         """
         graphical_spell = await self.get_graphical_spell()
         return await graphical_spell.accuracy()
+
+    async def is_castable(self) -> bool:
+        """
+        If this card can be casted
+        """
+        spell_window = self._spell_window
+        return not spell_window.maybe_spell_grayed()
 
     async def is_enchanted(self) -> bool:
         """
