@@ -4,6 +4,7 @@ from warnings import warn
 
 from .member import CombatMember
 from .card import CombatCard
+from .. import MemoryReadError, ReadingEnumFailed
 from ..memory import DuelPhase, WindowFlags
 
 
@@ -57,8 +58,15 @@ class CombatHandler:
         Args:
             sleep_time: Time to sleep between checks
         """
-        while await self.client.duel.duel_phase() != DuelPhase.planning:
-            await asyncio.sleep(sleep_time)
+        while True:
+            try:
+                phase = await self.client.duel.duel_phase()
+                if phase == DuelPhase.planning:
+                    break
+                else:
+                    await asyncio.sleep(sleep_time)
+            except (ReadingEnumFailed, MemoryReadError):
+                pass
 
     async def wait_for_combat(self, sleep_time: float = 0.5):
         """
