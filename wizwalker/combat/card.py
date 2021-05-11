@@ -1,3 +1,4 @@
+import asyncio
 from typing import Union
 
 import wizwalker
@@ -29,12 +30,21 @@ class CombatCard:
             NotEnoughPips: If you don't have enough pips to cast
         """
         if isinstance(target, CombatCard):
+            cards_len_before = len(await self.combat_handler.get_cards())
+
             await self.combat_handler.client.mouse_handler.click_window(
                 self._spell_window
             )
             await self.combat_handler.client.mouse_handler.click_window(
                 target._spell_window
             )
+
+            # wait until card number goes down
+            while len(await self.combat_handler.get_cards()) > cards_len_before:
+                await asyncio.sleep(0.1)
+
+            # wiz can't keep up with how fast we can cast
+            await asyncio.sleep(0.5)
 
         elif target is None:
             await self.combat_handler.client.mouse_handler.click_window(
