@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                1.1.0-alpha.0
+                1.1.0-alpha.1
               </div>
             
           
@@ -93,6 +93,12 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">WizWalker</a></li>
 <li class="toctree-l1"><a class="reference internal" href="#client">Client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#combat">Combat</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#combathandler">CombatHandler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#combatmember">CombatMember</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#combatcard">CombatCard</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="#xyz">XYZ</a></li>
 <li class="toctree-l1"><a class="reference internal" href="#rectangle">Rectangle</a></li>
 <li class="toctree-l1"><a class="reference internal" href="#mousehandler">MouseHandler</a></li>
@@ -108,7 +114,6 @@
 <li class="toctree-l2"><a class="reference internal" href="#memoryreader">MemoryReader</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="#memoryobjects">MemoryObjects</a></li>
 <li class="toctree-l1"><a class="reference internal" href="#errors">Errors</a></li>
 </ul>
 
@@ -352,6 +357,367 @@ ids are str</p>
 
 </dd></dl>
 
+</div>
+<div class="section" id="combat">
+<h1>Combat<a class="headerlink" href="#combat" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="combathandler">
+<h2>CombatHandler<a class="headerlink" href="#combathandler" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="wizwalker.combat.CombatHandler">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">wizwalker.combat.</span></code><code class="sig-name descname"><span class="pre">CombatHandler</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">client</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.combat.CombatHandler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handles client’s battles</p>
+<dl class="py method">
+<dt id="wizwalker.combat.CombatHandler.draw_button">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">draw_button</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.combat.CombatHandler.draw_button" title="Permalink to this definition">¶</a></dt>
+<dd><p>Click the draw button</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatHandler.flee_button">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">flee_button</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.combat.CombatHandler.flee_button" title="Permalink to this definition">¶</a></dt>
+<dd><p>Click the free button</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatHandler.get_all_monster_members">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">get_all_monster_members</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">wizwalker.combat.member.CombatMember</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.combat.CombatHandler.get_all_monster_members" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all members who are monsters</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatHandler.get_all_player_members">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">get_all_player_members</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">wizwalker.combat.member.CombatMember</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.combat.CombatHandler.get_all_player_members" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all members who are players</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatHandler.get_card_named">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">get_card_named</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">wizwalker.combat.card.CombatCard</span><a class="headerlink" href="#wizwalker.combat.CombatHandler.get_card_named" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the first Card with name</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatHandler.get_cards">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">get_cards</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">wizwalker.combat.card.CombatCard</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.combat.CombatHandler.get_cards" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of active CombatCards</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatHandler.get_client_member">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">get_client_member</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">wizwalker.combat.member.CombatMember</span><a class="headerlink" href="#wizwalker.combat.CombatHandler.get_client_member" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the client’s CombatMember</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatHandler.get_member_named">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">get_member_named</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">wizwalker.combat.member.CombatMember</span><a class="headerlink" href="#wizwalker.combat.CombatHandler.get_member_named" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the first Member with name</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatHandler.get_members">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">get_members</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">wizwalker.combat.member.CombatMember</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.combat.CombatHandler.get_members" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of active CombatMembers</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatHandler.handle_combat">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">handle_combat</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.combat.CombatHandler.handle_combat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handles an entire combat interaction</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatHandler.handle_round">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">handle_round</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.combat.CombatHandler.handle_round" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called at the start of each round</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatHandler.in_combat">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">in_combat</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#wizwalker.combat.CombatHandler.in_combat" title="Permalink to this definition">¶</a></dt>
+<dd><p>If the client is in combat or not</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatHandler.pass_button">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">pass_button</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.combat.CombatHandler.pass_button" title="Permalink to this definition">¶</a></dt>
+<dd><p>Click the pass button</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatHandler.round_number">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">round_number</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">int</span><a class="headerlink" href="#wizwalker.combat.CombatHandler.round_number" title="Permalink to this definition">¶</a></dt>
+<dd><p>Current round number</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatHandler.wait_for_combat">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">wait_for_combat</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sleep_time</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.combat.CombatHandler.wait_for_combat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wait until in combat</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatHandler.wait_for_hand_visible">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">wait_for_hand_visible</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sleep_time</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.combat.CombatHandler.wait_for_hand_visible" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wait for the hand window to be visible</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatHandler.wait_for_planning_phase">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">wait_for_planning_phase</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sleep_time</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.combat.CombatHandler.wait_for_planning_phase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wait for the duel to enter the planning phase</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>sleep_time</strong> – Time to sleep between checks</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatHandler.wait_until_next_round">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">wait_until_next_round</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_round</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sleep_time</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.combat.CombatHandler.wait_until_next_round" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wait for the round number to change</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="combatmember">
+<h2>CombatMember<a class="headerlink" href="#combatmember" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="wizwalker.combat.CombatMember">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">wizwalker.combat.</span></code><code class="sig-name descname"><span class="pre">CombatMember</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">combat_handler</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">wizwalker.combat.handler.CombatHandler</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">combatant_control</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">wizwalker.memory.memory_objects.window.DynamicWindow</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.combat.CombatMember" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt id="wizwalker.combat.CombatMember.get_health_text_window">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">get_health_text_window</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">wizwalker.memory.memory_objects.window.DynamicWindow</span><a class="headerlink" href="#wizwalker.combat.CombatMember.get_health_text_window" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the health text window
+Useful for targeting</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatMember.get_name_text_window">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">get_name_text_window</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">wizwalker.memory.memory_objects.window.DynamicWindow</span><a class="headerlink" href="#wizwalker.combat.CombatMember.get_name_text_window" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the name text window</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatMember.get_participant">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">get_participant</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.combat.CombatMember.get_participant" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the underlying participant object</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatMember.get_stats">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">get_stats</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.combat.CombatMember.get_stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the underlying game stats object</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatMember.health">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">health</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">int</span><a class="headerlink" href="#wizwalker.combat.CombatMember.health" title="Permalink to this definition">¶</a></dt>
+<dd><p>The amount of health this member has</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatMember.is_boss">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">is_boss</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#wizwalker.combat.CombatMember.is_boss" title="Permalink to this definition">¶</a></dt>
+<dd><p>If this member is a boss</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatMember.is_client">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">is_client</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#wizwalker.combat.CombatMember.is_client" title="Permalink to this definition">¶</a></dt>
+<dd><p>If this member is the local client</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatMember.is_minion">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">is_minion</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#wizwalker.combat.CombatMember.is_minion" title="Permalink to this definition">¶</a></dt>
+<dd><p>If this member is a minion</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatMember.is_monster">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">is_monster</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#wizwalker.combat.CombatMember.is_monster" title="Permalink to this definition">¶</a></dt>
+<dd><p>If this member is not a player and not a minion</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatMember.is_player">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">is_player</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#wizwalker.combat.CombatMember.is_player" title="Permalink to this definition">¶</a></dt>
+<dd><p>If this member is a player</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatMember.is_stunned">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">is_stunned</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#wizwalker.combat.CombatMember.is_stunned" title="Permalink to this definition">¶</a></dt>
+<dd><p>If this member is stunned</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatMember.level">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">level</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">int</span><a class="headerlink" href="#wizwalker.combat.CombatMember.level" title="Permalink to this definition">¶</a></dt>
+<dd><p>This member’s level</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatMember.mana">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">mana</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">int</span><a class="headerlink" href="#wizwalker.combat.CombatMember.mana" title="Permalink to this definition">¶</a></dt>
+<dd><p>The amount of mana this member has</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatMember.max_health">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">max_health</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">int</span><a class="headerlink" href="#wizwalker.combat.CombatMember.max_health" title="Permalink to this definition">¶</a></dt>
+<dd><p>This member’s max health</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatMember.max_mana">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">max_mana</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">int</span><a class="headerlink" href="#wizwalker.combat.CombatMember.max_mana" title="Permalink to this definition">¶</a></dt>
+<dd><p>This member’s max mana</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatMember.name">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">name</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">str</span><a class="headerlink" href="#wizwalker.combat.CombatMember.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of this member</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatMember.normal_pips">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">normal_pips</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">int</span><a class="headerlink" href="#wizwalker.combat.CombatMember.normal_pips" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of normal pips this member has</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatMember.owner_id">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">owner_id</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">int</span><a class="headerlink" href="#wizwalker.combat.CombatMember.owner_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>This member’s owner id</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatMember.power_pips">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">power_pips</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">int</span><a class="headerlink" href="#wizwalker.combat.CombatMember.power_pips" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of power pips this member has</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatMember.shadow_pips">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">shadow_pips</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">int</span><a class="headerlink" href="#wizwalker.combat.CombatMember.shadow_pips" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of shadow pips this member has</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatMember.template_id">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">template_id</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">int</span><a class="headerlink" href="#wizwalker.combat.CombatMember.template_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>This member’s template id</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="combatcard">
+<h2>CombatCard<a class="headerlink" href="#combatcard" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="wizwalker.combat.CombatCard">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">wizwalker.combat.</span></code><code class="sig-name descname"><span class="pre">CombatCard</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">combat_handler</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spell_window</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">wizwalker.memory.memory_objects.window.DynamicWindow</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.combat.CombatCard" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents a spell card</p>
+<dl class="py method">
+<dt id="wizwalker.combat.CombatCard.accuracy">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">accuracy</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">int</span><a class="headerlink" href="#wizwalker.combat.CombatCard.accuracy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Current accuracy of this card</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatCard.cast">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">cast</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">wizwalker.combat.card.CombatCard</span><span class="p"><span class="pre">,</span> </span><span class="pre">wizwalker.combat.member.CombatMember</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.combat.CombatCard.cast" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cast this Card on another Card; a Member or with no target</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>target</strong> – Card, Member, or None if there is no target</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><a class="reference internal" href="#wizwalker.NotEnoughPips" title="wizwalker.NotEnoughPips"><strong>NotEnoughPips</strong></a> – If you don’t have enough pips to cast</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatCard.discard">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">discard</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.combat.CombatCard.discard" title="Permalink to this definition">¶</a></dt>
+<dd><p>Discard this Card</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatCard.get_graphical_spell">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">get_graphical_spell</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">wizwalker.memory.memory_objects.spell.DynamicGraphicalSpell</span><a class="headerlink" href="#wizwalker.combat.CombatCard.get_graphical_spell" title="Permalink to this definition">¶</a></dt>
+<dd><p>The GraphicalSpell with information about this card</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatCard.is_cloaked">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">is_cloaked</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#wizwalker.combat.CombatCard.is_cloaked" title="Permalink to this definition">¶</a></dt>
+<dd><p>If this card is cloaked</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatCard.is_enchanted">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">is_enchanted</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#wizwalker.combat.CombatCard.is_enchanted" title="Permalink to this definition">¶</a></dt>
+<dd><p>If this card is enchanted or not</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatCard.is_enchanted_from_item_card">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">is_enchanted_from_item_card</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#wizwalker.combat.CombatCard.is_enchanted_from_item_card" title="Permalink to this definition">¶</a></dt>
+<dd><p>If this card was enchanted from an item card</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatCard.is_item_card">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">is_item_card</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#wizwalker.combat.CombatCard.is_item_card" title="Permalink to this definition">¶</a></dt>
+<dd><p>If this card is an item card</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatCard.is_pve_only">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">is_pve_only</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#wizwalker.combat.CombatCard.is_pve_only" title="Permalink to this definition">¶</a></dt>
+<dd><p>If this card can only be used in pve</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatCard.is_side_board">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">is_side_board</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#wizwalker.combat.CombatCard.is_side_board" title="Permalink to this definition">¶</a></dt>
+<dd><p>If this card is from the side deck</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatCard.is_treasure_card">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">is_treasure_card</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#wizwalker.combat.CombatCard.is_treasure_card" title="Permalink to this definition">¶</a></dt>
+<dd><p>If this card is a treasure card</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatCard.name">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">name</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">str</span><a class="headerlink" href="#wizwalker.combat.CombatCard.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of this card</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatCard.spell_id">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">spell_id</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">int</span><a class="headerlink" href="#wizwalker.combat.CombatCard.spell_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>This card’s spell id</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.combat.CombatCard.template_id">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">template_id</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">int</span><a class="headerlink" href="#wizwalker.combat.CombatCard.template_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>This card’s template id</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
 </div>
 <div class="section" id="xyz">
 <h1>XYZ<a class="headerlink" href="#xyz" title="Permalink to this headline">¶</a></h1>
@@ -952,9 +1318,6 @@ top left corner of the client</p>
 </dd></dl>
 
 </div>
-</div>
-<div class="section" id="memoryobjects">
-<h1>MemoryObjects<a class="headerlink" href="#memoryobjects" title="Permalink to this headline">¶</a></h1>
 </div>
 <div class="section" id="errors">
 <h1>Errors<a class="headerlink" href="#errors" title="Permalink to this headline">¶</a></h1>
