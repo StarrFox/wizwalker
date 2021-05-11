@@ -353,6 +353,35 @@ def get_logs_folder() -> Path:
     return log_dir
 
 
+def get_window_title(handle: int, max_size: int = 100) -> str:
+    """
+    Get a window's title bar text
+
+    Args:
+        handle: Handle to the window
+        max_size: Max size to read
+
+    Returns:
+        The window title
+    """
+    # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowtextw
+    window_title = ctypes.create_unicode_buffer(max_size)
+    user32.GetWindowTextW(handle, ctypes.byref(window_title), max_size)
+    return window_title.value
+
+
+def set_window_title(handle: int, window_title: str):
+    """
+    Set a window's title bar text
+
+    Args:
+        handle: Handle to the window
+        window_title: Title to write
+    """
+    # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowtextw
+    user32.SetWindowTextW(handle, window_title)
+
+
 def check_if_process_running(handle: int) -> bool:
     """
     Checks if a process is still running

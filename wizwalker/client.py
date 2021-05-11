@@ -22,7 +22,7 @@ from .memory import (
     CurrentRenderContext,
 )
 from .mouse_handler import MouseHandler
-from .utils import XYZ, check_if_process_running
+from .utils import XYZ, check_if_process_running, get_window_title, set_window_title
 
 
 class Client:
@@ -56,6 +56,17 @@ class Client:
 
     def __repr__(self):
         return f"<Client {self.window_handle=} {self.process_id=}>"
+
+    @property
+    def title(self):
+        """
+        Get or set this window's title
+        """
+        return get_window_title(self.window_handle)
+
+    @title.setter
+    def title(self, window_title: str):
+        set_window_title(self.window_handle, window_title)
 
     @cached_property
     def process_id(self) -> int:
