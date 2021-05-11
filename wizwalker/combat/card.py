@@ -115,7 +115,7 @@ class CombatCard:
         If this card can be casted
         """
         spell_window = self._spell_window
-        return not spell_window.maybe_spell_grayed()
+        return not await spell_window.maybe_spell_grayed()
 
     async def is_enchanted(self) -> bool:
         """
