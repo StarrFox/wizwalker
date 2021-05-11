@@ -114,6 +114,13 @@ class CombatCard:
         graphical_spell = await self.get_graphical_spell()
         return await graphical_spell.accuracy()
 
+    async def is_enchanted(self) -> bool:
+        """
+        If this card is enchanted or not
+        """
+        grapical_spell = await self.get_graphical_spell()
+        return await grapical_spell.enchantment() != 0
+
     async def is_treasure_card(self) -> bool:
         """
         If this card is a treasure card

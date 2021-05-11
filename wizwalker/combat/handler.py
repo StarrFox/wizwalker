@@ -185,7 +185,7 @@ class CombatHandler:
         cards = await self.get_cards()
 
         for card in cards:
-            if name.lower() in (await card.name()).lower():
+            if name.lower() == (await card.name()).lower():
                 return card
 
         raise ValueError(f"Couldn't find a card named {name}")
