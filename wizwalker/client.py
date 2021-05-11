@@ -66,21 +66,12 @@ class Client:
     @property
     def title(self):
         """
-        Get this window's title
+        Get or set this window's title
         """
         return get_window_title(self.window_handle)
 
     @title.setter
     def title(self, window_title: str):
-        """
-        Set this window's title
-
-        Args:
-            window_title:
-
-        Returns:
-
-        """
         set_window_title(self.window_handle, window_title)
 
     @property

@@ -25,9 +25,6 @@ class CombatCard:
 
         Args:
             target: Card, Member, or None if there is no target
-
-        Raises:
-            NotEnoughPips: If you don't have enough pips to cast
         """
         if isinstance(target, CombatCard):
             cards_len_before = len(await self.combat_handler.get_cards())
