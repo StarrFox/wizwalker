@@ -200,11 +200,20 @@ class CombatHandler:
         """
         return await self.client.duel.round_num()
 
-    # async def pass_button(self):
-    #     pass
-    #
-    # async def draw_button(self):
-    #     pass
-    #
-    # async def flee_button(self):
-    #     pass
+    async def pass_button(self):
+        """
+        Click the pass button
+        """
+        await self.client.mouse_handler.click_window_with_name("Focus")
+
+    async def draw_button(self):
+        """
+        Click the draw button
+        """
+        await self.client.mouse_handler.click_window_with_name("Draw")
+
+    async def flee_button(self):
+        """
+        Click the free button
+        """
+        await self.client.mouse_handler.click_window_with_name("Flee")
