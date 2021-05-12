@@ -190,6 +190,34 @@ class MemoryObject(MemoryReader):
 
         return pointers
 
+    async def read_shared_linked_list(self, offset: int) -> List[int]:
+        list_addr = await self.read_value_from_offset(offset, "long long")
+
+        addrs = []
+        next_node_addr = list_addr
+        list_size = await self.read_value_from_offset(offset + 8, "int")
+        for _ in range(list_size):
+            list_node = await self.read_typed(next_node_addr, "long long")
+            next_node_addr = await self.read_typed(list_node, "long long")
+            # pointer is +16 from "last" list node
+            addrs.append(await self.read_typed(list_node + 16, "long long"))
+
+        return addrs
+
+    async def read_linked_list(self, offset: int) -> List[int]:
+        list_addr = await self.read_value_from_offset(offset, "long long")
+
+        addrs = []
+        next_node_addr = list_addr
+        list_size = await self.read_value_from_offset(offset + 8, "int")
+        for _ in range(list_size):
+            list_node = await self.read_typed(next_node_addr, "long long")
+            next_node_addr = await self.read_typed(list_node, "long long")
+            # object starts +16 from "last" list node
+            addrs.append(list_node + 16)
+
+        return addrs
+
 
 class DynamicMemoryObject(MemoryObject):
     def __init__(self, hook_handler: HookHandler, base_address: int):

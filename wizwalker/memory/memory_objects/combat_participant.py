@@ -1,7 +1,11 @@
-from wizwalker.memory.memory_objects.enums import PipAquiredByEnum
-from wizwalker.memory.memory_objects.game_stats import DynamicGameStats
+from typing import List, Optional
+
 from wizwalker.memory.memory_object import DynamicMemoryObject, PropertyClass
-from wizwalker.memory.memory_objects.spell import DynamicHand
+from .enums import PipAquiredByEnum
+from .game_stats import DynamicGameStats
+from .spell import DynamicHand
+from .play_deck import DynamicPlayDeck
+from .spell_effect import DynamicSpellEffect
 
 
 class CombatParticipant(PropertyClass):
@@ -153,21 +157,32 @@ class CombatParticipant(PropertyClass):
     # async def write_saved_hand(self, p_saved_hand: class Hand*):
     #     await self.write_value_to_offset(264, p_saved_hand, "class Hand*")
 
-    # async def play_deck(self) -> class PlayDeck*:
-    #     return await self.read_value_from_offset(272, "class PlayDeck*")
-    #
-    # async def write_play_deck(self, p_play_deck: class PlayDeck*):
-    #     await self.write_value_to_offset(272, p_play_deck, "class PlayDeck*")
-    #
-    # async def saved_play_deck(self) -> class PlayDeck*:
-    #     return await self.read_value_from_offset(280, "class PlayDeck*")
-    #
+    async def play_deck(self) -> Optional[DynamicPlayDeck]:
+        addr = await self.read_value_from_offset(272, "long long")
+
+        if addr == 0:
+            return None
+
+        return DynamicPlayDeck(self.hook_handler, addr)
+
+    # async def write_play_deck(self, play_deck: class PlayDeck*):
+    #     await self.write_value_to_offset(272, play_deck, "class PlayDeck*")
+
+    async def saved_play_deck(self) -> Optional[DynamicPlayDeck]:
+        addr = await self.read_value_from_offset(280, "long long")
+
+        if addr == 0:
+            return None
+
+        return DynamicPlayDeck(self.hook_handler, addr)
+
     # async def write_saved_play_deck(self, p_saved_play_deck: class PlayDeck*):
     #     await self.write_value_to_offset(280, p_saved_play_deck, "class PlayDeck*")
 
-    # async def saved_game_stats(self) -> class SharedPointer<class WizGameStats>:
-    #     return await self.read_value_from_offset(288, "class SharedPointer<class WizGameStats>")
-    #
+    async def saved_game_stats(self) -> DynamicGameStats:
+        addr = await self.read_value_from_offset(288, "long long")
+        return DynamicGameStats(self.hook_handler, addr)
+
     # async def write_saved_game_stats(self, p_saved_game_stats: class SharedPointer<class WizGameStats>):
     #     await self.write_value_to_offset(288, p_saved_game_stats, "class SharedPointer<class WizGameStats>")
 
@@ -234,47 +249,52 @@ class CombatParticipant(PropertyClass):
     async def write_is_minion(self, is_minion: bool):
         await self.write_value_to_offset(396, is_minion, "bool")
 
-    # async def hanging_effects(self) -> class SpellEffect:
-    #     return await self.read_value_from_offset(408, "class SpellEffect")
-    #
-    # async def write_hanging_effects(self, hanging_effects: class SpellEffect):
-    #     await self.write_value_to_offset(408, hanging_effects, "class SpellEffect")
+    async def hanging_effects(self) -> List[DynamicSpellEffect]:
+        hanging_effects = []
+        for addr in await self.read_linked_list(408):
+            hanging_effects.append(DynamicSpellEffect(self.hook_handler, addr))
 
-    # async def public_hanging_effects(self) -> class SpellEffect:
-    #     return await self.read_value_from_offset(424, "class SpellEffect")
-    #
-    # async def write_public_hanging_effects(self, public_hanging_effects: class SpellEffect):
-    #     await self.write_value_to_offset(424, public_hanging_effects, "class SpellEffect")
+        return hanging_effects
 
-    # async def aura_effects(self) -> class SpellEffect:
-    #     return await self.read_value_from_offset(440, "class SpellEffect")
-    #
-    # async def write_aura_effects(self, aura_effects: class SpellEffect):
-    #     await self.write_value_to_offset(440, aura_effects, "class SpellEffect")
+    async def public_hanging_effects(self) -> List[DynamicSpellEffect]:
+        hanging_effects = []
+        for addr in await self.read_linked_list(424):
+            hanging_effects.append(DynamicSpellEffect(self.hook_handler, addr))
 
+        return hanging_effects
+
+    async def aura_effects(self) -> List[DynamicSpellEffect]:
+        aura_effects = []
+        for addr in await self.read_linked_list(440):
+            aura_effects.append(DynamicSpellEffect(self.hook_handler, addr))
+
+        return aura_effects
+
+    # TODO: add this class
     # async def shadow_effects(self) -> class SharedPointer<class ShadowSpellTrackingData>:
     #     return await self.read_value_from_offset(456, "class SharedPointer<class ShadowSpellTrackingData>")
-    #
-    # async def write_shadow_effects(self, shadow_effects: class SharedPointer<class ShadowSpellTrackingData>):
-    #     await self.write_value_to_offset(456, shadow_effects, "class SharedPointer<class ShadowSpellTrackingData>")
 
-    # async def shadow_spell_effects(self) -> class SpellEffect:
-    #     return await self.read_value_from_offset(472, "class SpellEffect")
-    #
-    # async def write_shadow_spell_effects(self, shadow_spell_effects: class SpellEffect):
-    #     await self.write_value_to_offset(472, shadow_spell_effects, "class SpellEffect")
-    #
-    # async def death_activated_effects(self) -> class SharedPointer<class SpellEffect>:
-    #     return await self.read_value_from_offset(504, "class SharedPointer<class SpellEffect>")
-    #
-    # async def write_death_activated_effects(self, death_activated_effects: class SharedPointer<class SpellEffect>):
-    #     await self.write_value_to_offset(504, death_activated_effects, "class SharedPointer<class SpellEffect>")
+    async def shadow_spell_effects(self) -> List[DynamicSpellEffect]:
+        shadow_spell_effects = []
+        for addr in await self.read_linked_list(472):
+            shadow_spell_effects.append(DynamicSpellEffect(self.hook_handler, addr))
 
-    # async def delay_cast_effects(self) -> class DelaySpellEffect:
-    #     return await self.read_value_from_offset(520, "class DelaySpellEffect")
-    #
-    # async def write_delay_cast_effects(self, delay_cast_effects: class DelaySpellEffect):
-    #     await self.write_value_to_offset(520, delay_cast_effects, "class DelaySpellEffect")
+        return shadow_spell_effects
+
+    async def death_activated_effects(self) -> List[DynamicSpellEffect]:
+        death_activated_effects = []
+        for addr in await self.read_shared_linked_list(504):
+            death_activated_effects.append(DynamicSpellEffect(self.hook_handler, addr))
+
+        return death_activated_effects
+
+    # note: these are actually DelaySpellEffects
+    async def delay_cast_effects(self) -> List[DynamicSpellEffect]:
+        delay_cast_effects = []
+        for addr in await self.read_linked_list(520):
+            delay_cast_effects.append(DynamicSpellEffect(self.hook_handler, addr))
+
+        return delay_cast_effects
 
     async def polymorph_spell_template_id(self) -> int:
         return await self.read_value_from_offset(568, "unsigned int")
@@ -344,11 +364,13 @@ class CombatParticipant(PropertyClass):
     async def write_shadow_creature_level_count(self, shadow_creature_level_count: int):
         await self.write_value_to_offset(712, shadow_creature_level_count, "int")
 
-    # async def intercept_effect(self) -> class SharedPointer<class SpellEffect>:
-    #     return await self.read_value_from_offset(736, "class SharedPointer<class SpellEffect>")
-    #
-    # async def write_intercept_effect(self, intercept_effect: class SharedPointer<class SpellEffect>):
-    #     await self.write_value_to_offset(736, intercept_effect, "class SharedPointer<class SpellEffect>")
+    async def intercept_effect(self) -> Optional[DynamicSpellEffect]:
+        addr = await self.read_value_from_offset(736, "long long")
+
+        if addr == 0:
+            return None
+
+        return DynamicSpellEffect(self.hook_handler, addr)
 
     async def rounds_since_shadow_pip(self) -> int:
         return await self.read_value_from_offset(768, "int")
@@ -356,11 +378,13 @@ class CombatParticipant(PropertyClass):
     async def write_rounds_since_shadow_pip(self, rounds_since_shadow_pip: int):
         await self.write_value_to_offset(768, rounds_since_shadow_pip, "int")
 
-    # async def polymorph_effect(self) -> class SharedPointer<class SpellEffect>:
-    #     return await self.read_value_from_offset(792, "class SharedPointer<class SpellEffect>")
-    #
-    # async def write_polymorph_effect(self, polymorph_effect: class SharedPointer<class SpellEffect>):
-    #     await self.write_value_to_offset(792, polymorph_effect, "class SharedPointer<class SpellEffect>")
+    async def polymorph_effect(self) -> Optional[DynamicSpellEffect]:
+        addr = await self.read_value_from_offset(792, "long long")
+
+        if addr == 0:
+            return None
+
+        return DynamicSpellEffect(self.hook_handler, addr)
 
     async def confused(self) -> int:
         return await self.read_value_from_offset(188, "int")
@@ -450,9 +474,6 @@ class CombatParticipant(PropertyClass):
 
     # async def cheat_settings(self) -> class SharedPointer<class CombatCheatSettings>:
     #     return await self.read_value_from_offset(96, "class SharedPointer<class CombatCheatSettings>")
-    #
-    # async def write_cheat_settings(self, cheat_settings: class SharedPointer<class CombatCheatSettings>):
-    #     await self.write_value_to_offset(96, cheat_settings, "class SharedPointer<class CombatCheatSettings>")
 
     async def is_monster(self) -> int:
         return await self.read_value_from_offset(400, "unsigned int")
@@ -462,9 +483,6 @@ class CombatParticipant(PropertyClass):
 
     # async def weapon_nif_sound_list(self) -> class SharedPointer<class SpellNifSoundOverride>:
     #     return await self.read_value_from_offset(80, "class SharedPointer<class SpellNifSoundOverride>")
-    #
-    # async def write_weapon_nif_sound_list(self, weapon_nif_sound_list: class SharedPointer<class SpellNifSoundOverride>):
-    #     await self.write_value_to_offset(80, weapon_nif_sound_list, "class SharedPointer<class SpellNifSoundOverride>")
 
     async def pet_combat_trigger(self) -> int:
         return await self.read_value_from_offset(680, "int")

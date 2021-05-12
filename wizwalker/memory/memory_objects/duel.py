@@ -1,13 +1,10 @@
 from typing import List
 
 from wizwalker.utils import XYZ
-from wizwalker.memory.memory_objects.combat_participant import DynamicCombatParticipant
-from wizwalker.memory.memory_objects.enums import (
-    DuelExecutionOrder,
-    DuelPhase,
-    SigilInitiativeSwitchMode,
-)
+from .combat_participant import DynamicCombatParticipant
+from .enums import DuelExecutionOrder, DuelPhase, SigilInitiativeSwitchMode
 from wizwalker.memory.memory_object import PropertyClass
+from .combat_resolver import DynamicCombatResolver
 
 
 class Duel(PropertyClass):
@@ -68,9 +65,10 @@ class Duel(PropertyClass):
     async def write_first_team_to_act(self, first_team_to_act: int):
         await self.write_value_to_offset(148, first_team_to_act, "int")
 
-    # async def combat_resolver(self) -> class CombatResolver*:
-    #     return await self.read_value_from_offset(104, "class CombatResolver*")
-    #
+    async def combat_resolver(self) -> DynamicCombatResolver:
+        addr = await self.read_value_from_offset(104, "long long")
+        return DynamicCombatResolver(self.hook_handler, addr)
+
     # async def write_combat_resolver(self, combat_resolver: class CombatResolver*):
     #     await self.write_value_to_offset(104, combat_resolver, "class CombatResolver*")
 
