@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                1.1.0-alpha.2
+                1.1.0-alpha.3
               </div>
             
           
@@ -654,19 +654,27 @@ Useful for targeting</p>
 
 <dl class="py method">
 <dt id="wizwalker.combat.CombatCard.cast">
-<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">cast</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">wizwalker.combat.card.CombatCard</span><span class="p"><span class="pre">,</span> </span><span class="pre">wizwalker.combat.member.CombatMember</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.combat.CombatCard.cast" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">cast</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">wizwalker.combat.card.CombatCard</span><span class="p"><span class="pre">,</span> </span><span class="pre">wizwalker.combat.member.CombatMember</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sleep_time</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.combat.CombatCard.cast" title="Permalink to this definition">¶</a></dt>
 <dd><p>Cast this Card on another Card; a Member or with no target</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>target</strong> – Card, Member, or None if there is no target</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target</strong> – Card, Member, or None if there is no target</p></li>
+<li><p><strong>sleep_time</strong> – how long to sleep after enchants and between multicasts or None for no sleep</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt id="wizwalker.combat.CombatCard.discard">
-<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">discard</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.combat.CombatCard.discard" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">discard</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sleep_time</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.combat.CombatCard.discard" title="Permalink to this definition">¶</a></dt>
 <dd><p>Discard this Card</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>sleep_time</strong> – Time to sleep after discard or None to not</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
