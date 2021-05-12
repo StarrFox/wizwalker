@@ -14,7 +14,8 @@ class ClientObject(PropertyClass):
     async def inactive_behaviors(self) -> List[DynamicBehaviorInstance]:
         behaviors = []
         for addr in await self.read_shared_vector(224):
-            behaviors.append(DynamicBehaviorInstance(self.hook_handler, addr))
+            if addr != 0:
+                behaviors.append(DynamicBehaviorInstance(self.hook_handler, addr))
 
         return behaviors
 

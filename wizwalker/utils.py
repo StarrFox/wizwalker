@@ -1,7 +1,6 @@
 import asyncio
 import ctypes
 import ctypes.wintypes
-import functools
 import io
 import math
 import struct
@@ -10,7 +9,6 @@ import subprocess
 # noinspection PyCompatibility
 import winreg
 import zlib
-from concurrent.futures.thread import ThreadPoolExecutor
 from pathlib import Path
 from typing import Callable, Iterable, List
 
