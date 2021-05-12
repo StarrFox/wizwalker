@@ -384,6 +384,34 @@ ids are str</p>
 </dd></dl>
 
 <dl class="py method">
+<dt id="wizwalker.Client.send_hotkey">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">send_hotkey</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">modifers</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">wizwalker.constants.Keycode</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">wizwalker.constants.Keycode</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.send_hotkey" title="Permalink to this definition">¶</a></dt>
+<dd><p>send a hotkey</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>modifers</strong> – The key modifers i.e CTRL, ALT</p></li>
+<li><p><strong>key</strong> – The key being modified</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.Client.send_key">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">send_key</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">wizwalker.constants.Keycode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seconds</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.send_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send a key</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> – The Keycode to send</p></li>
+<li><p><strong>seconds</strong> – How long to send it for</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="wizwalker.Client.teleport">
 <em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">teleport</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xyz</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">wizwalker.utils.XYZ</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yaw</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.teleport" title="Permalink to this definition">¶</a></dt>
 <dd><p>Teleport the client</p>
