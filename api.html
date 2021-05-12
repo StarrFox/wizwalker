@@ -284,8 +284,36 @@ energy globe must be visible to use</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="wizwalker.Client.get_entity_list">
-<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">get_entity_list</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.get_entity_list" title="Permalink to this definition">¶</a></dt>
+<dt id="wizwalker.Client.get_base_entities_with_name">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">get_base_entities_with_name</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.get_base_entities_with_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get entites with a name</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> – The name to search for</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>List of the matching entities</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.Client.get_base_entities_with_predicate">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">get_base_entities_with_predicate</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predicate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Callable</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.get_base_entities_with_predicate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get entities with a predicate</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>predicate</strong> – Awaitable that returns True or False on if to add an entity</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The matching entities</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.Client.get_base_entity_list">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">get_base_entity_list</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.get_base_entity_list" title="Permalink to this definition">¶</a></dt>
 <dd><p>List of WizClientObjects currently loaded</p>
 </dd></dl>
 
@@ -382,6 +410,12 @@ ids are str</p>
 <dt id="wizwalker.Client.window_rectangle">
 <em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">window_rectangle</span></code><a class="headerlink" href="#wizwalker.Client.window_rectangle" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get this window’s rectangle</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.Client.zone_name">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">zone_name</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">str</span><a class="headerlink" href="#wizwalker.Client.zone_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Client’s current zone name</p>
 </dd></dl>
 
 </dd></dl>
