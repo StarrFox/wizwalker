@@ -1,13 +1,21 @@
+from typing import List
+
 from wizwalker.memory.memory_object import PropertyClass, DynamicMemoryObject
 from .enums import ObjectType
+from .behavior_template import DynamicBehaviorTemplate
 
 
 class WizGameObjectTemplate(PropertyClass):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 
-    # async def behaviors(self) -> class BehaviorTemplate*:
-    #     return await self.read_value_from_offset(72, "class BehaviorTemplate*")
+    # TODO: add all behavior types
+    async def behaviors(self) -> List[DynamicBehaviorTemplate]:
+        behaviors = []
+        for addr in await self.read_dynamic_vector(72):
+            behaviors.append(DynamicBehaviorTemplate(self.hook_handler, addr))
+
+        return behaviors
 
     async def object_name(self) -> str:
         return await self.read_string_from_offset(96)

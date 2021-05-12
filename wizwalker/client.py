@@ -1,4 +1,5 @@
 from functools import cached_property
+from typing import Callable
 
 import pymem
 
@@ -94,12 +95,55 @@ class Client:
         """
         return check_if_process_running(self._pymem.process_handle)
 
-    async def get_entity_list(self):
+    async def zone_name(self) -> str:
+        """
+        Client's current zone name
+        """
+        client_zone = await self.client_object.client_zone()
+        return await client_zone.zone_name()
+
+    async def get_base_entity_list(self):
         """
         List of WizClientObjects currently loaded
         """
         root_client = await self.client_object.parent()
         return await root_client.children()
+
+    async def get_base_entities_with_name(self, name: str):
+        """
+        Get entites with a name
+
+        Args:
+            name: The name to search for
+
+        Returns:
+            List of the matching entities
+        """
+
+        async def _pred(entity):
+            object_template = await entity.object_template()
+            return await object_template.object_name() == name
+
+        return await self.get_base_entities_with_predicate(_pred)
+
+    # TODO: add example
+    async def get_base_entities_with_predicate(self, predicate: Callable):
+        """
+        Get entities with a predicate
+
+        Args:
+            predicate: Awaitable that returns True or False on if to add an entity
+
+        Returns:
+            The matching entities
+        """
+        entities = []
+
+        for entity in await self.get_base_entity_list():
+            if await predicate(entity):
+                entities.append(entity)
+
+        return entities
 
     async def activate_hooks(
         self, *, wait_for_ready: bool = True, timeout: float = None

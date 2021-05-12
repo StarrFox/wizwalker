@@ -190,6 +190,27 @@ class MemoryObject(MemoryReader):
 
         return pointers
 
+    async def read_dynamic_vector(self, offset: int) -> List[int]:
+        """
+        Read a vector that changes in size
+        """
+        start_address = await self.read_value_from_offset(offset, "long long")
+        end_address = await self.read_value_from_offset(offset + 8, "long long")
+        # only 8 in length
+        size = (end_address - start_address) // 8
+
+        if size == 0:
+            return []
+
+        current_address = start_address
+        pointers = []
+        for _ in range(size):
+            pointers.append(await self.read_typed(current_address, "long long"))
+
+            current_address += 8
+
+        return pointers
+
     async def read_shared_linked_list(self, offset: int) -> List[int]:
         list_addr = await self.read_value_from_offset(offset, "long long")
 
