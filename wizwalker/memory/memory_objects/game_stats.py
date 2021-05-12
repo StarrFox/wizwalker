@@ -113,21 +113,12 @@ class GameStats(PropertyClass):
 
     # async def arena_ladder(self) -> class SharedPointer<class Ladder>:
     #     return await self.read_value_from_offset(160, "class SharedPointer<class Ladder>")
-    #
-    # async def write_arena_ladder(self, arena_ladder: class SharedPointer<class Ladder>):
-    #     await self.write_value_to_offset(160, arena_ladder, "class SharedPointer<class Ladder>")
-    #
+
     # async def derby_ladder(self) -> class SharedPointer<class Ladder>:
     #     return await self.read_value_from_offset(176, "class SharedPointer<class Ladder>")
-    #
-    # async def write_derby_ladder(self, derby_ladder: class SharedPointer<class Ladder>):
-    #     await self.write_value_to_offset(176, derby_ladder, "class SharedPointer<class Ladder>")
-    #
+
     # async def bracket_lader(self) -> class SharedPointer<class Ladder>:
     #     return await self.read_value_from_offset(192, "class SharedPointer<class Ladder>")
-    #
-    # async def write_bracket_lader(self, bracket_lader: class SharedPointer<class Ladder>):
-    #     await self.write_value_to_offset(192, bracket_lader, "class SharedPointer<class Ladder>")
 
     async def bonus_hitpoints(self) -> int:
         return await self.read_value_from_offset(208, "int")

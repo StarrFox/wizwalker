@@ -1,7 +1,7 @@
 from typing import List
 
-from .enums import DelayOrder, SpellSourceType
 from wizwalker.memory.memory_object import DynamicMemoryObject, PropertyClass
+from .enums import DelayOrder, SpellSourceType
 from .spell_effect import DynamicSpellEffect
 
 
@@ -11,9 +11,6 @@ class SpellTemplate(PropertyClass):
 
     # async def behaviors(self) -> class BehaviorTemplate*:
     #     return await self.read_value_from_offset(72, "class BehaviorTemplate*")
-    #
-    # async def write_behaviors(self, behaviors: class BehaviorTemplate*):
-    #     await self.write_value_to_offset(72, behaviors, "class BehaviorTemplate*")
 
     async def name(self) -> str:
         return await self.read_string_from_offset(96)
@@ -45,9 +42,6 @@ class SpellTemplate(PropertyClass):
             effects.append(DynamicSpellEffect(self.hook_handler, addr))
 
         return effects
-
-    # async def write_effects(self, effects: class SharedPointer<class SpellEffect>):
-    #     await self.write_value_to_offset(240, effects, "class SharedPointer<class SpellEffect>")
 
     async def magic_school_name(self) -> str:
         return await self.read_string_from_offset(272)
@@ -177,9 +171,6 @@ class SpellTemplate(PropertyClass):
 
     # async def purchase_requirements(self) -> class RequirementList*:
     #     return await self.read_value_from_offset(568, "class RequirementList*")
-    #
-    # async def write_purchase_requirements(self, purchase_requirements: class RequirementList*):
-    #     await self.write_value_to_offset(568, purchase_requirements, "class RequirementList*")
 
     async def description_trainer(self) -> str:
         return await self.read_string_from_offset(576)

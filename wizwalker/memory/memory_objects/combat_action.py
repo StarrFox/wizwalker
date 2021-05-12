@@ -16,9 +16,6 @@ class CombatAction(MemoryObject):
         addr = await self.read_value_from_offset(96, "long long")
         return DynamicSpell(self.hook_handler, addr)
 
-    # async def write_spell(self, spell: class SharedPointer<class Spell>):
-    #     await self.write_value_to_offset(96, spell, "class SharedPointer<class Spell>")
-
     async def spell_hits(self) -> int:
         return await self.read_value_from_offset(112, "char")
 
@@ -177,9 +174,6 @@ class CombatAction(MemoryObject):
 
     # async def crit_hit_list(self) -> class TargetCritHit:
     #     return await self.read_value_from_offset(352, "class TargetCritHit")
-    #
-    # async def write_crit_hit_list(self, _crit_hit_list: class TargetCritHit):
-    #     await self.write_value_to_offset(352, _crit_hit_list, "class TargetCritHit")
 
 
 class DynamicCombatAction(DynamicMemoryObject, CombatAction):

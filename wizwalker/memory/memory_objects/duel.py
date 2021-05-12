@@ -1,9 +1,9 @@
 from typing import List
 
 from wizwalker.utils import XYZ
+from wizwalker.memory.memory_object import PropertyClass
 from .combat_participant import DynamicCombatParticipant
 from .enums import DuelExecutionOrder, DuelPhase, SigilInitiativeSwitchMode
-from wizwalker.memory.memory_object import PropertyClass
 from .combat_resolver import DynamicCombatResolver
 
 
@@ -19,9 +19,6 @@ class Duel(PropertyClass):
             participants.append(DynamicCombatParticipant(self.hook_handler, addr))
 
         return participants
-
-    # async def write_participant_list(self, flat_participant_list: class SharedPointer<class CombatParticipant>):
-    #     await self.write_value_to_offset(80, flat_participant_list, "class SharedPointer<class CombatParticipant>")
 
     async def duel_id_full(self) -> int:
         return await self.read_value_from_offset(72, "unsigned long long")
@@ -69,9 +66,6 @@ class Duel(PropertyClass):
         addr = await self.read_value_from_offset(104, "long long")
         return DynamicCombatResolver(self.hook_handler, addr)
 
-    # async def write_combat_resolver(self, combat_resolver: class CombatResolver*):
-    #     await self.write_value_to_offset(104, combat_resolver, "class CombatResolver*")
-
     async def pvp(self) -> bool:
         return await self.read_value_from_offset(144, "bool")
 
@@ -99,28 +93,16 @@ class Duel(PropertyClass):
     # note: this seems to be unused
     # async def execution_phase_combat_actions(self) -> class CombatAction:
     #     return await self.read_value_from_offset(168, "class CombatAction")
-    #
-    # async def write_execution_phase_combat_actions(self, execution_phase_combat_actions: class CombatAction):
-    #     await self.write_value_to_offset(168, execution_phase_combat_actions, "class CombatAction")
 
     # note: this also seems to be unused
     # async def sigil_actions(self) -> class CombatAction:
     #     return await self.read_value_from_offset(184, "class CombatAction")
-    #
-    # async def write_sigil_actions(self, sigil_actions: class CombatAction):
-    #     await self.write_value_to_offset(184, sigil_actions, "class CombatAction")
 
     # async def shadow_pip_rule(self) -> class SharedPointer<class ShadowPipRule>:
     #     return await self.read_value_from_offset(240, "class SharedPointer<class ShadowPipRule>")
-    #
-    # async def write_shadow_pip_rule(self, shadow_pip_rule: class SharedPointer<class ShadowPipRule>):
-    #     await self.write_value_to_offset(240, shadow_pip_rule, "class SharedPointer<class ShadowPipRule>")
 
     # async def game_object_anim_state_tracker(self) -> class GameObjectAnimStateTracker:
     #     return await self.read_value_from_offset(256, "class GameObjectAnimStateTracker")
-    #
-    # async def write_game_object_anim_state_tracker(self, game_object_anim_state_tracker: GameObjectAnimStateTracker):
-    #     await self.write_value_to_offset(256, game_object_anim_state_tracker, "class GameObjectAnimStateTracker")
 
     async def duel_phase(self) -> DuelPhase:
         return await self.read_enum(160, DuelPhase)
@@ -130,9 +112,6 @@ class Duel(PropertyClass):
 
     # async def duel_modifier(self) -> class SharedPointer<class DuelModifier>:
     #     return await self.read_value_from_offset(224, "class SharedPointer<class DuelModifier>")
-    #
-    # async def write_duel_modifier(self, duel_modifier: class SharedPointer<class DuelModifier>):
-    #     await self.write_value_to_offset(224, duel_modifier, "class SharedPointer<class DuelModifier>")
 
     async def initiative_switch_mode(self) -> SigilInitiativeSwitchMode:
         return await self.read_enum(344, SigilInitiativeSwitchMode)
@@ -150,15 +129,9 @@ class Duel(PropertyClass):
 
     # async def combat_rules(self) -> class SharedPointer<class CombatRule>:
     #     return await self.read_value_from_offset(424, "class SharedPointer<class CombatRule>")
-    #
-    # async def write_combat_rules(self, combat_rules: class SharedPointer<class CombatRule>):
-    #     await self.write_value_to_offset(424, combat_rules, "class SharedPointer<class CombatRule>")
 
     # async def alternate_turn_combat_rule(self) -> class SharedPointer<class AlternateTurnsCombatRule>:
     #     return await self.read_value_from_offset(440, "class SharedPointer<class AlternateTurnsCombatRule>")
-    #
-    # async def write_alternate_turn_combat_rule(self, alternate_turn_combat_rule: sharedpointer AlternateTurnsCombatRule):
-    #     await self.write_value_to_offset(440, alternate_turn_combat_rule, SharedPointer<class AlternateTurnsCombatRule")
 
     async def alt_turn_counter(self) -> int:
         return await self.read_value_from_offset(416, "int")

@@ -1,9 +1,9 @@
 from typing import Callable, List, Optional
 
-from wizwalker.memory.memory_objects.enums import WindowFlags, WindowStyle
 from wizwalker.memory.memory_object import DynamicMemoryObject, PropertyClass
-from wizwalker.memory.memory_objects.spell import DynamicGraphicalSpell
-from wizwalker.memory.memory_objects.combat_participant import DynamicCombatParticipant
+from .enums import WindowFlags, WindowStyle
+from .spell import DynamicGraphicalSpell
+from .combat_participant import DynamicCombatParticipant
 
 from wizwalker import Rectangle
 
@@ -153,9 +153,6 @@ class Window(PropertyClass):
 
         return windows
 
-    # async def write_children(self, children: class SharedPointer<class Window>):
-    #     await self.write_value_to_offset(112, children, "class SharedPointer<class Window>")
-
     async def parent(self) -> Optional["DynamicWindow"]:
         addr = await self.read_value_from_offset(136, "long long")
         # the root window has no parents
@@ -163,8 +160,6 @@ class Window(PropertyClass):
             return None
 
         return DynamicWindow(self.hook_handler, addr)
-
-    # write parent
 
     async def style(self) -> WindowStyle:
         style = await self.read_value_from_offset(152, "long")
@@ -207,9 +202,6 @@ class Window(PropertyClass):
 
     # async def window_style(self) -> class SharedPointer<class WindowStyle>:
     #     return await self.read_value_from_offset(232, "class SharedPointer<class WindowStyle>")
-    #
-    # async def write_window_style(self, window_style: class SharedPointer<class WindowStyle>):
-    #     await self.write_value_to_offset(232, window_style, "class SharedPointer<class WindowStyle>")
 
     async def help(self) -> str:
         return await self.read_string_from_offset(248)
@@ -243,9 +235,6 @@ class Window(PropertyClass):
 
     # async def bubble_list(self) -> class WindowBubble:
     #     return await self.read_value_from_offset(424, "class WindowBubble")
-    #
-    # async def write_bubble_list(self, bubble_list: class WindowBubble):
-    #     await self.write_value_to_offset(424, bubble_list, "class WindowBubble")
 
     async def parent_offset(self) -> tuple:
         return await self.read_vector(176, 4, "int")

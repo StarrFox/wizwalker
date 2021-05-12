@@ -68,9 +68,6 @@ class CombatParticipant(PropertyClass):
 
     # async def pip_round_rates(self) -> class SharedPointer<class ModifyPipRoundRateData>:
     #     return await self.read_value_from_offset(160, "class SharedPointer<class ModifyPipRoundRateData>")
-    #
-    # async def write_pip_round_rates(self, pip_round_rates: class SharedPointer<class ModifyPipRoundRateData>):
-    #     await self.write_value_to_offset(160, pip_round_rates, "class SharedPointer<class ModifyPipRoundRateData>")
 
     async def pips_suspended(self) -> bool:
         return await self.read_value_from_offset(176, "bool")
@@ -148,14 +145,9 @@ class CombatParticipant(PropertyClass):
         addr = await self.read_value_from_offset(256, "long long")
         return DynamicHand(self.hook_handler, addr)
 
-    # async def write_hand
-
     async def saved_hand(self) -> DynamicHand:
         addr = await self.read_value_from_offset(264, "long long")
         return DynamicHand(self.hook_handler, addr)
-
-    # async def write_saved_hand(self, p_saved_hand: class Hand*):
-    #     await self.write_value_to_offset(264, p_saved_hand, "class Hand*")
 
     async def play_deck(self) -> Optional[DynamicPlayDeck]:
         addr = await self.read_value_from_offset(272, "long long")
@@ -165,9 +157,6 @@ class CombatParticipant(PropertyClass):
 
         return DynamicPlayDeck(self.hook_handler, addr)
 
-    # async def write_play_deck(self, play_deck: class PlayDeck*):
-    #     await self.write_value_to_offset(272, play_deck, "class PlayDeck*")
-
     async def saved_play_deck(self) -> Optional[DynamicPlayDeck]:
         addr = await self.read_value_from_offset(280, "long long")
 
@@ -176,15 +165,9 @@ class CombatParticipant(PropertyClass):
 
         return DynamicPlayDeck(self.hook_handler, addr)
 
-    # async def write_saved_play_deck(self, p_saved_play_deck: class PlayDeck*):
-    #     await self.write_value_to_offset(280, p_saved_play_deck, "class PlayDeck*")
-
     async def saved_game_stats(self) -> DynamicGameStats:
         addr = await self.read_value_from_offset(288, "long long")
         return DynamicGameStats(self.hook_handler, addr)
-
-    # async def write_saved_game_stats(self, p_saved_game_stats: class SharedPointer<class WizGameStats>):
-    #     await self.write_value_to_offset(288, p_saved_game_stats, "class SharedPointer<class WizGameStats>")
 
     async def saved_primary_magic_school_id(self) -> int:
         return await self.read_value_from_offset(304, "int")
@@ -198,9 +181,7 @@ class CombatParticipant(PropertyClass):
         addr = await self.read_value_from_offset(312, "long long")
         return DynamicGameStats(self.hook_handler, addr)
 
-    # async def write_game_stats(self, game_stats: class SharedPointer<class WizGameStats>):
-    #     await self.write_value_to_offset(312, game_stats, "class SharedPointer<class WizGameStats>")
-
+    # TODO: figure out what color is
     # async def color(self) -> class Color:
     #     return await self.read_value_from_offset(328, "class Color")
     #

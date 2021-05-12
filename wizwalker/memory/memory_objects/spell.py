@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import List
 
-from wizwalker.memory.memory_objects.enums import DelayOrder
 from wizwalker.memory.memory_object import DynamicMemoryObject, PropertyClass
+from .enums import DelayOrder
 from .spell_template import DynamicSpellTemplate
 from .spell_effect import DynamicSpellEffect
 

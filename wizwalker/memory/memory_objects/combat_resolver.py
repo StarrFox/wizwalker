@@ -18,18 +18,12 @@ class CombatResolver(PropertyClass):
         addr = await self.read_value_from_offset(120, "long long")
         return DynamicSpellEffect(self.hook_handler, addr)
 
-    # async def write_global_effect(self, global_effect: class SharedPointer<class SpellEffect>):
-    #     await self.write_value_to_offset(120, global_effect, "class SharedPointer<class SpellEffect>")
-
     async def battlefield_effects(self) -> List[DynamicSpellEffect]:
         effects = []
         for addr in await self.read_shared_vector(136):
             effects.append(DynamicSpellEffect(self.hook_handler, addr))
 
         return effects
-
-    # async def write_battlefield_effects(self, battlefield_effects: class SharedPointer<class SpellEffect>):
-    #     await self.write_value_to_offset(136, battlefield_effects, "class SharedPointer<class SpellEffect>")
 
 
 class DynamicCombatResolver(DynamicMemoryObject, CombatResolver):

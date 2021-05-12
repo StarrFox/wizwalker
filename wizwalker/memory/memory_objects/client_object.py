@@ -1,6 +1,6 @@
 from wizwalker import XYZ
-from wizwalker.memory.memory_objects.game_stats import DynamicGameStats
 from wizwalker.memory.memory_object import PropertyClass
+from .game_stats import DynamicGameStats
 
 
 class ClientObject(PropertyClass):
@@ -9,9 +9,6 @@ class ClientObject(PropertyClass):
 
     # async def inactive_behaviors(self) -> class SharedPointer<class BehaviorInstance>:
     #     return await self.read_value_from_offset(224, "class SharedPointer<class BehaviorInstance>")
-    #
-    # async def write_inactive_behaviors(self, inactive_behaviors: class SharedPointer<class BehaviorInstance>):
-    #     await self.write_value_to_offset(224, inactive_behaviors, "class SharedPointer<class BehaviorInstance>")
 
     async def global_id_full(self) -> int:
         return await self.read_value_from_offset(72, "unsigned long long")
@@ -88,9 +85,6 @@ class ClientObject(PropertyClass):
     async def game_stats(self) -> DynamicGameStats:
         addr = await self.read_value_from_offset(544, "long long")
         return DynamicGameStats(self.hook_handler, addr)
-
-    # async def write_game_stats(self, game_stats: class WizGameStats*):
-    #     await self.write_value_to_offset(544, game_stats, "class WizGameStats*")
 
 
 class CurrentClientObject(ClientObject):
