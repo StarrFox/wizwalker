@@ -129,10 +129,10 @@ class WizWalkerConsole(Monitor):
             table_data = [["attribute", "value"]]
 
             hook_handler_attrs = [
-                "read_player_base",
+                "read_current_player_base",
                 "read_current_duel_base",
-                "read_quest_base",
-                "read_player_stat_base",
+                "read_current_quest_base",
+                "read_current_player_stat_base",
                 "read_current_client_base",
                 "read_current_root_window_base",
                 "read_current_render_context_base",

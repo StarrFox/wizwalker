@@ -98,12 +98,14 @@ class Duel(PropertyClass):
     async def write_execution_phase_timer(self, execution_phase_timer: float):
         await self.write_value_to_offset(164, execution_phase_timer, "float")
 
+    # note: this seems to be unused
     # async def execution_phase_combat_actions(self) -> class CombatAction:
     #     return await self.read_value_from_offset(168, "class CombatAction")
     #
     # async def write_execution_phase_combat_actions(self, execution_phase_combat_actions: class CombatAction):
     #     await self.write_value_to_offset(168, execution_phase_combat_actions, "class CombatAction")
 
+    # note: this also seems to be unused
     # async def sigil_actions(self) -> class CombatAction:
     #     return await self.read_value_from_offset(184, "class CombatAction")
     #

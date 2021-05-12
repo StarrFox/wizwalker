@@ -5,6 +5,8 @@ from .duel import CurrentDuel, Duel
 from .enums import *
 from .game_stats import CurrentGameStats
 from .quest_position import CurrentQuestPosition
+from .spell_effect import SpellEffects, DynamicSpellEffect
+from .spell_template import SpellTemplate, DynamicSpellTemplate
 from .spell import DynamicHand, DynamicSpell, Hand, Spell
 from .window import CurrentRootWindow, DynamicWindow, Window
 from .render_context import RenderContext, CurrentRenderContext
