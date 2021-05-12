@@ -9,11 +9,13 @@ class WizGameObjectTemplate(PropertyClass):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 
-    # TODO: add all behavior types
+    # TODO: add all behavior template types
     async def behaviors(self) -> List[DynamicBehaviorTemplate]:
         behaviors = []
         for addr in await self.read_dynamic_vector(72):
-            behaviors.append(DynamicBehaviorTemplate(self.hook_handler, addr))
+            # they sometimes set these to 0
+            if addr != 0:
+                behaviors.append(DynamicBehaviorTemplate(self.hook_handler, addr))
 
         return behaviors
 

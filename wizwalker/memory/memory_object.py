@@ -243,6 +243,13 @@ class MemoryObject(MemoryReader):
 class DynamicMemoryObject(MemoryObject):
     def __init__(self, hook_handler: HookHandler, base_address: int):
         super().__init__(hook_handler)
+
+        # sanity check
+        if base_address == 0:
+            raise RuntimeError(
+                f"Dynamic object {type(self).__name__} passed 0 base address."
+            )
+
         self.base_address = base_address
 
     async def read_base_address(self) -> int:

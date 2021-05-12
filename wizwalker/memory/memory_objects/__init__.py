@@ -20,3 +20,4 @@ from .combat_resolver import CombatResolver, DynamicCombatResolver
 from .play_deck import PlayDeck, PlaySpellData, DynamicPlayDeck, DynamicPlaySpellData
 from .game_object_template import WizGameObjectTemplate, DynamicWizGameObjectTemplate
 from .behavior_template import BehaviorTemplate, DynamicBehaviorTemplate
+from .behavior_instance import BehaviorInstance, DynamicBehaviorInstance

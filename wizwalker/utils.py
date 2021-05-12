@@ -511,6 +511,25 @@ def pharse_node_data(file_data: bytes) -> dict:
     return node_data
 
 
+async def send_hotkey(window_handle: int, modifers: List[Keycode], key: Keycode):
+    """
+    Send a hotkey
+
+    Args:
+        window_handle: Handle to the window to send the hotkey to
+        modifers: Keys to hold down
+        key: The key to press
+    """
+    for modifier in modifers:
+        user32.SendMessageW(window_handle, 0x100, modifier.value, 0)
+
+    user32.SendMessageW(window_handle, 0x100, key.value, 0)
+    user32.SendMessageW(window_handle, 0x101, key.value, 0)
+
+    for modifier in modifers:
+        user32.SendMessageW(window_handle, 0x101, modifier.value, 0)
+
+
 async def timed_send_key(window_handle: int, key: Keycode, seconds: float):
     """
     Send a key for a number of seconds

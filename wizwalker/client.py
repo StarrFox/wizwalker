@@ -1,6 +1,6 @@
 import asyncio
 from functools import cached_property
-from typing import Callable, Optional
+from typing import Callable, List, Optional
 
 import pymem
 
@@ -290,7 +290,24 @@ class Client:
         utils.instance_login(self.window_handle, username, password)
 
     async def send_key(self, key: Keycode, seconds: float = 0.5):
+        """
+        Send a key
+
+        Args:
+            key: The Keycode to send
+            seconds: How long to send it for
+        """
         await utils.timed_send_key(self.window_handle, key, seconds)
+
+    async def send_hotkey(self, modifers: List[Keycode], key: Keycode):
+        """
+        send a hotkey
+
+        Args:
+            modifers: The key modifers i.e CTRL, ALT
+            key: The key being modified
+        """
+        await utils.send_hotkey(self.window_handle, modifers, key)
 
     async def goto(self, x: float, y: float):
         """

@@ -4,14 +4,27 @@ from wizwalker import XYZ
 from wizwalker.memory.memory_object import PropertyClass, DynamicMemoryObject
 from .game_stats import DynamicGameStats
 from .game_object_template import DynamicWizGameObjectTemplate
+from .behavior_instance import DynamicBehaviorInstance
 
 
 class ClientObject(PropertyClass):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 
-    # async def inactive_behaviors(self) -> class SharedPointer<class BehaviorInstance>:
-    #     return await self.read_value_from_offset(224, "class SharedPointer<class BehaviorInstance>")
+    async def inactive_behaviors(self) -> List[DynamicBehaviorInstance]:
+        behaviors = []
+        for addr in await self.read_shared_vector(224):
+            behaviors.append(DynamicBehaviorInstance(self.hook_handler, addr))
+
+        return behaviors
+
+    # convenience method
+    async def object_name(self) -> Optional[str]:
+        object_template = await self.object_template()
+        if object_template is not None:
+            return await object_template.object_name()
+
+        return None
 
     # note: not defined
     async def parent(self) -> Optional["DynamicClientObject"]:
