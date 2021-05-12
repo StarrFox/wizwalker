@@ -407,6 +407,20 @@ ids are str</p>
 </dd></dl>
 
 <dl class="py method">
+<dt id="wizwalker.Client.wait_for_zone_change">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">wait_for_zone_change</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sleep_time</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.wait_for_zone_change" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wait for the client’s zone to change</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – The name of the zone to wait to be changed from or None to read</p></li>
+<li><p><strong>sleep_time</strong> – How long to sleep between reads or None to not</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="wizwalker.Client.window_rectangle">
 <em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">window_rectangle</span></code><a class="headerlink" href="#wizwalker.Client.window_rectangle" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get this window’s rectangle</p>
@@ -414,7 +428,7 @@ ids are str</p>
 
 <dl class="py method">
 <dt id="wizwalker.Client.zone_name">
-<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">zone_name</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">str</span><a class="headerlink" href="#wizwalker.Client.zone_name" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">zone_name</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.Client.zone_name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Client’s current zone name</p>
 </dd></dl>
 
