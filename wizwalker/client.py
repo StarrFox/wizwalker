@@ -1,5 +1,6 @@
+import asyncio
 from functools import cached_property
-from typing import Callable
+from typing import Callable, Optional
 
 import pymem
 
@@ -95,12 +96,16 @@ class Client:
         """
         return check_if_process_running(self._pymem.process_handle)
 
-    async def zone_name(self) -> str:
+    async def zone_name(self) -> Optional[str]:
         """
         Client's current zone name
         """
         client_zone = await self.client_object.client_zone()
-        return await client_zone.zone_name()
+
+        if client_zone is not None:
+            return await client_zone.zone_name()
+
+        return None
 
     async def get_base_entity_list(self):
         """
@@ -234,6 +239,29 @@ class Client:
         text = text.replace("<center>", "")
         used, total = text.split("/")
         return int(used), int(total)
+
+    async def wait_for_zone_change(
+        self, name: Optional[str] = None, *, sleep_time: Optional[float] = 0.5
+    ):
+        """
+        Wait for the client's zone to change
+
+        Args:
+            name: The name of the zone to wait to be changed from or None to read
+            sleep_time: How long to sleep between reads or None to not
+        """
+        if name is None:
+            name = await self.zone_name()
+
+            # the client zone is deallocated on zone change
+            if name is None:
+                raise RuntimeError("Client zone was already deallocated before calling")
+
+        while (zone_name := await self.zone_name()) == name and zone_name is not None:
+            await asyncio.sleep(sleep_time)
+
+        while await self.is_loading():
+            await asyncio.sleep(sleep_time)
 
     async def current_energy(self) -> int:
         """
