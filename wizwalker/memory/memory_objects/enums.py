@@ -241,3 +241,36 @@ class EffectTarget(Enum):
     multi_target_enemy = 14
     multi_target_friendly = 15
     friendly_single_not_me = 16
+
+
+class ObjectType(Enum):
+    undefined = 0
+    player = 1
+    npc = 2
+    prop = 3
+    object = 4
+    house = 5
+    key = 6
+    old_key = 7
+    deed = 8
+    mail = 9
+    recipe = 17
+    equip_head = 10
+    equip_chest = 11
+    equip_legs = 12
+    equip_hands = 13
+    equip_finger = 14
+    equip_feet = 15
+    equip_ear = 16
+    building_block = 18
+    building_block_solid = 19
+    golf = 20
+    door = 21
+    pet = 22
+    fabric = 23
+    window = 24
+    roof = 25
+    horse = 26
+    structure = 27
+    housing_texture = 28
+    plant = 29

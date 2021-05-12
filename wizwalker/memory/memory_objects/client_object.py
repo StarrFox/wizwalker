@@ -1,6 +1,9 @@
+from typing import List, Optional
+
 from wizwalker import XYZ
-from wizwalker.memory.memory_object import PropertyClass
+from wizwalker.memory.memory_object import PropertyClass, DynamicMemoryObject
 from .game_stats import DynamicGameStats
+from .game_object_template import DynamicWizGameObjectTemplate
 
 
 class ClientObject(PropertyClass):
@@ -9,6 +12,41 @@ class ClientObject(PropertyClass):
 
     # async def inactive_behaviors(self) -> class SharedPointer<class BehaviorInstance>:
     #     return await self.read_value_from_offset(224, "class SharedPointer<class BehaviorInstance>")
+
+    # note: not defined
+    async def parent(self) -> Optional["DynamicClientObject"]:
+        addr = await self.read_value_from_offset(208, "long long")
+
+        if addr == 0:
+            return None
+
+        return DynamicClientObject(self.hook_handler, addr)
+
+    # note: not defined
+    async def children(self) -> List["DynamicClientObject"]:
+        children = []
+        for addr in await self.read_shared_vector(384):
+            children.append(DynamicClientObject(self.hook_handler, addr))
+
+        return children
+
+    # note: not defined
+    async def client_zone(self) -> Optional["DynamicClientZone"]:
+        addr = await self.read_value_from_offset(304, "long long")
+
+        if addr == 0:
+            return None
+
+        return DynamicClientZone(self.hook_handler, addr)
+
+    # note: not defined
+    async def object_template(self) -> Optional[DynamicWizGameObjectTemplate]:
+        addr = await self.read_value_from_offset(88, "long long")
+
+        if addr == 0:
+            return None
+
+        return DynamicWizGameObjectTemplate(self.hook_handler, addr)
 
     async def global_id_full(self) -> int:
         return await self.read_value_from_offset(72, "unsigned long long")
@@ -90,3 +128,28 @@ class ClientObject(PropertyClass):
 class CurrentClientObject(ClientObject):
     async def read_base_address(self) -> int:
         return await self.hook_handler.read_current_client_base()
+
+
+class DynamicClientObject(DynamicMemoryObject, ClientObject):
+    pass
+
+
+class ClientZone(PropertyClass):
+    async def read_base_address(self) -> int:
+        raise NotImplementedError()
+
+    async def zone_id(self) -> int:
+        return await self.read_value_from_offset(72, "long long")
+
+    async def write_zone_id(self, zone_id: int):
+        await self.write_value_to_offset(72, zone_id, "long long")
+
+    async def zone_name(self) -> str:
+        return await self.read_string_from_offset(88)
+
+    async def write_zone_name(self, zone_name: str):
+        await self.write_string_to_offset(88, zone_name)
+
+
+class DynamicClientZone(DynamicClientObject, ClientZone):
+    pass

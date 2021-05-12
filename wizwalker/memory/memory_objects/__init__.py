@@ -1,5 +1,11 @@
 from .actor_body import ActorBody, CurrentActorBody
-from .client_object import ClientObject, CurrentClientObject
+from .client_object import (
+    ClientObject,
+    CurrentClientObject,
+    DynamicClientObject,
+    ClientZone,
+    DynamicClientZone,
+)
 from .combat_participant import CombatParticipant, DynamicCombatParticipant
 from .duel import CurrentDuel, Duel
 from .enums import *
@@ -12,3 +18,4 @@ from .window import CurrentRootWindow, DynamicWindow, Window
 from .render_context import RenderContext, CurrentRenderContext
 from .combat_resolver import CombatResolver, DynamicCombatResolver
 from .play_deck import PlayDeck, PlaySpellData, DynamicPlayDeck, DynamicPlaySpellData
+from .game_object_template import WizGameObjectTemplate, DynamicWizGameObjectTemplate

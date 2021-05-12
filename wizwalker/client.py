@@ -94,6 +94,13 @@ class Client:
         """
         return check_if_process_running(self._pymem.process_handle)
 
+    async def get_entity_list(self):
+        """
+        List of WizClientObjects currently loaded
+        """
+        root_client = await self.client_object.parent()
+        return await root_client.children()
+
     async def activate_hooks(
         self, *, wait_for_ready: bool = True, timeout: float = None
     ):
