@@ -325,6 +325,12 @@ ids are str</p>
 </dd></dl>
 
 <dl class="py method">
+<dt id="wizwalker.Client.get_world_view_window">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">get_world_view_window</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.get_world_view_window" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the world view window</p>
+</dd></dl>
+
+<dl class="py method">
 <dt id="wizwalker.Client.goto">
 <em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">goto</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.goto" title="Permalink to this definition">¶</a></dt>
 <dd><p>Moves the player to a specific x and y</p>
@@ -347,7 +353,13 @@ ids are str</p>
 <dl class="py method">
 <dt id="wizwalker.Client.is_in_dialog">
 <em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">is_in_dialog</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#wizwalker.Client.is_in_dialog" title="Permalink to this definition">¶</a></dt>
-<dd><p>If the client is in dialong</p>
+<dd><p>If the client is in dialog</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.Client.is_in_npc_range">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">is_in_npc_range</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#wizwalker.Client.is_in_npc_range" title="Permalink to this definition">¶</a></dt>
+<dd><p>If the client is within an npc interact range</p>
 </dd></dl>
 
 <dl class="py method">
@@ -399,7 +411,7 @@ ids are str</p>
 
 <dl class="py method">
 <dt id="wizwalker.Client.send_key">
-<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">send_key</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">wizwalker.constants.Keycode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seconds</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.send_key" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">send_key</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">wizwalker.constants.Keycode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seconds</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.send_key" title="Permalink to this definition">¶</a></dt>
 <dd><p>Send a key</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
