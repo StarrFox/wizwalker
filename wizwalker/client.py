@@ -240,6 +240,8 @@ class Client:
             if await child.name() == "NPCServicesWin":
                 return True
 
+        return False
+
     async def is_in_npc_range(self) -> bool:
         """
         If the client is within an npc interact range
