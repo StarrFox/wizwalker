@@ -31,9 +31,14 @@ class CacheHandler:
         """
         return utils.get_cache_folder()
 
-    async def check_updated(self, wad_file: Wad, files: Union[List[str], str]):
+    async def check_updated(
+        self, wad_file: Wad, files: Union[List[str], str]
+    ) -> List[str]:
         """
         Checks if some wad files have changed since we last accessed them
+
+        Returns:
+            List of the file names that have updated
         """
         if isinstance(files, str):
             files = [files]
@@ -63,6 +68,7 @@ class CacheHandler:
 
         return res
 
+    # TODO: rename in 2.0
     async def cache(self):
         """
         Caches various file data
@@ -73,9 +79,7 @@ class CacheHandler:
         await self._cache_template(root_wad)
 
     async def _cache_template(self, root_wad):
-        template_file = "TemplateManifest.xml"
-
-        template_file = await self.check_updated(root_wad, template_file)
+        template_file = await self.check_updated(root_wad, "TemplateManifest.xml")
 
         if template_file:
             file_data = await root_wad.get_file("TemplateManifest.xml")
@@ -85,50 +89,6 @@ class CacheHandler:
             async with aiofiles.open(self.cache_dir / "template_ids.json", "w+") as fp:
                 json_data = json.dumps(pharsed_template_ids)
                 await fp.write(json_data)
-
-    async def _cache_nodes(self):
-        self.node_cache = await self.get_node_cache()
-
-        game_data = self.install_location / "Data" / "GameData"
-        all_wads = game_data.glob("*.wad")
-
-        new_node_data = {}
-        for wad_name in all_wads:
-            wad_name = wad_name.name
-            if not self.node_cache[wad_name]:
-                logger.info(f"Checking {wad_name} for node data")
-                wad = Wad.from_game_data(wad_name)
-                self.node_cache[wad_name] = 1
-
-                try:
-                    file_info = await wad.get_file_info("pathNodeData.bin")
-                    if file_info.size == 20:
-                        continue
-
-                    node_data = await wad.get_file("pathNodeData.bin")
-                except RuntimeError:
-                    continue
-                else:
-                    pharsed_node_data = utils.pharse_node_data(node_data)
-                    new_node_data[wad_name] = pharsed_node_data
-
-        if new_node_data:
-            node_data_json = self.cache_dir / "node_data.json"
-            if node_data_json.exists():
-                async with aiofiles.open(node_data_json) as fp:
-                    json_data = await fp.read()
-                    old_node_data = json.loads(json_data)
-
-            else:
-                old_node_data = {}
-
-            old_node_data.update(new_node_data)
-
-            async with aiofiles.open(node_data_json, "w+") as fp:
-                json_data = json.dumps(old_node_data)
-                await fp.write(json_data)
-
-        await self.write_node_cache()
 
     async def get_template_ids(self) -> dict:
         """
@@ -180,31 +140,16 @@ class CacheHandler:
             json_data = json.dumps(self.wad_cache)
             await fp.write(json_data)
 
-    async def get_node_cache(self) -> dict:
-        """
-        Loads the node cache from disk
-
-        Returns:
-            The current node cache data
-        """
-        try:
-            async with aiofiles.open(self.cache_dir / "node_cache.data") as fp:
-                data = await fp.read()
-        except OSError:
-            data = None
-
-        node_cache = defaultdict(lambda: 0)
-
-        if data:
-            node_cache_data = json.loads(data)
-            node_cache.update(node_cache_data)
-
-        return node_cache
-
-    async def write_node_cache(self):
-        """
-        Writes node cache to disk
-        """
-        async with aiofiles.open(self.cache_dir / "node_cache.data", "w+") as fp:
-            json_data = json.dumps(self.node_cache)
-            await fp.write(json_data)
+    # async def get_nav_data(self, zone_name: str):
+    #     """
+    #
+    #     Args:
+    #         zone_name:
+    #
+    #     Returns:
+    #
+    #     """
+    #     pass
+    #
+    # async def write_nav_data(self):
+    #     pass

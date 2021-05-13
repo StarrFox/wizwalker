@@ -61,6 +61,7 @@ class Client:
 
         self._template_ids = None
         self._is_loading_addr = None
+        self._world_view_window = None
 
     def __repr__(self):
         return f"<Client {self.window_handle=} {self.process_id=}>"
@@ -150,6 +151,19 @@ class Client:
 
         return entities
 
+    async def get_world_view_window(self):
+        """
+        Get the world view window
+        """
+        if self._world_view_window:
+            return self._world_view_window
+
+        pos = await self.root_window.get_windows_with_name("WorldView")
+        # TODO: test this claim on login screen
+        # world view always exists
+        self._world_view_window = pos[0]
+        return self._world_view_window
+
     async def activate_hooks(
         self, *, wait_for_ready: bool = True, timeout: float = None
     ):
@@ -218,9 +232,24 @@ class Client:
 
     async def is_in_dialog(self) -> bool:
         """
-        If the client is in dialong
+        If the client is in dialog
         """
-        return bool(await self.root_window.get_windows_with_name("wndDialogMain"))
+        world_view = await self.get_world_view_window()
+        for child in await world_view.children():
+            # TODO: check if we also need to check for wndDialogMain child
+            if await child.name() == "NPCServicesWin":
+                return True
+
+    async def is_in_npc_range(self) -> bool:
+        """
+        If the client is within an npc interact range
+        """
+        world_view = await self.get_world_view_window()
+        for child in await world_view.children():
+            if await child.name() == "NPCRangeWin":
+                return True
+
+        return False
 
     async def backpack_space(self) -> tuple:
         """
@@ -289,7 +318,7 @@ class Client:
         """
         utils.instance_login(self.window_handle, username, password)
 
-    async def send_key(self, key: Keycode, seconds: float = 0.5):
+    async def send_key(self, key: Keycode, seconds: float = 0):
         """
         Send a key
 
