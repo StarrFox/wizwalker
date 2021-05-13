@@ -237,7 +237,10 @@ class Client:
         world_view = await self.get_world_view_window()
         for child in await world_view.children():
             # TODO: check if we also need to check for wndDialogMain child
-            if await child.name() == "NPCServicesWin":
+            if (child_name := await child.name()) == "NPCServicesWin":
+                return True
+
+            elif child_name == "wndDialogMain":
                 return True
 
         return False
@@ -366,9 +369,6 @@ class Client:
         Args:
             xyz: xyz to teleport to
             yaw: yaw to set or None to not change
-
-        Raises:
-            RuntimeError: player hook not active
         """
         await self.body.write_position(xyz)
 
