@@ -80,7 +80,7 @@ class Client:
     @property
     def window_rectangle(self):
         """
-        Get this window's rectangle
+        Get this client's window rectangle
         """
         return get_window_rectangle(self.window_handle)
 
