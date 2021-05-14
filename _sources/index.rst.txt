@@ -1,32 +1,12 @@
-Welcome to WizWalker's documentation
-=====================================
+.. title:: Wizwalker
 
-To install simply do
+.. container:: lead
 
-.. code-block:: sh
+    Wizwalker
 
-    pip install wizwalker
+    Wizard101 scripting library
 
-Guides
-======
+    .. raw:: html
 
-.. toctree::
-    :maxdepth: 1
-
-    quickstart
-
-Api Reference
-=============
-
-.. toctree::
-   :maxdepth: 2
-
-   api
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+        <a href="quickstart.html" class="btn btn-primary">Quickstart →</a>
+        <a href="api.html" class="btn btn-primary">API →</a>
