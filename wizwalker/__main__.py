@@ -9,7 +9,6 @@ from loguru import logger
 
 from wizwalker import Wad, WizWalker, utils
 from wizwalker.cli import start_console
-from wizwalker.cli.wizwalker_script import parse, run_script as run_wizwalker_script
 
 
 logger.enable("wizwalker")
@@ -45,15 +44,15 @@ def cli():
     start_console(locals={"walker": walker})
 
 
-@main.command()
-@click.argument("script_location", type=click.Path(exists=True, dir_okay=False))
-def run_script(script_location):
-    script_location = Path(script_location)
-    parsed = parse(script_location.read_text())
-
-    walker = WizWalker()
-
-    asyncio.run(run_wizwalker_script(walker, parsed))
+# @main.command()
+# @click.argument("script_location", type=click.Path(exists=True, dir_okay=False))
+# def run_script(script_location):
+#     script_location = Path(script_location)
+#     parsed = parse(script_location.read_text())
+#
+#     walker = WizWalker()
+#
+#     asyncio.run(run_wizwalker_script(walker, parsed))
 
 
 @main.command()
