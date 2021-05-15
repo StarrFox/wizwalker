@@ -213,7 +213,7 @@ class Client:
     async def is_loading(self) -> bool:
         """
         If the client is currently in a loading screen
-        (does not apply to chacter load in)
+        (does not apply to character load in)
         """
         if not self._is_loading_addr:
             mov_instruction_addr = await self.hook_handler.pattern_scan(

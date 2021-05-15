@@ -232,6 +232,19 @@ class HookHandler(MemoryReader):
         if wait_for_ready:
             await self._wait_for_value(player_hook.player_struct, timeout)
 
+    async def deactivate_player_hook(self):
+        """
+        Deactivate player hook
+        """
+        if not self._check_if_hook_active(PlayerHook):
+            raise HookNotActive("Player")
+
+        hook = await self._get_hook_by_type(PlayerHook)
+        self._active_hooks.remove(hook)
+        await hook.unhook()
+
+        del self._base_addrs["player_struct"]
+
     async def read_current_player_base(self) -> int:
         """
         Read player base address
@@ -264,6 +277,19 @@ class HookHandler(MemoryReader):
 
         if wait_for_ready:
             await self._wait_for_value(duel_hook.current_duel_addr, timeout)
+
+    async def deactivate_duel_hook(self):
+        """
+        Deactivate duel hook
+        """
+        if not self._check_if_hook_active(DuelHook):
+            raise HookNotActive("Duel")
+
+        hook = await self._get_hook_by_type(DuelHook)
+        self._active_hooks.remove(hook)
+        await hook.unhook()
+
+        del self._base_addrs["current_duel"]
 
     async def read_current_duel_base(self) -> int:
         """
@@ -298,6 +324,19 @@ class HookHandler(MemoryReader):
         if wait_for_ready:
             await self._wait_for_value(quest_hook.cord_struct, timeout)
 
+    async def deactivate_quest_hook(self):
+        """
+        Deactivate quest hook
+        """
+        if not self._check_if_hook_active(QuestHook):
+            raise HookNotActive("Quest")
+
+        hook = await self._get_hook_by_type(QuestHook)
+        self._active_hooks.remove(hook)
+        await hook.unhook()
+
+        del self._base_addrs["quest_struct"]
+
     async def read_current_quest_base(self) -> int:
         """
         Read quest base address
@@ -331,6 +370,19 @@ class HookHandler(MemoryReader):
         if wait_for_ready:
             await self._wait_for_value(player_stat_hook.stat_addr, timeout)
 
+    async def deactivate_player_stat_hook(self):
+        """
+        Deactivate player stat hook
+        """
+        if not self._check_if_hook_active(PlayerStatHook):
+            raise HookNotActive("Player stat")
+
+        hook = await self._get_hook_by_type(PlayerStatHook)
+        self._active_hooks.remove(hook)
+        await hook.unhook()
+
+        del self._base_addrs["player_stat_struct"]
+
     async def read_current_player_stat_base(self) -> int:
         """
         Read player stat base address
@@ -363,6 +415,19 @@ class HookHandler(MemoryReader):
 
         if wait_for_ready:
             await self._wait_for_value(client_hook.current_client_addr, timeout)
+
+    async def deactivate_client_hook(self):
+        """
+        Deactivate client hook
+        """
+        if not self._check_if_hook_active(ClientHook):
+            raise HookNotActive("Client")
+
+        hook = await self._get_hook_by_type(ClientHook)
+        self._active_hooks.remove(hook)
+        await hook.unhook()
+
+        del self._base_addrs["current_client"]
 
     async def read_current_client_base(self) -> int:
         """
@@ -401,6 +466,19 @@ class HookHandler(MemoryReader):
                 root_window_hook.current_root_window_addr, timeout
             )
 
+    async def deactivate_root_window_hook(self):
+        """
+        Deactivate root window hook
+        """
+        if not self._check_if_hook_active(RootWindowHook):
+            raise HookNotActive("Root window")
+
+        hook = await self._get_hook_by_type(RootWindowHook)
+        self._active_hooks.remove(hook)
+        await hook.unhook()
+
+        del self._base_addrs["current_root_window"]
+
     async def read_current_root_window_base(self) -> int:
         """
         Read current root window base address
@@ -438,6 +516,19 @@ class HookHandler(MemoryReader):
                 render_context_hook.current_render_context_addr, timeout
             )
 
+    async def deactivate_render_context_hook(self):
+        """
+        Deactivate render context hook
+        """
+        if not self._check_if_hook_active(RenderContextHook):
+            raise HookNotActive("Render context")
+
+        hook = await self._get_hook_by_type(RenderContextHook)
+        self._active_hooks.remove(hook)
+        await hook.unhook()
+
+        del self._base_addrs["current_render_context"]
+
     async def read_current_render_context_base(self) -> int:
         """
         Read current render context base address
@@ -466,6 +557,19 @@ class HookHandler(MemoryReader):
         self._base_addrs["mouse_position"] = mouseless_cursor_hook.mouse_pos_addr
 
         await self.write_mouse_position(0, 0)
+
+    async def deactivate_mouseless_cursor_hook(self):
+        """
+        Deactivate mouseless cursor hook
+        """
+        if not self._check_if_hook_active(MouselessCursorMoveHook):
+            raise HookNotActive("Mouseless cursor")
+
+        hook = await self._get_hook_by_type(MouselessCursorMoveHook)
+        self._active_hooks.remove(hook)
+        await hook.unhook()
+
+        del self._base_addrs["mouse_position"]
 
     async def write_mouse_position(self, x: int, y: int):
         """
