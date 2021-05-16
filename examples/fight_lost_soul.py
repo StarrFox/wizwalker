@@ -1,6 +1,6 @@
 import asyncio
 
-from wizwalker import WizWalker
+from wizwalker import ClientHandler
 from wizwalker.combat import CombatHandler
 
 
@@ -22,8 +22,8 @@ class LostSoulDestroyer(CombatHandler):
 
 
 async def main():
-    walker = WizWalker()
-    client = walker.get_new_clients()[0]
+    handler = ClientHandler()
+    client = handler.get_new_clients()[0]
 
     try:
         print("Preparing")
@@ -34,7 +34,7 @@ async def main():
         await LostSoulDestroyer(client).wait_for_combat()
     finally:
         print("Closing")
-        await walker.close()
+        await handler.close()
 
 
 if __name__ == "__main__":

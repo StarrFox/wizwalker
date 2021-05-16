@@ -4,18 +4,18 @@ import wizwalker
 from wizwalker.hotkey import Hotkey, Listener, ModifierKeys
 
 
-class Quester:
+class Quester(wizwalker.ClientHandler):
     def __init__(self):
-        self.walker = wizwalker.WizWalker()
-        self.walker.get_new_clients()
+        super().__init__()
+        self.get_new_clients()
 
     async def activate_hooks(self):
-        for client in self.walker.clients:
+        for client in self.clients:
             await client.hook_handler.activate_quest_hook()
             await client.hook_handler.activate_player_hook()
 
     async def handle_e_pressed(self):
-        for client in self.walker.clients:
+        for client in self.clients:
             await client.teleport(await client.quest_position.position())
 
     async def run(self):
@@ -30,9 +30,6 @@ class Quester:
 
         while True:
             await quest_listener.listen()
-
-    async def close(self):
-        await self.walker.close()
 
 
 if __name__ == "__main__":

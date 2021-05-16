@@ -1,6 +1,6 @@
 import asyncio
 
-from wizwalker import WizWalker, Keycode
+from wizwalker import ClientHandler, Keycode
 
 
 async def read_fish_basket(client):
@@ -26,8 +26,8 @@ async def read_fish_basket(client):
 
 
 async def main():
-    walker = WizWalker()
-    client = walker.get_new_clients()[0]
+    handler = ClientHandler()
+    client = handler.get_new_clients()[0]
 
     try:
         print("Preparing")
@@ -37,7 +37,7 @@ async def main():
         await read_fish_basket(client)
     finally:
         print("Closing")
-        await walker.close()
+        await handler.close()
 
 
 if __name__ == "__main__":
