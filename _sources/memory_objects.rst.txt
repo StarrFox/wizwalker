@@ -4,7 +4,7 @@
    :maxdepth: 5
 
 Actor bodys
-=========
+===========
 
 ActorBody
 ~~~~~~~~~
@@ -19,7 +19,7 @@ CurrentActorBody
     :members:
 
 Behavior instaces
-================
+=================
 
 BehaviorInstace
 ~~~~~~~~~~~~~~~
@@ -34,7 +34,7 @@ DynamicBehaviorInstace
     :members:
 
 Behavior templates
-================
+==================
 
 BehaviorTemplate
 ~~~~~~~~~~~~~~~~

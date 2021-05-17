@@ -110,6 +110,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#wizwalker.combat.CombatCard.accuracy">accuracy() (wizwalker.combat.CombatCard method)</a>
 </li>
+      <li><a href="api.html#wizwalker.ClientHandler.activate_all_client_hooks">activate_all_client_hooks() (wizwalker.ClientHandler method)</a>
+</li>
       <li><a href="api.html#wizwalker.memory.HookHandler.activate_all_hooks">activate_all_hooks() (wizwalker.memory.HookHandler method)</a>
 </li>
       <li><a href="api.html#wizwalker.memory.HookHandler.activate_client_hook">activate_client_hook() (wizwalker.memory.HookHandler method)</a>
@@ -120,10 +122,10 @@
 </li>
       <li><a href="api.html#wizwalker.MouseHandler.activate_mouseless">activate_mouseless() (wizwalker.MouseHandler method)</a>
 </li>
-      <li><a href="api.html#wizwalker.memory.HookHandler.activate_mouseless_cursor_hook">activate_mouseless_cursor_hook() (wizwalker.memory.HookHandler method)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#wizwalker.memory.HookHandler.activate_mouseless_cursor_hook">activate_mouseless_cursor_hook() (wizwalker.memory.HookHandler method)</a>
+</li>
       <li><a href="api.html#wizwalker.memory.HookHandler.activate_player_hook">activate_player_hook() (wizwalker.memory.HookHandler method)</a>
 </li>
       <li><a href="api.html#wizwalker.memory.HookHandler.activate_player_stat_hook">activate_player_stat_hook() (wizwalker.memory.HookHandler method)</a>
@@ -182,16 +184,22 @@
 </li>
       <li><a href="memory_objects.html#wizwalker.memory.memory_objects.ClientObject.client_zone">client_zone() (wizwalker.memory.memory_objects.ClientObject method)</a>
 </li>
+      <li><a href="api.html#wizwalker.ClientClosedError">ClientClosedError</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#wizwalker.ClientClosedError">ClientClosedError</a>
+      <li><a href="api.html#wizwalker.ClientHandler">ClientHandler (class in wizwalker)</a>
 </li>
       <li><a href="memory_objects.html#wizwalker.memory.memory_objects.ClientObject">ClientObject (class in wizwalker.memory.memory_objects)</a>
 </li>
       <li><a href="memory_objects.html#wizwalker.memory.memory_objects.ClientZone">ClientZone (class in wizwalker.memory.memory_objects)</a>
 </li>
       <li><a href="api.html#wizwalker.Client.close">close() (wizwalker.Client method)</a>
+
+      <ul>
+        <li><a href="api.html#wizwalker.ClientHandler.close">(wizwalker.ClientHandler method)</a>
 </li>
+      </ul></li>
       <li><a href="api.html#wizwalker.combat.CombatCard">CombatCard (class in wizwalker.combat)</a>
 </li>
       <li><a href="api.html#wizwalker.combat.CombatHandler">CombatHandler (class in wizwalker.combat)</a>
@@ -284,15 +292,19 @@
 </li>
       <li><a href="api.html#wizwalker.combat.CombatCard.get_graphical_spell">get_graphical_spell() (wizwalker.combat.CombatCard method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#wizwalker.combat.CombatMember.get_health_text_window">get_health_text_window() (wizwalker.combat.CombatMember method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#wizwalker.combat.CombatHandler.get_member_named">get_member_named() (wizwalker.combat.CombatHandler method)</a>
 </li>
       <li><a href="api.html#wizwalker.combat.CombatHandler.get_members">get_members() (wizwalker.combat.CombatHandler method)</a>
 </li>
       <li><a href="api.html#wizwalker.combat.CombatMember.get_name_text_window">get_name_text_window() (wizwalker.combat.CombatMember method)</a>
+</li>
+      <li><a href="api.html#wizwalker.ClientHandler.get_new_clients">get_new_clients() (wizwalker.ClientHandler method)</a>
+</li>
+      <li><a href="api.html#wizwalker.ClientHandler.get_ordered_clients">get_ordered_clients() (wizwalker.ClientHandler method)</a>
 </li>
       <li><a href="api.html#wizwalker.combat.CombatMember.get_participant">get_participant() (wizwalker.combat.CombatMember method)</a>
 </li>
@@ -354,6 +366,8 @@
 </li>
       <li><a href="memory_objects.html#wizwalker.memory.memory_objects.ClientObject.inactive_behaviors">inactive_behaviors() (wizwalker.memory.memory_objects.ClientObject method)</a>
 </li>
+      <li><a href="api.html#wizwalker.ClientHandler.install_location">install_location() (wizwalker.ClientHandler property)</a>
+</li>
       <li><a href="api.html#wizwalker.combat.CombatMember.is_boss">is_boss() (wizwalker.combat.CombatMember method)</a>
 </li>
       <li><a href="api.html#wizwalker.combat.CombatCard.is_castable">is_castable() (wizwalker.combat.CombatCard method)</a>
@@ -368,10 +382,10 @@
 </li>
       <li><a href="api.html#wizwalker.Client.is_in_dialog">is_in_dialog() (wizwalker.Client method)</a>
 </li>
-      <li><a href="api.html#wizwalker.Client.is_in_npc_range">is_in_npc_range() (wizwalker.Client method)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#wizwalker.Client.is_in_npc_range">is_in_npc_range() (wizwalker.Client method)</a>
+</li>
       <li><a href="api.html#wizwalker.combat.CombatCard.is_item_card">is_item_card() (wizwalker.combat.CombatCard method)</a>
 </li>
       <li><a href="api.html#wizwalker.Client.is_loading">is_loading() (wizwalker.Client method)</a>
@@ -547,10 +561,10 @@
 </li>
       <li><a href="api.html#wizwalker.memory.HookHandler.read_current_render_context_base">read_current_render_context_base() (wizwalker.memory.HookHandler method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#wizwalker.memory.HookHandler.read_current_root_window_base">read_current_root_window_base() (wizwalker.memory.HookHandler method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#wizwalker.memory.MemoryReader.read_typed">read_typed() (wizwalker.memory.MemoryReader method)</a>
 </li>
       <li><a href="api.html#wizwalker.ReadingEnumFailed">ReadingEnumFailed</a>
@@ -558,6 +572,8 @@
       <li><a href="api.html#wizwalker.Rectangle">Rectangle (class in wizwalker)</a>
 </li>
       <li><a href="api.html#wizwalker.XYZ.relative_yaw">relative_yaw() (wizwalker.XYZ method)</a>
+</li>
+      <li><a href="api.html#wizwalker.ClientHandler.remove_dead_clients">remove_dead_clients() (wizwalker.ClientHandler method)</a>
 </li>
       <li><a href="memory_objects.html#wizwalker.memory.memory_objects.ActorBody.roll">roll() (wizwalker.memory.memory_objects.ActorBody method)</a>
 </li>
@@ -581,10 +597,10 @@
 </li>
       <li><a href="api.html#wizwalker.Client.send_hotkey">send_hotkey() (wizwalker.Client method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#wizwalker.Client.send_key">send_key() (wizwalker.Client method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#wizwalker.MouseHandler.set_mouse_position">set_mouse_position() (wizwalker.MouseHandler method)</a>
 </li>
       <li><a href="api.html#wizwalker.combat.CombatMember.shadow_pips">shadow_pips() (wizwalker.combat.CombatMember method)</a>
@@ -592,6 +608,8 @@
       <li><a href="memory_objects.html#wizwalker.memory.memory_objects.ClientObject.speed_multiplier">speed_multiplier() (wizwalker.memory.memory_objects.ClientObject method)</a>
 </li>
       <li><a href="api.html#wizwalker.combat.CombatCard.spell_id">spell_id() (wizwalker.combat.CombatCard method)</a>
+</li>
+      <li><a href="api.html#wizwalker.ClientHandler.start_wiz_client">start_wiz_client() (wizwalker.ClientHandler static method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -638,8 +656,6 @@
         <li><a href="api.html#module-wizwalker">module</a>
 </li>
       </ul></li>
-      <li><a href="api.html#wizwalker.WizWalker">WizWalker (class in wizwalker)</a>
-</li>
       <li>
     wizwalker.memory.memory_objects
 
@@ -663,10 +679,10 @@
 </li>
       <li><a href="memory_objects.html#wizwalker.memory.memory_objects.ClientObject.write_debug_name">write_debug_name() (wizwalker.memory.memory_objects.ClientObject method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="memory_objects.html#wizwalker.memory.memory_objects.ClientObject.write_display_key">write_display_key() (wizwalker.memory.memory_objects.ClientObject method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="memory_objects.html#wizwalker.memory.memory_objects.ClientObject.write_global_id_full">write_global_id_full() (wizwalker.memory.memory_objects.ClientObject method)</a>
 </li>
       <li><a href="memory_objects.html#wizwalker.memory.memory_objects.ActorBody.write_height">write_height() (wizwalker.memory.memory_objects.ActorBody method)</a>

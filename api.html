@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WizWalker &#8212; WizWalker  documentation</title>
+    <title>ClientHandler &#8212; WizWalker  documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/basic.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -80,12 +80,70 @@
     
   <span class="target" id="module-wizwalker"></span><div class="toctree-wrapper compound">
 </div>
-<div class="section" id="wizwalker">
-<h1>WizWalker<a class="headerlink" href="#wizwalker" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="clienthandler">
+<h1>ClientHandler<a class="headerlink" href="#clienthandler" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
-<dt id="wizwalker.WizWalker">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">wizwalker.</span></code><code class="sig-name descname"><span class="pre">WizWalker</span></code><a class="headerlink" href="#wizwalker.WizWalker" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="wizwalker.ClientHandler">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">wizwalker.</span></code><code class="sig-name descname"><span class="pre">ClientHandler</span></code><a class="headerlink" href="#wizwalker.ClientHandler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Manages clients</p>
+<dl class="py method">
+<dt id="wizwalker.ClientHandler.activate_all_client_hooks">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">activate_all_client_hooks</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wait_for_ready</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.ClientHandler.activate_all_client_hooks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Activate hooks for all clients</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.ClientHandler.close">
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">close</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.ClientHandler.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Closes all clients</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.ClientHandler.get_new_clients">
+<code class="sig-name descname"><span class="pre">get_new_clients</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">wizwalker.client.Client</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.ClientHandler.get_new_clients" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all new clients currently not managed</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>List of new clients added</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.ClientHandler.get_ordered_clients">
+<code class="sig-name descname"><span class="pre">get_ordered_clients</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">wizwalker.client.Client</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.ClientHandler.get_ordered_clients" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get client’s ordered by their position on the screen</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>List of the ordered clients</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.ClientHandler.install_location">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">install_location</span></code><a class="headerlink" href="#wizwalker.ClientHandler.install_location" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wizard101 install location</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.ClientHandler.remove_dead_clients">
+<code class="sig-name descname"><span class="pre">remove_dead_clients</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">wizwalker.client.Client</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#wizwalker.ClientHandler.remove_dead_clients" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove and return clients that are no longer running</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>List of the dead clients removed</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="wizwalker.ClientHandler.start_wiz_client">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">start_wiz_client</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.ClientHandler.start_wiz_client" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start a new client</p>
+</dd></dl>
+
+</dd></dl>
 
 </div>
 <div class="section" id="client">
