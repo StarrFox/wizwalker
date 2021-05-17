@@ -66,6 +66,7 @@ html_theme_options = {
     "navbar_links": [
         ("Quickstart", "quickstart"),
         ("API", "api"),
+        ("Memory objects", "memory_objects"),
         ("Index", "genindex"),
     ],
     "footer_text": "",

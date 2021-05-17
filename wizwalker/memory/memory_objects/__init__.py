@@ -1,10 +1,9 @@
 from .actor_body import ActorBody, CurrentActorBody
+from .client_zone import ClientZone, DynamicClientZone
 from .client_object import (
     ClientObject,
     CurrentClientObject,
     DynamicClientObject,
-    ClientZone,
-    DynamicClientZone,
 )
 from .combat_participant import CombatParticipant, DynamicCombatParticipant
 from .duel import CurrentDuel, Duel

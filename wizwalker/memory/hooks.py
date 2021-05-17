@@ -355,7 +355,7 @@ class User32GetClassInfoBaseHook(AutoBotBaseHook):
 
     async def alloc(self, size: int) -> int:
         if self._autobot_addr is None:
-            addr = await self.pattern_scan(self.AUTOBOT_PATTERN)
+            addr = await self.pattern_scan(self.AUTOBOT_PATTERN, module="user32.dll")
             # this is so all instances have the address
             User32GetClassInfoBaseHook._autobot_addr = addr
 

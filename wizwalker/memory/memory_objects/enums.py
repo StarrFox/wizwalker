@@ -274,3 +274,22 @@ class ObjectType(Enum):
     structure = 27
     housing_texture = 28
     plant = 29
+
+
+# class MagicSchool(Enum):
+#     ice = 72777
+#     sun = 78483
+#     life = 2330892
+#     fire = 2343174
+#     star = 2625203
+#     myth = 2448141
+#     moon = 2504141
+#     death = 78318724
+#     storm = 83375795
+#     gardening = 663550619
+#     castle_magic = 806477568
+#     whirly_burly = 931528087
+#     balance = 1027491821
+#     shadow = 1429009101
+#     fishing = 1488274711
+#     cantrips = 1760873841

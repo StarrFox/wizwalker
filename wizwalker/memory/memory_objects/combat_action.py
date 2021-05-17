@@ -2,6 +2,7 @@ from wizwalker.memory.memory_object import MemoryObject, DynamicMemoryObject
 from .spell import DynamicSpell
 
 
+# TODO: document
 class CombatAction(MemoryObject):
     async def read_base_address(self) -> int:
         raise NotImplementedError()

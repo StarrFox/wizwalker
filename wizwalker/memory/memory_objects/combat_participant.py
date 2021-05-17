@@ -9,72 +9,175 @@ from .spell_effect import DynamicSpellEffect
 
 
 class CombatParticipant(PropertyClass):
+    """
+    Base class for CombatParticipants
+    """
+
     def read_base_address(self) -> int:
         raise NotImplementedError()
 
     async def owner_id_full(self) -> int:
+        """
+        This combat participant's owner id
+        """
         return await self.read_value_from_offset(112, "unsigned long long")
 
     async def write_owner_id_full(self, owner_id_full: int):
+        """
+        Write this combat participant's owner id
+
+        Args:
+            owner_id_full: The owner id to write
+        """
         await self.write_value_to_offset(112, owner_id_full, "unsigned long long")
 
     async def template_id_full(self) -> int:
+        """
+        This combat participant's template id
+        """
         return await self.read_value_from_offset(120, "unsigned long long")
 
     async def write_template_id_full(self, template_id_full: int):
+        """
+        Write this combat participant's template id
+
+        Args:
+            template_id_full: The template id to write
+        """
         await self.write_value_to_offset(120, template_id_full, "unsigned long long")
 
     async def is_player(self) -> bool:
+        """
+        If this combat participant is a player
+        """
         return await self.read_value_from_offset(128, "bool")
 
     async def write_is_player(self, is_player: bool):
+        """
+        Write if this combat participant is a player
+
+        Args:
+            is_player: The bool to write
+        """
         await self.write_value_to_offset(128, is_player, "bool")
 
     async def zone_id_full(self) -> int:
+        """
+        This combat participant's zone id
+        """
         return await self.read_value_from_offset(136, "unsigned long long")
 
     async def write_zone_id_full(self, zone_id_full: int):
+        """
+        Write this combat participant's zone id
+
+        Args:
+            zone_id_full: The zone id to write
+        """
         await self.write_value_to_offset(136, zone_id_full, "unsigned long long")
 
+    # TODO: look into what a team id is; i.e is it always the two ids
     async def team_id(self) -> int:
+        """
+        This combat participant's team id
+        """
         return await self.read_value_from_offset(144, "int")
 
     async def write_team_id(self, team_id: int):
+        """
+        Write this combat participant's team id
+
+        Args:
+            team_id: The team id to write
+        """
         await self.write_value_to_offset(144, team_id, "int")
 
+    # TODO: turn this into an enum?
     async def primary_magic_school_id(self) -> int:
+        """
+        This combat participant's primary school id
+
+        Notes:
+            This is a template id
+        """
         return await self.read_value_from_offset(148, "int")
 
     async def write_primary_magic_school_id(self, primary_magic_school_id: int):
+        """
+        Write this combat participant's primate school id
+
+        Args:
+            primary_magic_school_id: The school id to write
+
+        Notes:
+            this is a template id
+        """
         await self.write_value_to_offset(148, primary_magic_school_id, "int")
 
     async def num_pips(self) -> int:
+        """
+        The number of pips this combat participant has
+        """
         return await self.read_value_from_offset(152, "unsigned char")
 
     async def write_num_pips(self, num_pips: int):
+        """
+        Write this participant's pip number
+
+        Args:
+            num_pips: The pip number to write
+        """
         await self.write_value_to_offset(152, num_pips, "unsigned char")
 
     async def num_power_pips(self) -> int:
+        """
+        The number of power pips this combat participant has
+        """
         return await self.read_value_from_offset(153, "unsigned char")
 
     async def write_num_power_pips(self, num_power_pips: int):
+        """
+        Write the number of power pips this combat participant has
+
+        Args:
+            num_power_pips: The power pip number to write
+        """
         await self.write_value_to_offset(153, num_power_pips, "unsigned char")
 
     async def num_shadow_pips(self) -> int:
+        """
+        The number of shadow pips this combat participant has
+        """
         return await self.read_value_from_offset(154, "unsigned char")
 
     async def write_num_shadow_pips(self, num_shadow_pips: int):
+        """
+        Write the number of shadow pips this combat participant has
+
+        Args:
+            num_shadow_pips: The power pip number to write
+        """
         await self.write_value_to_offset(154, num_shadow_pips, "unsigned char")
 
     # async def pip_round_rates(self) -> class SharedPointer<class ModifyPipRoundRateData>:
     #     return await self.read_value_from_offset(160, "class SharedPointer<class ModifyPipRoundRateData>")
 
     async def pips_suspended(self) -> bool:
+        """
+        If this participant's pips are suspended
+        """
         return await self.read_value_from_offset(176, "bool")
 
     async def write_pips_suspended(self, pips_suspended: bool):
+        """
+        Write if this participant's pips are suspended
+
+        Args:
+            pips_suspended: bool if pips are suspended
+        """
         await self.write_value_to_offset(176, pips_suspended, "bool")
 
+    # TODO: finish docs
     async def stunned(self) -> int:
         return await self.read_value_from_offset(180, "int")
 
