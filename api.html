@@ -1014,7 +1014,7 @@ top left corner of the client</p>
 
 <dl class="py method">
 <dt id="wizwalker.memory.HookHandler.activate_quest_hook">
-<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">activate_quest_hook</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wait_for_ready</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.memory.HookHandler.activate_quest_hook" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">async</span> </em><code class="sig-name descname"><span class="pre">activate_quest_hook</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wait_for_ready</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.memory.HookHandler.activate_quest_hook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Activate quest hook</p>
 <dl class="field-list simple">
 <dt class="field-odd">Keyword Arguments</dt>
@@ -1272,6 +1272,7 @@ top left corner of the client</p>
 <dd class="field-even"><ul class="simple">
 <li><p><a class="reference internal" href="#wizwalker.ClientClosedError" title="wizwalker.ClientClosedError"><strong>ClientClosedError</strong></a> – If the client is closed</p></li>
 <li><p><a class="reference internal" href="#wizwalker.MemoryReadError" title="wizwalker.MemoryReadError"><strong>MemoryReadError</strong></a> – If there was an error reading memory</p></li>
+<li><p><strong>ValueError</strong> – If the addrress is out of bounds</p></li>
 </ul>
 </dd>
 </dl>
@@ -1401,7 +1402,7 @@ but it is not</p>
 
 <dl class="py exception">
 <dt id="wizwalker.MemoryReadError">
-<em class="property"><span class="pre">exception</span> </em><code class="sig-prename descclassname"><span class="pre">wizwalker.</span></code><code class="sig-name descname"><span class="pre">MemoryReadError</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">address</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.MemoryReadError" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">exception</span> </em><code class="sig-prename descclassname"><span class="pre">wizwalker.</span></code><code class="sig-name descname"><span class="pre">MemoryReadError</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">address_or_message</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.MemoryReadError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Raised when we couldn’t read some memory</p>
 </dd></dl>
 
