@@ -3,10 +3,10 @@
 .. toctree::
    :maxdepth: 5
 
-WizWalker
-=========
+ClientHandler
+=============
 
-.. autoclass:: WizWalker()
+.. autoclass:: ClientHandler
    :members:
 
 Client
