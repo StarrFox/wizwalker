@@ -338,8 +338,8 @@ class User32GetClassInfoBaseHook(AutoBotBaseHook):
     """
 
     AUTOBOT_PATTERN = (
-        rb"\x48\x89\x5C\x24\x20\x55\x56\x57\x41\x54"
-        rb"\x41\x55\x41\x56\x41\x57........\x48......\x48\x8B\x05\x9A"
+        rb"\x48\x89\x5C\x24\x20\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57........"
+        rb"\x48......\x48\x8B\x05....\x48\x33\xC4.+\x48\x8B\xDA\x4C"
     )
     # rounded down
     AUTOBOT_SIZE = 1200
@@ -445,7 +445,8 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
         return bytecode
 
     async def get_pattern(self) -> Tuple[bytes, str]:
-        return rb"[\xBA\xE9]....\x44\x8D\x42\x7E\x48\xFF\x25", "user32.dll"
+        # other processes love hooking this function
+        return rb"[\xBA\xE9]....[\x44\x41][\x8D\xB8]..(..)?\x48\xFF\x25", "user32.dll"
 
     async def unhook(self):
         await super().unhook()
