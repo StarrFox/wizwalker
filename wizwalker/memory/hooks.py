@@ -332,6 +332,7 @@ class RenderContextHook(SimpleHook):
         return bytecode
 
 
+# TODO: fix this hacky class
 class User32GetClassInfoBaseHook(AutoBotBaseHook):
     """
     Subclass of MemoryHook that uses the user32.GetClassInfoExA for bytes so addresses arent huge
@@ -339,7 +340,7 @@ class User32GetClassInfoBaseHook(AutoBotBaseHook):
 
     AUTOBOT_PATTERN = (
         rb"\x48\x89\x5C\x24\x20\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57........"
-        rb"\x48......\x48\x8B\x05....\x48\x33\xC4.+\x48\x8B\xDA\x4C"
+        rb"\x48......\x48\x8B\x05.+\x48\x33\xC4.+\x48\x8B\xDA\x4C"
     )
     # rounded down
     AUTOBOT_SIZE = 1200

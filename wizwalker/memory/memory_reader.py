@@ -69,7 +69,7 @@ class MemoryReader:
 
         found = []
 
-        for match in re.finditer(pattern, page_bytes):
+        for match in re.finditer(pattern, page_bytes, re.DOTALL):
             found_address = address + match.span()[0]
             found.append(found_address)
 
