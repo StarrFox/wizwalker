@@ -181,7 +181,11 @@ class MemoryReader:
         Raises:
             ClientClosedError: If the client is closed
             MemoryReadError: If there was an error reading memory
+            ValueError: If the addrress is out of bounds
         """
+        if not 0 < address <= 0x7FFFFFFFFFFFFFFF:
+            raise ValueError(f"Address {address} out of bounds")
+
         try:
             return await self.run_in_executor(self.process.read_bytes, address, size)
         except pymem.exception.MemoryReadError:

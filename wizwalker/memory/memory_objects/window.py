@@ -69,7 +69,11 @@ class Window(PropertyClass):
         windows = []
 
         # check our own children
-        children = await self.children()
+        try:
+            children = await self.children()
+        except ValueError:
+            children = []
+
         for child in children:
             if await predicate(child):
                 windows.append(child)

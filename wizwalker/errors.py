@@ -1,3 +1,6 @@
+from typing import Union
+
+
 class WizWalkerError(Exception):
     """
     Base wizwalker exception, all exceptions raised should inherit from this
@@ -68,8 +71,11 @@ class MemoryReadError(WizWalkerMemoryError):
     Raised when we couldn't read some memory
     """
 
-    def __init__(self, address: int):
-        super().__init__(f"Unable to read memory at address {address}.")
+    def __init__(self, address_or_message: Union[int, str]):
+        if isinstance(address_or_message, int):
+            super().__init__(f"Unable to read memory at address {address_or_message}.")
+        else:
+            super().__init__(address_or_message)
 
 
 class MemoryWriteError(WizWalkerMemoryError):

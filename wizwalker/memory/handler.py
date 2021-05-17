@@ -61,7 +61,9 @@ class HookHandler(MemoryReader):
         return addr
 
     async def _get_autobot_address(self):
-        addr = await self.pattern_scan(self.AUTOBOT_PATTERN)
+        addr = await self.pattern_scan(
+            self.AUTOBOT_PATTERN, module="WizardGraphicalClient.exe"
+        )
         if addr is None:
             raise RuntimeError("Pattern scan failed for autobot pattern")
 
@@ -185,7 +187,8 @@ class HookHandler(MemoryReader):
         await self.activate_player_hook(wait_for_ready=False)
         # duel is only written to on battle join
         await self.activate_duel_hook()
-        await self.activate_quest_hook(wait_for_ready=False)
+        # quest hook is not written if the quest arrow is off
+        await self.activate_quest_hook()
         await self.activate_player_stat_hook(wait_for_ready=False)
         await self.activate_client_hook(wait_for_ready=False)
         await self.activate_root_window_hook(wait_for_ready=False)
@@ -196,7 +199,6 @@ class HookHandler(MemoryReader):
             for atter_name in [
                 "player_struct",
                 "player_stat_struct",
-                "quest_struct",
                 "current_client",
                 "current_root_window",
                 "current_render_context",
@@ -301,7 +303,7 @@ class HookHandler(MemoryReader):
         return await self._read_hook_base_addr("current_duel", "Duel")
 
     async def activate_quest_hook(
-        self, *, wait_for_ready: bool = True, timeout: float = None
+        self, *, wait_for_ready: bool = False, timeout: float = None
     ):
         """
         Activate quest hook
