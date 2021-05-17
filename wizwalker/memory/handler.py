@@ -241,7 +241,7 @@ class HookHandler(MemoryReader):
         if not self._check_if_hook_active(PlayerHook):
             raise HookNotActive("Player")
 
-        hook = await self._get_hook_by_type(PlayerHook)
+        hook = self._get_hook_by_type(PlayerHook)
         self._active_hooks.remove(hook)
         await hook.unhook()
 
@@ -287,7 +287,7 @@ class HookHandler(MemoryReader):
         if not self._check_if_hook_active(DuelHook):
             raise HookNotActive("Duel")
 
-        hook = await self._get_hook_by_type(DuelHook)
+        hook = self._get_hook_by_type(DuelHook)
         self._active_hooks.remove(hook)
         await hook.unhook()
 
@@ -333,7 +333,7 @@ class HookHandler(MemoryReader):
         if not self._check_if_hook_active(QuestHook):
             raise HookNotActive("Quest")
 
-        hook = await self._get_hook_by_type(QuestHook)
+        hook = self._get_hook_by_type(QuestHook)
         self._active_hooks.remove(hook)
         await hook.unhook()
 
@@ -379,7 +379,7 @@ class HookHandler(MemoryReader):
         if not self._check_if_hook_active(PlayerStatHook):
             raise HookNotActive("Player stat")
 
-        hook = await self._get_hook_by_type(PlayerStatHook)
+        hook = self._get_hook_by_type(PlayerStatHook)
         self._active_hooks.remove(hook)
         await hook.unhook()
 
@@ -425,7 +425,7 @@ class HookHandler(MemoryReader):
         if not self._check_if_hook_active(ClientHook):
             raise HookNotActive("Client")
 
-        hook = await self._get_hook_by_type(ClientHook)
+        hook = self._get_hook_by_type(ClientHook)
         self._active_hooks.remove(hook)
         await hook.unhook()
 
@@ -475,7 +475,7 @@ class HookHandler(MemoryReader):
         if not self._check_if_hook_active(RootWindowHook):
             raise HookNotActive("Root window")
 
-        hook = await self._get_hook_by_type(RootWindowHook)
+        hook = self._get_hook_by_type(RootWindowHook)
         self._active_hooks.remove(hook)
         await hook.unhook()
 
@@ -525,7 +525,7 @@ class HookHandler(MemoryReader):
         if not self._check_if_hook_active(RenderContextHook):
             raise HookNotActive("Render context")
 
-        hook = await self._get_hook_by_type(RenderContextHook)
+        hook = self._get_hook_by_type(RenderContextHook)
         self._active_hooks.remove(hook)
         await hook.unhook()
 
@@ -567,7 +567,7 @@ class HookHandler(MemoryReader):
         if not self._check_if_hook_active(MouselessCursorMoveHook):
             raise HookNotActive("Mouseless cursor")
 
-        hook = await self._get_hook_by_type(MouselessCursorMoveHook)
+        hook = self._get_hook_by_type(MouselessCursorMoveHook)
         self._active_hooks.remove(hook)
         await hook.unhook()
 

@@ -174,7 +174,11 @@ class MemoryObject(MemoryReader):
         end_address = await self.read_value_from_offset(offset + 8, "long long")
         size = end_address - start_address
 
-        shared_pointers_data = await self.read_bytes(start_address, size)
+        try:
+            shared_pointers_data = await self.read_bytes(start_address, size)
+        except ValueError:
+            return []
+
         pointers = []
         data_pos = 0
         # Shared pointers are 16 in length
