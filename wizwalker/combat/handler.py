@@ -142,7 +142,6 @@ class CombatHandler:
             if await member.is_client():
                 return member
 
-        # this shouldn't be possible
         raise ValueError("Couldn't find client's CombatMember")
 
     async def get_all_monster_members(self) -> List[CombatMember]:

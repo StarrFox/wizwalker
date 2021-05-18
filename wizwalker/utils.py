@@ -315,12 +315,27 @@ async def wait_for_value(
 
         except Exception as e:
             if ignore_errors:
-                pass
+                await asyncio.sleep(sleep_time)
 
             else:
                 raise e
 
-        finally:
+
+async def wait_for_non_error(coro, sleep_time: float = 0.5):
+    """
+    Wait for a coro to not error
+
+    Args:
+        coro: Coro to wait for
+        sleep_time: Time between calls
+    """
+    while True:
+        # noinspection PyBroadException
+        try:
+            now = await coro()
+            return now
+
+        except Exception:
             await asyncio.sleep(sleep_time)
 
 

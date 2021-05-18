@@ -107,17 +107,23 @@ class CombatCard:
 
         return res
 
+    async def wait_for_graphical_spell(self):
+        """
+        Wait for GraphicalSpell
+        """
+        return await wizwalker.utils.wait_for_non_error(self.get_graphical_spell)
+
     async def get_spell_effects(
         self,
     ) -> List["wizwalker.memory.memory_objects.spell_effect.DynamicSpellEffect"]:
-        spell = await self.get_graphical_spell()
+        spell = await self.wait_for_graphical_spell()
         return await spell.spell_effects()
 
     async def name(self) -> str:
         """
         The name of this card
         """
-        graphical_spell = await self.get_graphical_spell()
+        graphical_spell = await self.wait_for_graphical_spell()
         spell_template = await graphical_spell.spell_template()
         # name is the actual name; display name is local lang code
         return await spell_template.name()
@@ -126,21 +132,21 @@ class CombatCard:
         """
         This card's template id
         """
-        graphical_spell = await self.get_graphical_spell()
+        graphical_spell = await self.wait_for_graphical_spell()
         return await graphical_spell.template_id()
 
     async def spell_id(self) -> int:
         """
         This card's spell id
         """
-        graphical_spell = await self.get_graphical_spell()
+        graphical_spell = await self.wait_for_graphical_spell()
         return await graphical_spell.spell_id()
 
     async def accuracy(self) -> int:
         """
         Current accuracy of this card
         """
-        graphical_spell = await self.get_graphical_spell()
+        graphical_spell = await self.wait_for_graphical_spell()
         return await graphical_spell.accuracy()
 
     async def is_castable(self) -> bool:
@@ -154,47 +160,47 @@ class CombatCard:
         """
         If this card is enchanted or not
         """
-        grapical_spell = await self.get_graphical_spell()
+        grapical_spell = await self.wait_for_graphical_spell()
         return await grapical_spell.enchantment() != 0
 
     async def is_treasure_card(self) -> bool:
         """
         If this card is a treasure card
         """
-        graphical_spell = await self.get_graphical_spell()
+        graphical_spell = await self.wait_for_graphical_spell()
         return await graphical_spell.treasure_card()
 
     async def is_item_card(self) -> bool:
         """
         If this card is an item card
         """
-        graphical_spell = await self.get_graphical_spell()
+        graphical_spell = await self.wait_for_graphical_spell()
         return await graphical_spell.item_card()
 
     async def is_side_board(self) -> bool:
         """
         If this card is from the side deck
         """
-        graphical_spell = await self.get_graphical_spell()
+        graphical_spell = await self.wait_for_graphical_spell()
         return await graphical_spell.side_board()
 
     async def is_cloaked(self) -> bool:
         """
         If this card is cloaked
         """
-        graphical_spell = await self.get_graphical_spell()
+        graphical_spell = await self.wait_for_graphical_spell()
         return await graphical_spell.cloaked()
 
     async def is_enchanted_from_item_card(self) -> bool:
         """
         If this card was enchanted from an item card
         """
-        graphical_spell = await self.get_graphical_spell()
+        graphical_spell = await self.wait_for_graphical_spell()
         return await graphical_spell.enchantment_spell_is_item_card()
 
     async def is_pve_only(self) -> bool:
         """
         If this card can only be used in pve
         """
-        graphical_spell = await self.get_graphical_spell()
+        graphical_spell = await self.wait_for_graphical_spell()
         return await graphical_spell.pve()
