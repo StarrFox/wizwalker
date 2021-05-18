@@ -10,7 +10,7 @@ import subprocess
 import winreg
 import zlib
 from pathlib import Path
-from typing import Callable, Iterable, List
+from typing import Any, Callable, Iterable, List, Optional
 
 import appdirs
 
@@ -337,6 +337,38 @@ async def wait_for_non_error(coro, sleep_time: float = 0.5):
 
         except Exception:
             await asyncio.sleep(sleep_time)
+
+
+async def maybe_wait_for_value_with_timeout(
+    coro,
+    sleep_time: float = 0.5,
+    *,
+    value: Any = None,
+    timeout: Optional[float] = None,
+    ignore_exceptions: bool = True,
+    inverse_value: bool = False,
+):
+    async def _inner():
+        while True:
+            try:
+                res = await coro()
+                if value is not None and inverse_value and res != value:
+                    return res
+
+                elif value is not None and not inverse_value and res == value:
+                    return res
+
+                else:
+                    return res
+
+            except Exception as e:
+                if ignore_exceptions:
+                    await asyncio.sleep(sleep_time)
+
+                else:
+                    raise e
+
+    return await asyncio.wait_for(_inner(), timeout)
 
 
 def get_cache_folder() -> Path:

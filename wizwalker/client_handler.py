@@ -98,6 +98,13 @@ class ClientHandler:
             for task in hook_tasks:
                 await task
 
+    async def activate_all_client_mouseless(self):
+        """
+        Activates mouseless hook for all clients
+        """
+        for client in self.clients:
+            await client.mouse_handler.activate_mouseless()
+
     async def close(self):
         """
         Closes all clients
