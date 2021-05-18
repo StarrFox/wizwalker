@@ -195,6 +195,37 @@ class CombatHandler:
 
         raise ValueError(f"Couldn't find a member named {name}")
 
+    async def attempt_cast(
+        self,
+        name: str,
+        *,
+        on_member: str = None,
+        on_card: str = None,
+        on_client: bool = False,
+    ):
+        try:
+            card = await self.get_card_named(name)
+
+            if on_member:
+                target = await self.get_member_named(on_member)
+                await card.cast(target)
+
+            elif on_card:
+                target = await self.get_card_named(on_card)
+                await card.cast(target)
+
+            elif on_client:
+                target = await self.get_client_member()
+                await card.cast(target)
+
+            else:
+                await card.cast(None)
+
+            return True
+
+        except ValueError:
+            return False
+
     async def round_number(self) -> int:
         """
         Current round number
