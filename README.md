@@ -8,21 +8,22 @@ Wizard101 scripting library
 you can find the documentation [here](https://starrfox.github.io/wizwalker/)
 
 ## install
-download the latest release from [here](https://github.com/StarrFox/WizWalker/releases)
-or install from pypi `pip install -U wizwalker`
+```shell
+$ pip install -U wizwalker
+```
 
 ## discord
 join the offical discord [here](https://discord.gg/JHrdCNK)
 
 ## development install
 This package uses [poetry](https://python-poetry.org/)
-```shell script
+```shell
 $ poetry install
 ```
 
 ## running
 Shell may need admin perms
-```shell script
+```shell
 $ poetry shell
 $ wizwalker
 ```
@@ -31,7 +32,7 @@ $ wizwalker
 You'll need the dev install (see above) for this to work
 
 ### exe
-```shell script
+```shell
 # Admin if needed
 $ pyinstaller -F --uac-admin --name WizWalker wizwalker/__main__.py
 # Normal
@@ -39,12 +40,12 @@ $ pyinstaller -F --name WizWalker wizwalker/__main__.py
 ```
 
 ### wheel and source
-```shell script
+```shell
 $ poetry build
 ```
 
 ### Docs
-```shell script
+```shell
 $ cd docs
 $ make html
 ```

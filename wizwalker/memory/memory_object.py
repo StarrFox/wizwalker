@@ -9,6 +9,9 @@ from .handler import HookHandler
 from .memory_reader import MemoryReader
 
 
+MAX_STRING = 5_000
+
+
 class MemoryObject(MemoryReader):
     """
     Class for any represented classes from memory
@@ -73,7 +76,8 @@ class MemoryObject(MemoryReader):
 
     async def read_string(self, address: int, encoding: str = "utf-8") -> str:
         string_len = await self.read_typed(address + 16, "int")
-        if string_len == 0:
+
+        if not 1 <= string_len <= MAX_STRING:
             return ""
 
         # strings larger than 16 bytes are pointers

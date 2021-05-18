@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "wizwalker"
-version = "1.2.4"
+version = "1.2.5-alpha.0"
 description = "Wizard101 scripting library"
 authors = ["StarrFox <starrfox6312@gmail.com>"]
 license = "GPL-3.0-or-later"
@@ -19,7 +19,6 @@ click_default_group = "^1.2.2"
 aiomonitor = "^0.4.5"
 terminaltables = "^3.1.0"
 janus = "^0.6.1"
-lark = "^0.11.3"
 
 [tool.poetry.dev-dependencies]
 pyinstaller = "^3.6"

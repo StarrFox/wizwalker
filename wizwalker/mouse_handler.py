@@ -17,10 +17,31 @@ class MouseHandler:
 
     async def activate_mouseless(self):
         """
-        Activates the mousless hook
+        Activates the mouseless hook
         """
         # this will error if already active for us
         await self.client.hook_handler.activate_mouseless_cursor_hook()
+
+    async def deactivate_mouseless(self):
+        """
+        Deactivates the mouseless hook
+        """
+        await self.client.hook_handler.deactivate_mouseless_cursor_hook()
+
+    async def set_mouse_position_to_window(
+        self, window: "wizwalker.memory.window.DynamicWindow", **kwargs
+    ):
+        """
+        Set the mouse position to a window
+        kwargs are passed to set_mouse_position
+
+        Args:
+            window: The window to set the mouse position to
+        """
+        scaled_rect = await window.scale_to_client()
+        center = scaled_rect.center()
+
+        await self.set_mouse_position(*center, **kwargs)
 
     async def click_window(
         self, window: "wizwalker.memory.window.DynamicWindow", **kwargs
@@ -103,6 +124,8 @@ class MouseHandler:
                 await asyncio.sleep(sleep_duration)
             # mouse button up
             send_method(self.client.window_handle, button_down_message + 1, 0, 0)
+            # move mouse outside of client area
+            await self.set_mouse_position(-100, -100)
 
     async def set_mouse_position(
         self,

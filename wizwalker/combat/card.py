@@ -36,7 +36,15 @@ class CombatCard:
             await self.combat_handler.client.mouse_handler.click_window(
                 self._spell_window
             )
+
             await asyncio.sleep(sleep_time)
+
+            await self.combat_handler.client.mouse_handler.set_mouse_position_to_window(
+                target._spell_window
+            )
+
+            await asyncio.sleep(sleep_time)
+
             await self.combat_handler.client.mouse_handler.click_window(
                 target._spell_window
             )
