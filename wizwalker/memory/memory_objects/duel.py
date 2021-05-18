@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from wizwalker.utils import XYZ
 from wizwalker.memory.memory_object import PropertyClass
@@ -62,8 +62,12 @@ class Duel(PropertyClass):
     async def write_first_team_to_act(self, first_team_to_act: int):
         await self.write_value_to_offset(148, first_team_to_act, "int")
 
-    async def combat_resolver(self) -> DynamicCombatResolver:
+    async def combat_resolver(self) -> Optional[DynamicCombatResolver]:
         addr = await self.read_value_from_offset(104, "long long")
+
+        if addr == 0:
+            return None
+
         return DynamicCombatResolver(self.hook_handler, addr)
 
     async def pvp(self) -> bool:

@@ -295,6 +295,35 @@ def calculate_perfect_yaw(current_xyz: XYZ, target_xyz: XYZ) -> float:
     return perfect_yaw
 
 
+async def wait_for_value(
+    coro, want, sleep_time: float = 0.5, *, ignore_errors: bool = True
+):
+    """
+    Wait for a coro to return a value
+
+    Args:
+        coro: Coro to wait for
+        want: Value wanted
+        sleep_time: Time between calls
+        ignore_errors: If errors should be ignored
+    """
+    while True:
+        try:
+            now = await coro()
+            if now == want:
+                return now
+
+        except Exception as e:
+            if ignore_errors:
+                pass
+
+            else:
+                raise e
+
+        finally:
+            await asyncio.sleep(sleep_time)
+
+
 def get_cache_folder() -> Path:
     """
     Get the wizwalker cache folder

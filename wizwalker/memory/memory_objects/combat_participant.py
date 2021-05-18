@@ -244,12 +244,20 @@ class CombatParticipant(PropertyClass):
     async def write_max_hand_size(self, max_hand_size: int):
         await self.write_value_to_offset(248, max_hand_size, "int")
 
-    async def hand(self) -> DynamicHand:
+    async def hand(self) -> Optional[DynamicHand]:
         addr = await self.read_value_from_offset(256, "long long")
+
+        if addr == 0:
+            return None
+
         return DynamicHand(self.hook_handler, addr)
 
-    async def saved_hand(self) -> DynamicHand:
+    async def saved_hand(self) -> Optional[DynamicHand]:
         addr = await self.read_value_from_offset(264, "long long")
+
+        if addr == 0:
+            return None
+
         return DynamicHand(self.hook_handler, addr)
 
     async def play_deck(self) -> Optional[DynamicPlayDeck]:
@@ -268,8 +276,12 @@ class CombatParticipant(PropertyClass):
 
         return DynamicPlayDeck(self.hook_handler, addr)
 
-    async def saved_game_stats(self) -> DynamicGameStats:
+    async def saved_game_stats(self) -> Optional[DynamicGameStats]:
         addr = await self.read_value_from_offset(288, "long long")
+
+        if addr == 0:
+            return None
+
         return DynamicGameStats(self.hook_handler, addr)
 
     async def saved_primary_magic_school_id(self) -> int:
@@ -280,8 +292,12 @@ class CombatParticipant(PropertyClass):
     ):
         await self.write_value_to_offset(304, saved_primary_magic_school_id, "int")
 
-    async def game_stats(self) -> DynamicGameStats:
+    async def game_stats(self) -> Optional[DynamicGameStats]:
         addr = await self.read_value_from_offset(312, "long long")
+
+        if addr == 0:
+            return None
+
         return DynamicGameStats(self.hook_handler, addr)
 
     # TODO: figure out what color is

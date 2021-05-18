@@ -1,3 +1,5 @@
+from typing import Optional
+
 from wizwalker.memory.memory_object import MemoryObject, DynamicMemoryObject
 from .spell import DynamicSpell
 
@@ -13,8 +15,12 @@ class CombatAction(MemoryObject):
     async def write_spell_caster(self, spell_caster: int):
         await self.write_value_to_offset(72, spell_caster, "int")
 
-    async def spell(self) -> DynamicSpell:
+    async def spell(self) -> Optional[DynamicSpell]:
         addr = await self.read_value_from_offset(96, "long long")
+
+        if addr == 0:
+            return None
+
         return DynamicSpell(self.hook_handler, addr)
 
     async def spell_hits(self) -> int:

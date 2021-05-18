@@ -101,7 +101,11 @@ class CombatCard:
         """
         The GraphicalSpell with information about this card
         """
-        return await self._spell_window.maybe_graphical_spell()
+        res = await self._spell_window.maybe_graphical_spell()
+        if res is None:
+            raise ValueError("Graphical spell not found; probably reading too fast")
+
+        return res
 
     async def get_spell_effects(
         self,
@@ -115,7 +119,7 @@ class CombatCard:
         """
         graphical_spell = await self.get_graphical_spell()
         spell_template = await graphical_spell.spell_template()
-        # name is the actual name; display name is some wack stuff
+        # name is the actual name; display name is local lang code
         return await spell_template.name()
 
     async def template_id(self) -> int:

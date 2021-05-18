@@ -4,8 +4,8 @@ from warnings import warn
 
 from .member import CombatMember
 from .card import CombatCard
-from .. import MemoryReadError, ReadingEnumFailed
 from ..memory import DuelPhase, WindowFlags
+from wizwalker import utils
 
 
 class CombatHandler:
@@ -58,29 +58,22 @@ class CombatHandler:
         Args:
             sleep_time: Time to sleep between checks
         """
-        while True:
-            try:
-                phase = await self.client.duel.duel_phase()
-                if phase == DuelPhase.planning:
-                    break
-                else:
-                    await asyncio.sleep(sleep_time)
-            except (ReadingEnumFailed, MemoryReadError):
-                pass
+        await utils.wait_for_value(
+            self.client.duel.duel_phase, DuelPhase.planning, sleep_time
+        )
 
     async def wait_for_combat(self, sleep_time: float = 0.5):
         """
         Wait until in combat
         """
-        while not await self.in_combat():
-            await asyncio.sleep(sleep_time)
-
+        await utils.wait_for_value(self.in_combat, True, sleep_time)
         await self.handle_combat()
 
     async def wait_until_next_round(self, current_round: int, sleep_time: float = 0.5):
         """
         Wait for the round number to change
         """
+        # can't use wait_for_value bc of the special in_combat condition
         # so we don't get stuck waiting if combat ends
         while await self.in_combat():
             new_round_number = await self.round_number()

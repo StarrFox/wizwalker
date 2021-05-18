@@ -101,12 +101,16 @@ class Window(PropertyClass):
         raise ValueError(f"No child named {name}")
 
     # This is here because checking in .children slows down window filtering majorly
-    async def maybe_graphical_spell(self) -> DynamicGraphicalSpell:
+    async def maybe_graphical_spell(self) -> Optional[DynamicGraphicalSpell]:
         type_name = await self.maybe_read_type_name()
         if type_name != "SpellCheckBox":
             raise ValueError(f"This object is a {type_name} not a SpellCheckBox.")
 
         addr = await self.read_value_from_offset(952, "long long")
+
+        if addr == 0:
+            return None
+
         return DynamicGraphicalSpell(self.hook_handler, addr)
 
     # see maybe_graphical_spell
@@ -119,7 +123,7 @@ class Window(PropertyClass):
         return await self.read_value_from_offset(1024, "bool")
 
     # See maybe_graphical_spell
-    async def maybe_combat_participant(self) -> DynamicCombatParticipant:
+    async def maybe_combat_participant(self) -> Optional[DynamicCombatParticipant]:
         type_name = await self.maybe_read_type_name()
         if type_name != "CombatantDataControl":
             raise ValueError(
@@ -127,6 +131,10 @@ class Window(PropertyClass):
             )
 
         addr = await self.read_value_from_offset(1592, "long long")
+
+        if addr == 0:
+            return None
+
         return DynamicCombatParticipant(self.hook_handler, addr)
 
     # See maybe_graphical_spell

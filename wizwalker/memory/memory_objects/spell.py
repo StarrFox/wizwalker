@@ -24,8 +24,12 @@ class Spell(PropertyClass):
         await self.write_value_to_offset(128, template_id, "unsigned int")
 
     # note: not defined
-    async def spell_template(self) -> DynamicSpellTemplate:
+    async def spell_template(self) -> Optional[DynamicSpellTemplate]:
         addr = await self.read_value_from_offset(120, "long long")
+
+        if addr == 0:
+            return None
+
         return DynamicSpellTemplate(self.hook_handler, addr)
 
     # write spell_template
