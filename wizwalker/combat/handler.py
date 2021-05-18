@@ -203,6 +203,15 @@ class CombatHandler:
         on_card: str = None,
         on_client: bool = False,
     ):
+        """
+        Attempt to cast a card
+
+        Args:
+            name: Name of the card to cast
+            on_member: Name of the member to cast the card on
+            on_card: Name of the card to cast the card on
+            on_client: Bool if the card should be cast on the client
+        """
         try:
             card = await self.get_card_named(name)
 
