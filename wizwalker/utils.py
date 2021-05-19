@@ -332,8 +332,7 @@ def get_cache_folder() -> Path:
     app_author = "StarrFox"
     cache_dir = Path(appdirs.user_cache_dir(app_name, app_author))
 
-    if not cache_dir.exists():
-        cache_dir.mkdir(parents=True)
+    cache_dir.mkdir(parents=True, exist_ok=True)
 
     return cache_dir
 
@@ -346,8 +345,7 @@ def get_logs_folder() -> Path:
     app_author = "StarrFox"
     log_dir = Path(appdirs.user_log_dir(app_name, app_author))
 
-    if not log_dir.exists():
-        log_dir.mkdir(parents=True)
+    log_dir.mkdir(parents=True, exist_ok=True)
 
     return log_dir
 
