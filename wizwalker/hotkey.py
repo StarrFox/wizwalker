@@ -56,15 +56,31 @@ class Listener:
     Examples:
         .. code-block:: py
 
-            async def listen_for_a():
-                async def callback():
-                    print("a was pressed")
+                import asyncio
 
-                hotkey = Hotkey(Keycode.A, callback)
-                listener = Listener(hotkey)
+                from wizwalker import Hotkey, Keycode, Listener
 
-                # listens for a to be pressed once
-                await listener.listen()
+
+                async def main():
+                    async def callback():
+                        print("a was pressed")
+
+                    hotkey = Hotkey(Keycode.A, callback)
+                    listener = Listener(hotkey)
+
+                    listener.listen_forever()
+
+                    try:
+                        # your program here
+                        while True:
+                            await asyncio.sleep(1)
+
+                    finally:
+                        await listener.close()
+
+
+                if __name__ == "__main__":
+                    asyncio.run(main())
 
     """
 
@@ -77,6 +93,7 @@ class Listener:
         self._queue = None
         self._message_task = None
         self._id_counter = 1
+        self._closed = False
 
     def listen_forever(self) -> asyncio.Task:
         """
@@ -104,30 +121,41 @@ class Listener:
         # TODO: add to self._tasks and cancel in self.close
         self._loop.create_task(self._callbacks[keycode + modifiers]())
 
+    # async for future proofing
+    async def close(self):
+        self._closed = True
+
     def _add_and_listen(self):
         if not self.ready:
             self._add_hotkeys()
         self.ready = True
 
         while True:
+            # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-peekmessagew
             message = ctypes.wintypes.MSG()
-            user32.GetMessageW(
-                ctypes.byref(message), None, 0x311, 0x314,
+            is_message = user32.PeekMessageW(
+                ctypes.byref(message), None, 0x311, 0x314, 1,
             )
 
-            modifiers = message.lParam & 0b1111111111111111
-            keycode = message.lParam >> 16
+            if is_message:
+                modifiers = message.lParam & 0b1111111111111111
+                keycode = message.lParam >> 16
 
-            self._queue.sync_q.put(f"{keycode}|{modifiers}")
+                self._queue.sync_q.put(f"{keycode}|{modifiers}")
 
-            user32.DispatchMessageW(ctypes.byref(message))
+                user32.DispatchMessageW(ctypes.byref(message))
+
+            else:
+                if self._closed:
+                    break
 
     def _add_hotkeys(self):
         for hotkey in self._hotkeys:
-            if self._register_hotkey(hotkey.keycode.value, hotkey.modifiers.value):
+            if self._register_hotkey(hotkey.keycode.value, int(hotkey.modifiers)):
                 # No repeat is not included in the return message
                 no_norepeat = hotkey.modifiers & ~ModifierKeys.NOREPEAT
                 self._callbacks[hotkey.keycode.value + no_norepeat] = hotkey.callback
+
             else:
                 raise HotkeyAlreadyRegistered(
                     f"{hotkey.keycode} with modifers {hotkey.modifiers}"
