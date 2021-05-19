@@ -178,20 +178,20 @@ def get_wiz_install() -> Path:
     """
     Get the game install root dir
     """
-    reg = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
-
     try:
-        key = winreg.OpenKey(
-            reg,
+        with winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
             r"Software\Microsoft\Windows\CurrentVersion\Uninstall\{A9E27FF5-6294-46A8-B8FD-77B1DECA3021}",
             0,
             winreg.KEY_READ,
-        )
+        ) as key:
+            install_location = Path(
+                winreg.QueryValueEx(key, "InstallLocation")[0]
+            ).absolute()
+            return install_location
     except OSError:
         raise Exception("Wizard101 install not found.")
 
-    install_location = Path(winreg.QueryValueEx(key, "InstallLocation")[0]).absolute()
-    return install_location
 
 
 def start_instance():
@@ -332,8 +332,7 @@ def get_cache_folder() -> Path:
     app_author = "StarrFox"
     cache_dir = Path(appdirs.user_cache_dir(app_name, app_author))
 
-    if not cache_dir.exists():
-        cache_dir.mkdir(parents=True)
+    cache_dir.mkdir(parents=True, exist_ok=True)
 
     return cache_dir
 
@@ -346,8 +345,7 @@ def get_logs_folder() -> Path:
     app_author = "StarrFox"
     log_dir = Path(appdirs.user_log_dir(app_name, app_author))
 
-    if not log_dir.exists():
-        log_dir.mkdir(parents=True)
+    log_dir.mkdir(parents=True, exist_ok=True)
 
     return log_dir
 

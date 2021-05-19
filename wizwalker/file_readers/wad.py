@@ -209,8 +209,7 @@ class Wad:
                 current = path
                 for next_dir in dirs[:-1]:
                     current = current / next_dir
-                    if not current.exists():
-                        current.mkdir()
+                    current.mkdir(exist_ok=True)
 
             file_path = path / file.name
             file_data = await self.get_file(file.name)
