@@ -14,6 +14,7 @@ from typing import Any, Callable, Iterable, List, Optional
 
 import appdirs
 
+from wizwalker import ExceptionalTimeout
 from wizwalker.constants import Keycode, kernel32, user32, gdi32
 
 
@@ -348,7 +349,11 @@ async def maybe_wait_for_value_with_timeout(
     ignore_exceptions: bool = True,
     inverse_value: bool = False,
 ):
+    possible_exception = None
+
     async def _inner():
+        nonlocal possible_exception
+
         while True:
             try:
                 res = await coro()
@@ -363,12 +368,18 @@ async def maybe_wait_for_value_with_timeout(
 
             except Exception as e:
                 if ignore_exceptions:
+                    possible_exception = e
                     await asyncio.sleep(sleep_time)
 
                 else:
                     raise e
 
-    return await asyncio.wait_for(_inner(), timeout)
+    try:
+        return await asyncio.wait_for(_inner(), timeout)
+    except asyncio.TimeoutError:
+        raise ExceptionalTimeout(
+            f"Timed out waiting for coro {coro.__name__}", possible_exception
+        )
 
 
 def get_cache_folder() -> Path:
