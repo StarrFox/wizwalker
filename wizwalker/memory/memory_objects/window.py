@@ -1,11 +1,12 @@
 from typing import Callable, List, Optional
+from contextlib import suppress
 
 from wizwalker.memory.memory_object import DynamicMemoryObject, PropertyClass
 from .enums import WindowFlags, WindowStyle
 from .spell import DynamicGraphicalSpell
 from .combat_participant import DynamicCombatParticipant
 
-from wizwalker import Rectangle
+from wizwalker import AddressOutOfRange, MemoryReadError, Rectangle
 
 
 class Window(PropertyClass):
@@ -48,11 +49,12 @@ class Window(PropertyClass):
         return await self.get_windows_with_predicate(_pred)
 
     async def _recursive_get_windows_by_predicate(self, predicate, windows):
-        for child in await self.children():
-            if await predicate(child):
-                windows.append(child)
+        with suppress(ValueError, MemoryReadError, AddressOutOfRange):
+            for child in await self.children():
+                if await predicate(child):
+                    windows.append(child)
 
-            await child._recursive_get_windows_by_predicate(predicate, windows)
+                await child._recursive_get_windows_by_predicate(predicate, windows)
 
     async def get_windows_with_predicate(
         self, predicate: Callable
@@ -71,7 +73,7 @@ class Window(PropertyClass):
         # check our own children
         try:
             children = await self.children()
-        except ValueError:
+        except (ValueError, MemoryReadError, AddressOutOfRange):
             children = []
 
         for child in children:
