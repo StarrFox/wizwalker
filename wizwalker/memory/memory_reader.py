@@ -10,6 +10,7 @@ import pymem.ressources.structure
 from loguru import logger
 
 from wizwalker import (
+    AddressOutOfRange,
     ClientClosedError,
     MemoryReadError,
     MemoryWriteError,
@@ -181,10 +182,10 @@ class MemoryReader:
         Raises:
             ClientClosedError: If the client is closed
             MemoryReadError: If there was an error reading memory
-            ValueError: If the addrress is out of bounds
+            AddressOutOfRange: If the addrress is out of bounds
         """
         if not 0 < address <= 0x7FFFFFFFFFFFFFFF:
-            raise ValueError(f"Address {address} out of bounds")
+            raise AddressOutOfRange(address)
 
         try:
             return await self.run_in_executor(self.process.read_bytes, address, size)

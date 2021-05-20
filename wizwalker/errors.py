@@ -7,6 +7,12 @@ class WizWalkerError(Exception):
     """
 
 
+class ExceptionalTimeout(WizWalkerError):
+    def __init__(self, msg, possible_exception: Exception = None):
+        super().__init__(msg)
+        self.possible_exception = possible_exception
+
+
 class ClientClosedError(WizWalkerError):
     """
     Raised when trying to do an action that requires a running client
@@ -76,6 +82,11 @@ class MemoryReadError(WizWalkerMemoryError):
             super().__init__(f"Unable to read memory at address {address_or_message}.")
         else:
             super().__init__(address_or_message)
+
+
+class AddressOutOfRange(MemoryReadError):
+    def __init__(self, address):
+        super().__init__(f"Address {address} out of bounds")
 
 
 class MemoryWriteError(WizWalkerMemoryError):

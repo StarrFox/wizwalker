@@ -104,7 +104,11 @@ class Client:
         client_zone = await self.client_object.client_zone()
 
         if client_zone is not None:
-            return await client_zone.zone_name()
+            # noinspection PyBroadException
+            try:
+                return await client_zone.zone_name()
+            except Exception:
+                return None
 
         return None
 
@@ -287,11 +291,7 @@ class Client:
         if name is None:
             name = await self.zone_name()
 
-            # the client zone is deallocated on zone change
-            if name is None:
-                raise RuntimeError("Client zone was already deallocated before calling")
-
-        while (zone_name := await self.zone_name()) == name and zone_name is not None:
+        while await self.zone_name() == name:
             await asyncio.sleep(sleep_time)
 
         while await self.is_loading():
