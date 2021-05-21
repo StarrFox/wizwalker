@@ -60,8 +60,8 @@ class CombatMember:
         If this member is the local client
         """
         owner_id = await self.owner_id()
-        character_id = await self.combat_handler.client.client_object.character_id()
-        return owner_id - 2 == character_id
+        global_id = await self.combat_handler.client.client_object.global_id_full()
+        return owner_id == global_id
 
     async def is_player(self) -> bool:
         """

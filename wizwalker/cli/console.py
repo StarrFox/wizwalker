@@ -107,11 +107,11 @@ class WizWalkerConsole(Monitor):
             close_fut.result(timeout=15)
 
     def do_start(self):
-        """Attach and hook to all clients"""
+        """Attach and hook to all new clients"""
         walker = self.get_local("walker")
-        walker.get_new_clients()
-        self.write(f"Attached to {len(walker.clients)} clients")
-        for idx, client in enumerate(walker.clients):
+        clients = walker.get_new_clients()
+        self.write(f"Attached to {len(clients)} new clients")
+        for idx, client in enumerate(clients):
             self.run_coro(client.activate_hooks(), None)
             self.write(f"client-{idx}: hooked all")
 
