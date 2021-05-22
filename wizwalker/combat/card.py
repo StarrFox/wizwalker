@@ -107,7 +107,9 @@ class CombatCard:
 
         return res
 
-    async def wait_for_graphical_spell(self):
+    async def wait_for_graphical_spell(
+        self,
+    ) -> "wizwalker.memory.memory_objects.spell.DynamicGraphicalSpell":
         """
         Wait for GraphicalSpell
         """
@@ -125,8 +127,23 @@ class CombatCard:
         """
         graphical_spell = await self.wait_for_graphical_spell()
         spell_template = await graphical_spell.spell_template()
-        # name is the actual name; display name is local lang code
         return await spell_template.name()
+
+    async def display_name(self) -> str:
+        """
+        The display name of this card
+        """
+        graphical_spell = await self.wait_for_graphical_spell()
+        spell_template = await graphical_spell.spell_template()
+        return await spell_template.display_name()
+
+    async def type_name(self) -> str:
+        """
+        The type name of this card
+        """
+        graphical_spell = await self.wait_for_graphical_spell()
+        spell_template = await graphical_spell.spell_template()
+        return await spell_template.type_name()
 
     async def template_id(self) -> int:
         """

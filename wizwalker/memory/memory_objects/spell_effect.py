@@ -1,3 +1,5 @@
+from typing import List
+
 from wizwalker.memory.memory_object import DynamicMemoryObject, PropertyClass
 from .enums import SpellEffects, EffectTarget
 
@@ -117,6 +119,23 @@ class SpellEffect(PropertyClass):
 
     async def write_rank(self, rank: int):
         await self.write_value_to_offset(208, rank, "int")
+
+    async def maybe_effect_list(
+        self, *, check_type: bool = False
+    ) -> List["DynamicSpellEffect"]:
+        if check_type:
+            type_name = await self.maybe_read_type_name()
+            if type_name not in ("RandomSpellEffect", "RandomPerTargetSpellEffect"):
+                raise ValueError(
+                    f"This object is a {type_name} not a RandomSpellEffect/RandomPerTargetSpellEffect."
+                )
+
+        effects = []
+
+        for addr in await self.read_shared_linked_list(224):
+            effects.append(DynamicSpellEffect(self.hook_handler, addr))
+
+        return effects
 
 
 class DynamicSpellEffect(DynamicMemoryObject, SpellEffect):

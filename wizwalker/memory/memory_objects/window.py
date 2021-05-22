@@ -103,10 +103,13 @@ class Window(PropertyClass):
         raise ValueError(f"No child named {name}")
 
     # This is here because checking in .children slows down window filtering majorly
-    async def maybe_graphical_spell(self) -> Optional[DynamicGraphicalSpell]:
-        type_name = await self.maybe_read_type_name()
-        if type_name != "SpellCheckBox":
-            raise ValueError(f"This object is a {type_name} not a SpellCheckBox.")
+    async def maybe_graphical_spell(
+        self, *, check_type: bool = False
+    ) -> Optional[DynamicGraphicalSpell]:
+        if check_type:
+            type_name = await self.maybe_read_type_name()
+            if type_name != "SpellCheckBox":
+                raise ValueError(f"This object is a {type_name} not a SpellCheckBox.")
 
         addr = await self.read_value_from_offset(952, "long long")
 
@@ -117,20 +120,24 @@ class Window(PropertyClass):
 
     # see maybe_graphical_spell
     # note: not defined
-    async def maybe_spell_grayed(self) -> bool:
-        type_name = await self.maybe_read_type_name()
-        if type_name != "SpellCheckBox":
-            raise ValueError(f"This object is a {type_name} not a SpellCheckBox")
+    async def maybe_spell_grayed(self, *, check_type: bool = False) -> bool:
+        if check_type:
+            type_name = await self.maybe_read_type_name()
+            if type_name != "SpellCheckBox":
+                raise ValueError(f"This object is a {type_name} not a SpellCheckBox")
 
         return await self.read_value_from_offset(1024, "bool")
 
     # See maybe_graphical_spell
-    async def maybe_combat_participant(self) -> Optional[DynamicCombatParticipant]:
-        type_name = await self.maybe_read_type_name()
-        if type_name != "CombatantDataControl":
-            raise ValueError(
-                f"This object is a {type_name} not a CombatantDataControl."
-            )
+    async def maybe_combat_participant(
+        self, *, check_type: bool = False
+    ) -> Optional[DynamicCombatParticipant]:
+        if check_type:
+            type_name = await self.maybe_read_type_name()
+            if type_name != "CombatantDataControl":
+                raise ValueError(
+                    f"This object is a {type_name} not a CombatantDataControl."
+                )
 
         addr = await self.read_value_from_offset(1592, "long long")
 
@@ -140,7 +147,7 @@ class Window(PropertyClass):
         return DynamicCombatParticipant(self.hook_handler, addr)
 
     # See maybe_graphical_spell
-    async def maybe_text(self) -> str:
+    async def maybe_text(self, *, check_type: bool = False) -> str:
         # TODO: see if all types with .text have Control prefix
         #  and if so check that they have it
         return await self.read_wide_string_from_offset(584)

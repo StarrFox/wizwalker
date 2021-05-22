@@ -1,5 +1,5 @@
 import asyncio
-from typing import List
+from typing import Callable, List
 from warnings import warn
 
 from .member import CombatMember
@@ -117,6 +117,36 @@ class CombatHandler:
 
         return cards
 
+    async def get_cards_with_predicate(self, pred: Callable) -> List[CombatCard]:
+        """
+        Return cards that match a predicate
+
+        Args:
+            pred: The predicate function
+        """
+        cards = []
+
+        for card in await self.get_cards():
+            if await pred(card):
+                cards.append(card)
+
+        return cards
+
+    async def get_card_named(self, name: str) -> CombatCard:
+        """
+        Returns the first Card with name
+        """
+
+        async def _pred(card):
+            return name.lower() == (await card.name()).lower()
+
+        possible = await self.get_cards_with_predicate(_pred)
+
+        if possible:
+            return possible[0]
+
+        raise ValueError(f"Couldn't find a card named {name}")
+
     async def get_members(self) -> List[CombatMember]:
         """
         List of active CombatMembers
@@ -129,6 +159,21 @@ class CombatHandler:
 
         for window in combatant_windows:
             members.append(CombatMember(self, window))
+
+        return members
+
+    async def get_members_with_predicate(self, pred: Callable) -> List[CombatMember]:
+        """
+        Return members that match a predicate
+
+        Args:
+            pred: The predicate function
+        """
+        members = []
+
+        for member in await self.get_members():
+            if await pred(member):
+                members.append(member)
 
         return members
 
@@ -169,18 +214,6 @@ class CombatHandler:
                 players.append(member)
 
         return players
-
-    async def get_card_named(self, name: str) -> CombatCard:
-        """
-        Returns the first Card with name
-        """
-        cards = await self.get_cards()
-
-        for card in cards:
-            if name.lower() == (await card.name()).lower():
-                return card
-
-        raise ValueError(f"Couldn't find a card named {name}")
 
     async def get_member_named(self, name: str) -> CombatMember:
         """
