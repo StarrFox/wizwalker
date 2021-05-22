@@ -2,7 +2,7 @@ import asyncio
 from copy import copy
 from functools import cached_property
 from pathlib import Path
-from typing import List
+from typing import List, Type
 
 from wizwalker import utils
 from .client import Client
@@ -13,7 +13,9 @@ class ClientHandler:
     Manages clients
     """
 
-    def __init__(self):
+    def __init__(self, *, client_cls: Type[Client] = Client):
+        self.client_cls = client_cls
+
         self._managed_handles = []
         self.clients = []
 
@@ -48,7 +50,7 @@ class ClientHandler:
             if handle not in self._managed_handles:
                 self._managed_handles.append(handle)
 
-                new_client = Client(handle)
+                new_client = self.client_cls(handle)
                 self.clients.append(new_client)
                 new_clients.append(new_client)
 
