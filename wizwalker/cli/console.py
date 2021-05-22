@@ -62,6 +62,7 @@ class NoBannerConsole(aioconsole.AsynchronousConsole):
 class WizWalkerConsole(Monitor):
     intro = "WizWalkerCLI\n{tasknum} task{s} running. Use help (?) for commands.\n"
     prompt = "WW > "
+    instance_finders = {}
 
     def write(self, message: str):
         self._sout.write(message + "\n")
@@ -217,8 +218,14 @@ class WizWalkerConsole(Monitor):
 
     def do_findinstances(self, class_name: str):
         """Find instances of a class"""
-        pm = Pymem("WizardGraphicalClient.exe")
-        finder = InstanceFinder(pm, class_name)
+        if self.instance_finders.get(class_name):
+            finder = self.instance_finders[class_name]
+
+        else:
+            pm = Pymem("WizardGraphicalClient.exe")
+            finder = InstanceFinder(pm, class_name)
+            self.instance_finders[class_name] = finder
+
         instances = self.run_coro(finder.get_instances(), None)
 
         self.write(str(instances))
