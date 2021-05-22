@@ -35,6 +35,8 @@ class CombatHandler:
             await self.handle_round()
             await self.wait_until_next_round(round_number)
 
+        self._spell_check_boxes = None
+
     # TODO: remove in 2.0
     async def wait_for_hand_visible(self, sleep_time: float = 0.5):
         """

@@ -4,6 +4,8 @@ from typing import List, Optional, Union
 import wizwalker
 
 
+# TODO: add way to cast divide spells (remember to click the confirm button after targeting)
+#  cast_divide?
 class CombatCard:
     """
     Represents a spell card
@@ -95,6 +97,7 @@ class CombatCard:
         if sleep_time is not None:
             await asyncio.sleep(sleep_time)
 
+    # TODO: 2.0 rename get_* effects to just attr name i.e async def graphical_spell
     async def get_graphical_spell(
         self,
     ) -> "wizwalker.memory.memory_objects.spell.DynamicGraphicalSpell":
@@ -129,9 +132,9 @@ class CombatCard:
         spell_template = await graphical_spell.spell_template()
         return await spell_template.name()
 
-    async def display_name(self) -> str:
+    async def display_name_code(self) -> str:
         """
-        The display name of this card
+        The display name code of this card
         """
         graphical_spell = await self.wait_for_graphical_spell()
         spell_template = await graphical_spell.spell_template()
