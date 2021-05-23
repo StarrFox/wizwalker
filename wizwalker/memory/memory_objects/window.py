@@ -6,7 +6,7 @@ from .enums import WindowFlags, WindowStyle
 from .spell import DynamicGraphicalSpell
 from .combat_participant import DynamicCombatParticipant
 
-from wizwalker import AddressOutOfRange, MemoryReadError, Rectangle
+from wizwalker import AddressOutOfRange, MemoryReadError, Rectangle, utils
 
 
 class Window(PropertyClass):
@@ -18,7 +18,7 @@ class Window(PropertyClass):
             f"{'-' * depth} [{await self.name()}] {await self.maybe_read_type_name()}"
         )
 
-        for child in await self.children():
+        for child in await utils.wait_for_non_error(self.children):
             await child.debug_print_ui_tree(depth + 1)
 
     async def debug_paint(self):
