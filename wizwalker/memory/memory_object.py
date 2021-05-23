@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Any, List, Type
 
 from wizwalker.constants import type_format_dict
-from wizwalker.errors import MemoryReadError, ReadingEnumFailed, WizWalkerMemoryError
+from wizwalker.errors import AddressOutOfRange, MemoryReadError, ReadingEnumFailed, WizWalkerMemoryError
 from wizwalker.utils import XYZ
 from .handler import HookHandler
 from .memory_reader import MemoryReader
@@ -178,9 +178,12 @@ class MemoryObject(MemoryReader):
         end_address = await self.read_value_from_offset(offset + 8, "long long")
         size = end_address - start_address
 
+        if size == 0:
+            return []
+
         try:
             shared_pointers_data = await self.read_bytes(start_address, size)
-        except ValueError:
+        except (ValueError, AddressOutOfRange):
             return []
 
         pointers = []
