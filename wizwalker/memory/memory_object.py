@@ -3,7 +3,12 @@ from enum import Enum
 from typing import Any, List, Type
 
 from wizwalker.constants import type_format_dict
-from wizwalker.errors import AddressOutOfRange, MemoryReadError, ReadingEnumFailed, WizWalkerMemoryError
+from wizwalker.errors import (
+    AddressOutOfRange,
+    MemoryReadError,
+    ReadingEnumFailed,
+    WizWalkerMemoryError,
+)
 from wizwalker.utils import XYZ
 from .handler import HookHandler
 from .memory_reader import MemoryReader
@@ -74,6 +79,42 @@ class MemoryObject(MemoryReader):
         base_address = await self.read_base_address()
         return await self.read_wide_string(base_address + offset, encoding)
 
+    async def write_wide_string(
+        self, address: int, string: str, encoding: str = "utf-8"
+    ):
+        string_len_addr = address + 16
+        encoded = string.encode(encoding)
+        # len(encoded) instead of string bc it can be larger in some encodings
+        string_len = len(encoded)
+
+        current_string_len = await self.read_typed(address + 16, "int")
+
+        # we need to create a pointer to the string data
+        if string_len >= 7 > current_string_len:
+            # +1 for 0 byte after
+            pointer_address = await self.allocate(string_len + 1)
+
+            # need 0 byte for some c++ null termination standard
+            await self.write_bytes(pointer_address, encoded + b"\x00")
+            await self.write_typed(address, pointer_address, "long long")
+
+        # string is already a pointer
+        elif string_len >= 7 and current_string_len >= 8:
+            pointer_address = await self.read_typed(address, "long long")
+            await self.write_bytes(pointer_address, encoded + b"\x00")
+
+        # normal buffer string
+        else:
+            await self.write_bytes(address, encoded + b"\x00")
+
+        await self.write_typed(string_len_addr, string_len, "int")
+
+    async def write_wide_string_to_offset(
+        self, offset: int, string: str, encoding: str = "utf-8"
+    ):
+        base_address = await self.read_base_address()
+        await self.write_string(base_address + offset, string, encoding)
+
     async def read_string(self, address: int, encoding: str = "utf-8") -> str:
         string_len = await self.read_typed(address + 16, "int")
 
@@ -96,8 +137,6 @@ class MemoryObject(MemoryReader):
     ) -> str:
         base_address = await self.read_base_address()
         return await self.read_string(base_address + offset, encoding)
-
-    # TODO: write wide string
 
     async def write_string(self, address: int, string: str, encoding: str = "utf-8"):
         string_len_addr = address + 16
@@ -173,7 +212,9 @@ class MemoryObject(MemoryReader):
     async def write_enum(self, offset, value: Enum):
         await self.write_value_to_offset(offset, value.value, "int")
 
-    async def read_shared_vector(self, offset: int) -> List[int]:
+    async def read_shared_vector(
+        self, offset: int, *, max_size: int = 1000
+    ) -> List[int]:
         start_address = await self.read_value_from_offset(offset, "long long")
         end_address = await self.read_value_from_offset(offset + 8, "long long")
         size = end_address - start_address
@@ -181,9 +222,16 @@ class MemoryObject(MemoryReader):
         if size == 0:
             return []
 
+        # dealloc
+        if size < 0:
+            return []
+
+        if size > max_size:
+            raise ValueError(f"Size was {size} and the max was {max_size}")
+
         try:
             shared_pointers_data = await self.read_bytes(start_address, size)
-        except (ValueError, AddressOutOfRange):
+        except (ValueError, AddressOutOfRange, MemoryError):
             return []
 
         pointers = []

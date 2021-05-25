@@ -1,11 +1,12 @@
 from typing import Callable, List, Optional
 from contextlib import suppress
 
+from loguru import logger
+
 from wizwalker.memory.memory_object import DynamicMemoryObject, PropertyClass
 from .enums import WindowFlags, WindowStyle
 from .spell import DynamicGraphicalSpell
 from .combat_participant import DynamicCombatParticipant
-
 from wizwalker import AddressOutOfRange, MemoryReadError, Rectangle, utils
 
 
@@ -152,12 +153,11 @@ class Window(PropertyClass):
         #  and if so check that they have it
         return await self.read_wide_string_from_offset(584)
 
-    # TODO: add back
-    # async def write_maybe_text(self, text: str):
-    #     """
-    #     Writing to this when there isn't actually a .text could crash
-    #     """
-    #     await self.write_string_to_offset(584, text)
+    async def write_maybe_text(self, text: str):
+        """
+        Writing to this when there isn't actually a .text could crash
+        """
+        await self.write_wide_string_to_offset(584, text)
 
     async def name(self) -> str:
         return await self.read_string_from_offset(80)
@@ -166,7 +166,11 @@ class Window(PropertyClass):
         await self.write_string_to_offset(80, name)
 
     async def children(self) -> List["DynamicWindow"]:
-        pointers = await self.read_shared_vector(112)
+        try:
+            pointers = await self.read_shared_vector(112)
+        except (ValueError, MemoryReadError):
+            logger.error("Issue while reading children vector raised to upper level")
+            return []
 
         windows = []
         for addr in pointers:

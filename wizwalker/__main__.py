@@ -15,7 +15,7 @@ logger.enable("wizwalker")
 logger.remove(0)
 
 logfile = utils.get_logs_folder() / "debug.log"
-logger.add(logfile, level="DEBUG", rotation="10 MB")
+logger.add(logfile, level="DEBUG", rotation="1 week", enqueue=True)
 
 
 @click.group(cls=DefaultGroup, default="cli", default_if_no_args=True)
