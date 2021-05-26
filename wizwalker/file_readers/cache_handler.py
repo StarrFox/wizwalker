@@ -11,6 +11,7 @@ from wizwalker import utils
 from .wad import Wad
 
 
+# TODO: add lang file code lookup
 class CacheHandler:
     def __init__(self):
         self.wad_cache = None

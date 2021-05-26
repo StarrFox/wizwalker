@@ -149,6 +149,30 @@ class CombatHandler:
 
         raise ValueError(f"Couldn't find a card named {name}")
 
+    # TODO: finish
+    #  and add get_damage_enchants
+    # async def get_damaging_aoes(self, *, check_enchanted: bool = True):
+    #     """
+    #     Get a list of all damaging aoes in hand
+    #     """
+    #
+    #     async def _pred(card):
+    #         if check_enchanted:
+    #             if not await card.is_enchanted():
+    #                 return False
+    #
+    #         if await card.type_name() != "AOE":
+    #             return False
+    #
+    #         effects = await card.get_spell_effects()
+    #
+    #         for effect in effects:
+    #             effect_type = await effect.maybe_read_type_name()
+    #             if "random" in effect_type.lower():
+    #                 pass
+    #
+    #     return await self.get_cards_with_predicate(_pred)
+
     async def get_members(self) -> List[CombatMember]:
         """
         List of active CombatMembers
