@@ -153,12 +153,6 @@ class WizWalkerConsole(Monitor):
         for idx, client in enumerate(walker.clients):
             self.write(f"client-{idx}: {self.run_coro(client.body.position())}")
 
-    def do_cache(self):
-        """Cache data"""
-        walker = self.get_local("walker")
-        self.run_coro(walker.cache())
-        self.write("Cached data")
-
     def do_teleport(self, x: float, y: float, z: float = None, yaw: float = None):
         """Teleport to a location
 
