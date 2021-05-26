@@ -362,7 +362,7 @@ class Client:
         await self.body.write_yaw(yaw)
         await utils.timed_send_key(self.window_handle, Keycode.W, move_seconds)
 
-    async def teleport(self, xyz: XYZ, yaw: int = None):
+    async def teleport(self, xyz: XYZ, yaw: int = None, *, move_after: bool = False):
         """
         Teleport the client
 
@@ -371,6 +371,9 @@ class Client:
             yaw: yaw to set or None to not change
         """
         await self.body.write_position(xyz)
+
+        if move_after:
+            await self.send_key(Keycode.D, 0.1)
 
         if yaw is not None:
             await self.body.write_yaw(yaw)

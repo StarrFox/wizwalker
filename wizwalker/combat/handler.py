@@ -150,14 +150,21 @@ class CombatHandler:
         raise ValueError(f"Couldn't find a card named {name}")
 
     # TODO: add get_damage_enchants
-    async def get_damaging_aoes(self, *, check_enchanted: bool = True):
+    async def get_damaging_aoes(self, *, check_enchanted: bool = None):
         """
         Get a list of all damaging aoes in hand
+
+        Keyword Args:
+            check_enchanted: None -> don't check enchanted; False -> non-enchanted; True -> enchanted
         """
 
         async def _pred(card):
-            if check_enchanted:
+            if check_enchanted is True:
                 if not await card.is_enchanted():
+                    return False
+
+            elif check_enchanted is False:
+                if await card.is_enchanted():
                     return False
 
             if await card.type_name() != "AOE":
