@@ -529,6 +529,7 @@ def get_windows_from_predicate(predicate: Callable) -> list:
     return handles
 
 
+# TODO: 2.0 move all these pharse functions to cache_handler, and rename them to parse instead of pharse
 def pharse_template_id_file(file_data: bytes) -> dict:
     """
     Pharse a template id file's data

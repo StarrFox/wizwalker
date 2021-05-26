@@ -83,9 +83,6 @@ class Spell(PropertyClass):
 
         return effects
 
-    # async def write_spell_effects(self, spell_effects: class SharedPointer<class SpellEffect>):
-    #     await self.write_value_to_offset(88, spell_effects, "class SharedPointer<class SpellEffect>")
-
     async def treasure_card(self) -> bool:
         return await self.read_value_from_offset(265, "bool")
 
@@ -152,15 +149,9 @@ class Spell(PropertyClass):
 
     # async def param_overrides(self) -> class SharedPointer<class SpellEffectParamOverride>:
     #     return await self.read_value_from_offset(288, "class SharedPointer<class SpellEffectParamOverride>")
-    #
-    # async def write_param_overrides(self, param_overrides: class SharedPointer<class SpellEffectParamOverride>):
-    #     await self.write_value_to_offset(288, param_overrides, "class SharedPointer<class SpellEffectParamOverride>")
-    #
+
     # async def sub_effect_meta(self) -> class SharedPointer<class SpellSubEffectMetadata>:
     #     return await self.read_value_from_offset(304, "class SharedPointer<class SpellSubEffectMetadata>")
-    #
-    # async def write_sub_effect_meta(self, sub_effect_meta: class SharedPointer<class SpellSubEffectMetadata>):
-    #     await self.write_value_to_offset(304, sub_effect_meta, "class SharedPointer<class SpellSubEffectMetadata>")
 
     async def delay_enchantment(self) -> bool:
         return await self.read_value_from_offset(321, "bool")

@@ -140,6 +140,13 @@ class CombatCard:
         spell_template = await graphical_spell.spell_template()
         return await spell_template.display_name()
 
+    async def display_name(self) -> str:
+        """
+        the display name of this card
+        """
+        code = await self.display_name_code()
+        return await self.combat_handler.client.cache_handler.get_langcode_name(code)
+
     async def type_name(self) -> str:
         """
         The type name of this card

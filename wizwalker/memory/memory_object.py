@@ -219,6 +219,8 @@ class MemoryObject(MemoryReader):
         end_address = await self.read_value_from_offset(offset + 8, "long long")
         size = end_address - start_address
 
+        element_number = size // 16
+
         if size == 0:
             return []
 
@@ -226,8 +228,8 @@ class MemoryObject(MemoryReader):
         if size < 0:
             return []
 
-        if size > max_size:
-            raise ValueError(f"Size was {size} and the max was {max_size}")
+        if element_number > max_size:
+            raise ValueError(f"Size was {element_number} and the max was {max_size}")
 
         try:
             shared_pointers_data = await self.read_bytes(start_address, size)
@@ -237,7 +239,7 @@ class MemoryObject(MemoryReader):
         pointers = []
         data_pos = 0
         # Shared pointers are 16 in length
-        for _ in range(size // 16):
+        for _ in range(element_number):
             # fmt: off
             shared_pointer_data = shared_pointers_data[data_pos: data_pos + 16]
             # fmt: on
