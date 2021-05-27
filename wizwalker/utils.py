@@ -18,6 +18,23 @@ from wizwalker import ExceptionalTimeout
 from wizwalker.constants import Keycode, kernel32, user32, gdi32
 
 
+async def async_sorted(iterable, /, *, key=None, reverse=False):
+    """
+    sorted but key function is awaited
+    """
+    if key is None:
+        return sorted(iterable, reverse=reverse)
+
+    evaluated = {}
+
+    for item in iterable:
+        evaluated[item] = await key(item)
+
+    return [
+        i[0] for i in sorted(evaluated.items(), key=lambda it: it[1], reverse=reverse)
+    ]
+
+
 class XYZ:
     def __init__(self, x: float, y: float, z: float):
         self.x = x

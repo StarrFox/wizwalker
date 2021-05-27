@@ -4,7 +4,7 @@ from warnings import warn
 
 from .member import CombatMember
 from .card import CombatCard
-from ..memory import DuelPhase, EffectTarget, WindowFlags
+from ..memory import DuelPhase, EffectTarget, SpellEffects, WindowFlags
 from wizwalker import utils
 
 
@@ -149,7 +149,7 @@ class CombatHandler:
 
         raise ValueError(f"Couldn't find a card named {name}")
 
-    # TODO: add get_damage_enchants
+    # TODO: add allow_treasure_cards that defaults to False
     async def get_damaging_aoes(self, *, check_enchanted: bool = None):
         """
         Get a list of all damaging aoes in hand
@@ -190,6 +190,35 @@ class CombatHandler:
                         return True
 
         return await self.get_cards_with_predicate(_pred)
+
+    async def get_damage_enchants(self, *, sort_by_damage: bool = False):
+        """
+        Get enchants that increse the damage of spells
+
+        Keyword Args:
+            sort_by_damage: If enchants should be sorted by how much damage they add
+        """
+
+        async def _pred(card):
+            if await card.type_name() != "Enchantment":
+                return False
+
+            for effect in await card.get_spell_effects():
+                if await effect.effect_type() == SpellEffects.modify_card_damage:
+                    return True
+
+            return False
+
+        damage_enchants = await self.get_cards_with_predicate(_pred)
+
+        if not sort_by_damage:
+            return damage_enchants
+
+        async def _sort_by_damage(card):
+            effect = (await card.get_spell_effects())[0]
+            return await effect.effect_param()
+
+        return await utils.async_sorted(damage_enchants, key=_sort_by_damage)
 
     async def get_members(self) -> List[CombatMember]:
         """
@@ -334,3 +363,49 @@ class CombatHandler:
         Click the free button
         """
         await self.client.mouse_handler.click_window_with_name("Flee")
+
+
+class AoeHandler(CombatHandler):
+    """
+    Subclass of CombatHandler that just casts enchanted aoes
+    """
+
+    async def handle_round(self):
+        enchanted_aoes = await self.get_damaging_aoes(check_enchanted=True)
+        if enchanted_aoes:
+            await enchanted_aoes[0].cast(None)
+
+        unenchanted_aoes = await self.get_damaging_aoes(check_enchanted=False)
+        enchants = await self.get_damage_enchants(sort_by_damage=True)
+
+        # enchant card then cast card
+        if enchants and unenchanted_aoes:
+            await enchants[0].cast(unenchanted_aoes[0])
+            enchanted_aoes = await self.get_damaging_aoes(check_enchanted=True)
+
+            if not enchanted_aoes:
+                raise RuntimeError("Enchant failure")
+
+            await enchanted_aoes[0].cast(None)
+
+        # no enchants so just cast card
+        elif not enchants and unenchanted_aoes:
+            await unenchanted_aoes[0].cast(None)
+
+        # hand full of enchants or enchants + other cards
+        elif enchants and not unenchanted_aoes:
+            if len(await self.get_cards()) == 7:
+                await enchants[0].discard()
+
+            # TODO: draw tc
+            else:
+                raise RuntimeError("No hits in hand")
+
+        # no enchants or aoes in hand
+        else:
+            # TODO: maybe flee instead?
+            if len(await self.get_cards()) == 0:
+                raise RuntimeError("Out of cards")
+
+            # TODO: add method for people to subclass for this?
+            raise RuntimeError("Out of hits and enchants")
