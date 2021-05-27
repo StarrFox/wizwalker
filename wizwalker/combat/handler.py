@@ -174,7 +174,7 @@ class CombatHandler:
 
             for effect in effects:
                 effect_type = await effect.maybe_read_type_name()
-                if "random" in effect_type.lower() or "variable" in effect_type.lower:
+                if "random" in effect_type.lower() or "variable" in effect_type.lower():
                     for sub_effect in await effect.maybe_effect_list():
                         if await sub_effect.effect_target() in (
                             EffectTarget.enemy_team,
@@ -384,7 +384,7 @@ class AoeHandler(CombatHandler):
             enchanted_aoes = await self.get_damaging_aoes(check_enchanted=True)
 
             if not enchanted_aoes:
-                raise RuntimeError("Enchant failure")
+                raise Exception("Enchant failure")
 
             await enchanted_aoes[0].cast(None)
 
@@ -397,15 +397,15 @@ class AoeHandler(CombatHandler):
             if len(await self.get_cards()) == 7:
                 await enchants[0].discard()
 
-            # TODO: draw tc
+            # TODO: draw tc?
             else:
-                raise RuntimeError("No hits in hand")
+                raise Exception("No hits in hand")
 
         # no enchants or aoes in hand
         else:
             # TODO: maybe flee instead?
             if len(await self.get_cards()) == 0:
-                raise RuntimeError("Out of cards")
+                raise Exception("Out of cards")
 
             # TODO: add method for people to subclass for this?
-            raise RuntimeError("Out of hits and enchants")
+            raise Exception("Out of hits and enchants")
