@@ -44,6 +44,7 @@ class Hotkey:
         self.callback = callback
 
 
+# TODO: test removing executor; add sleep_time kwarg to class or listen? default to 0.1
 # TODO: add .close that unregisters hotkeys and ends tasks
 class Listener:
     """

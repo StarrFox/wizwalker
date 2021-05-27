@@ -67,7 +67,7 @@ class Client:
         return f"<Client {self.window_handle=} {self.process_id=}>"
 
     @property
-    def title(self):
+    def title(self) -> str:
         """
         Get or set this window's title
         """
@@ -76,6 +76,22 @@ class Client:
     @title.setter
     def title(self, window_title: str):
         set_window_title(self.window_handle, window_title)
+
+    @property
+    def is_foreground(self) -> bool:
+        """
+        If this client is the foreground window
+
+        Set this to True to bring it to the foreground
+        """
+        return utils.get_foreground_window() == self.window_handle
+
+    @is_foreground.setter
+    def is_foreground(self, value: bool):
+        if value is False:
+            return
+
+        utils.set_foreground_window(self.window_handle)
 
     @property
     def window_rectangle(self):

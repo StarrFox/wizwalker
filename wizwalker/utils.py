@@ -211,7 +211,6 @@ def get_wiz_install() -> Path:
         raise Exception("Wizard101 install not found.")
 
 
-
 def start_instance():
     """
     Starts a wizard101 instance
@@ -423,6 +422,29 @@ def get_logs_folder() -> Path:
     log_dir.mkdir(parents=True, exist_ok=True)
 
     return log_dir
+
+
+def get_foreground_window() -> Optional[int]:
+    """
+    Get the window currently in the forground
+
+    Returns:
+        Handle to the window currently in the forground
+    """
+    return user32.GetForegroundWindow()
+
+
+def set_foreground_window(window_handle: int) -> bool:
+    """
+    Bring a window to the foreground
+
+    Args:
+        window_handle: Handle to the window to bring to the foreground
+
+    Returns:
+        False if the operation failed True otherwise
+    """
+    return user32.SetForegroundWindow(window_handle) != 0
 
 
 def get_window_title(handle: int, max_size: int = 100) -> str:
