@@ -105,7 +105,7 @@ def unarchive(input_wad, output_dir):
 
     if not path.exists():
         if click.confirm(f"{path} does not exsist; create it?", default=True):
-            path.mkdir()
+            path.mkdir(exist_ok=True)
         else:
             exit(0)
 
@@ -124,8 +124,7 @@ def unarchive(input_wad, output_dir):
                     current = path
                     for next_dir in dirs[:-1]:
                         current = current / next_dir
-                        if not current.exists():
-                            current.mkdir()
+                        current.mkdir(exist_ok=True)
 
                 file_path = path / file_name
                 file_data = await wad_file.get_file(file_name)

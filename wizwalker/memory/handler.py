@@ -182,7 +182,7 @@ class HookHandler(MemoryReader):
 
         Keyword Args:
             wait_for_ready: Wait for hook values to be written
-            timeout: How long to wait for hook values to be witten (None for no timeout)
+            timeout: How long to wait for hook values to be written (None for no timeout)
         """
         await self.activate_player_hook(wait_for_ready=False)
         # duel is only written to on battle join
@@ -218,7 +218,7 @@ class HookHandler(MemoryReader):
 
         Keyword Args:
             wait_for_ready: Wait for hook values to be written
-            timeout: How long to wait for hook values to be witten (None for no timeout)
+            timeout: How long to wait for hook values to be written (None for no timeout)
         """
         if self._check_if_hook_active(PlayerHook):
             raise HookAlreadyActivated("Player")
@@ -264,7 +264,7 @@ class HookHandler(MemoryReader):
 
         Keyword Args:
             wait_for_ready: Wait for hook values to be written
-            timeout: How long to wait for hook values to be witten (None for no timeout)
+            timeout: How long to wait for hook values to be written (None for no timeout)
         """
         if self._check_if_hook_active(DuelHook):
             raise HookAlreadyActivated("Duel")
@@ -310,7 +310,7 @@ class HookHandler(MemoryReader):
 
         Keyword Args:
             wait_for_ready: Wait for hook values to be written
-            timeout: How long to wait for hook values to be witten (None for no timeout)
+            timeout: How long to wait for hook values to be written (None for no timeout)
         """
         if self._check_if_hook_active(QuestHook):
             raise HookAlreadyActivated("Quest")
@@ -356,7 +356,7 @@ class HookHandler(MemoryReader):
 
         Keyword Args:
             wait_for_ready: Wait for hook values to be written
-            timeout: How long to wait for hook values to be witten (None for no timeout)
+            timeout: How long to wait for hook values to be written (None for no timeout)
         """
         if self._check_if_hook_active(PlayerStatHook):
             raise HookAlreadyActivated("Player stat")
@@ -402,7 +402,7 @@ class HookHandler(MemoryReader):
 
         Keyword Args:
             wait_for_ready: Wait for hook values to be written
-            timeout: How long to wait for hook values to be witten (None for no timeout)
+            timeout: How long to wait for hook values to be written (None for no timeout)
         """
         if self._check_if_hook_active(ClientHook):
             raise HookAlreadyActivated("Client")
@@ -448,7 +448,7 @@ class HookHandler(MemoryReader):
 
         Keyword Args:
             wait_for_ready: Wait for hook values to be written
-            timeout: How long to wait for hook values to be witten (None for no timeout)
+            timeout: How long to wait for hook values to be written (None for no timeout)
         """
         if self._check_if_hook_active(RootWindowHook):
             raise HookAlreadyActivated("Root window")
@@ -498,7 +498,7 @@ class HookHandler(MemoryReader):
 
         Keyword Args:
             wait_for_ready: Wait for hook values to be written
-            timeout: How long to wait for hook values to be witten (None for no timeout)
+            timeout: How long to wait for hook values to be written (None for no timeout)
         """
         if self._check_if_hook_active(RenderContextHook):
             raise HookAlreadyActivated("Render context")
