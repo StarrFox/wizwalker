@@ -386,11 +386,17 @@ class AoeHandler(CombatHandler):
             if not enchanted_aoes:
                 raise Exception("Enchant failure")
 
-            await enchanted_aoes[0].cast(None)
+            to_cast = enchanted_aoes[0]
+
+            if to_cast.is_castable():
+                await to_cast.cast(None)
 
         # no enchants so just cast card
         elif not enchants and unenchanted_aoes:
-            await unenchanted_aoes[0].cast(None)
+            to_cast = unenchanted_aoes[0]
+
+            if to_cast.is_castable():
+                await to_cast.cast(None)
 
         # hand full of enchants or enchants + other cards
         elif enchants and not unenchanted_aoes:

@@ -11,6 +11,46 @@ from wizwalker import HotkeyAlreadyRegistered
 from wizwalker.constants import Keycode, user32
 
 
+MAX_HOTKEY_ID = 0xBFFF
+
+
+class _GlobalHotkeyIdentifierManager:
+    def __init__(self):
+        self.hotkey_id_list = []
+        self.hotkey_lock = asyncio.Lock()
+
+    async def get_id(self) -> int:
+        # so an id isn't given out twice
+        async with self.hotkey_lock:
+            if (id_list_len := len(self.hotkey_id_list)) == MAX_HOTKEY_ID:
+                raise RuntimeError(f"Max hotkey id of {MAX_HOTKEY_ID} reached")
+
+            # all True
+            if sum(self.hotkey_id_list) == id_list_len:
+                self.hotkey_id_list.append(True)
+                print(f"Giving out id {id_list_len + 1} {self.hotkey_id_list=}")
+                return id_list_len + 1
+
+            # at least one False
+            else:
+                index = self.hotkey_id_list.index(False)
+                self.hotkey_id_list[index] = True
+                print(f"Giving out id {index + 1} {self.hotkey_id_list=}")
+                return index + 1
+
+    async def free_id(self, hotkey_id: int):
+        async with self.hotkey_lock:
+            print(f"Freeing id {hotkey_id} {self.hotkey_id_list=}")
+            self.hotkey_id_list[hotkey_id - 1] = False
+
+            # all False
+            if sum(self.hotkey_id_list) == 0:
+                self.hotkey_id_list = []
+
+
+_hotkey_id_manager = _GlobalHotkeyIdentifierManager()
+
+
 class ModifierKeys(IntFlag):
     """
     Key modifiers
@@ -71,18 +111,14 @@ class Listener:
 
                     listener.listen_forever()
 
-                    try:
-                        # your program here
-                        while True:
-                            await asyncio.sleep(1)
+                    # your program here
+                    while True:
+                        await asyncio.sleep(1)
 
-                    finally:
-                        await listener.close()
 
 
                 if __name__ == "__main__":
                     asyncio.run(main())
-
     """
 
     def __init__(self, *hotkeys: Hotkey):
@@ -183,9 +219,9 @@ class HotkeyListener:
 
                     async def callback():
                         print("a was pressed; removing it")
-                        listener.remove_hotkey(Keycode.A, modifiers=ModifierKeys.NOREPEAT)
+                        await listener.remove_hotkey(Keycode.A, modifiers=ModifierKeys.NOREPEAT)
 
-                    listener.add_hotkey(Keycode.A, callback, modifiers=ModifierKeys.NOREPEAT)
+                    await listener.add_hotkey(Keycode.A, callback, modifiers=ModifierKeys.NOREPEAT)
 
                     listener.start()
 
@@ -211,18 +247,18 @@ class HotkeyListener:
 
         self._message_loop_task = None
 
-        self._id_counter = 1
-
     def start(self):
         if self._message_loop_task:
             raise ValueError("This listener has already been started")
 
         self._message_loop_task = asyncio.create_task(self._message_loop())
 
-    def stop(self):
-        # expected failure for hotkeys already unregistered
-        for hotkey_id in range(1, self._id_counter + 1):
-            user32.UnregisterHotKey(None, hotkey_id)
+    async def stop(self):
+        for hotkey_id in self._hotkeys.values():
+            res = user32.UnregisterHotKey(None, hotkey_id)
+
+            if res != 0:
+                await _hotkey_id_manager.free_id(hotkey_id)
 
         with suppress(asyncio.CancelledError):
             if self._message_loop_task:
@@ -231,10 +267,10 @@ class HotkeyListener:
             for task in self._callback_tasks:
                 task.cancel()
 
-    def add_hotkey(
+    async def add_hotkey(
         self, key: Keycode, callback: Callable, *, modifiers: ModifierKeys = 0
     ):
-        if self._register_hotkey(key.value, int(modifiers)):
+        if await self._register_hotkey(key.value, int(modifiers)):
             # No repeat is not included in the return message
             no_norepeat = modifiers & ~ModifierKeys.NOREPEAT
             self._callbacks[key.value + no_norepeat] = callback
@@ -242,16 +278,18 @@ class HotkeyListener:
         else:
             raise ValueError(f"{key} with modifers {modifiers} already registered")
 
-    def remove_hotkey(self, key: Keycode, *, modifiers: ModifierKeys = 0):
+    async def remove_hotkey(self, key: Keycode, *, modifiers: ModifierKeys = 0):
         if self._hotkeys.get(key.value + modifiers) is None:
             raise ValueError(
                 f"No hotkey registered for key {key} with modifiers {modifiers}"
             )
 
-        if not self._unregister_hotkey(key.value, int(modifiers)):
+        if not await self._unregister_hotkey(key.value, int(modifiers)):
             raise ValueError(
                 f"Unregistering hotkey failure for key {key} with modifiers {modifiers}"
             )
+
+        del self._hotkeys[key.value + modifiers]
 
     async def _message_loop(self):
         while True:
@@ -276,22 +314,30 @@ class HotkeyListener:
             asyncio.create_task(self._callbacks[keycode + modifiers]())
         )
 
-    def _register_hotkey(self, keycode: int, modifiers: int = 0) -> bool:
+    async def _register_hotkey(self, keycode: int, modifiers: int = 0) -> bool:
+        hotkey_id = await _hotkey_id_manager.get_id()
         # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerhotkey
-        res = user32.RegisterHotKey(None, self._id_counter, modifiers, keycode)
+        res = user32.RegisterHotKey(None, hotkey_id, modifiers, keycode)
 
         success = res != 0
 
         if success:
-            self._hotkeys[keycode + modifiers] = self._id_counter
-            self._id_counter += 1
+            self._hotkeys[keycode + modifiers] = hotkey_id
+
+        else:
+            await _hotkey_id_manager.free_id(hotkey_id)
 
         return success
 
-    def _unregister_hotkey(self, keycode: int, modifiers: int = 0):
+    async def _unregister_hotkey(self, keycode: int, modifiers: int = 0):
         hotkey_id = self._hotkeys[keycode + modifiers]
 
         # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-unregisterhotkey
         res = user32.UnregisterHotKey(None, hotkey_id)
 
-        return res != 0
+        success = res != 0
+
+        if success:
+            await _hotkey_id_manager.free_id(hotkey_id)
+
+        return success
