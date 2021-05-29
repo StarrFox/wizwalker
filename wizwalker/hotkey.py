@@ -1,6 +1,7 @@
 import asyncio
 import ctypes
 import ctypes.wintypes
+from contextlib import suppress
 from enum import IntFlag
 from typing import Callable, Union
 
@@ -21,7 +22,7 @@ class ModifierKeys(IntFlag):
     SHIFT = 0x4
 
 
-# TODO: add properties to set attrs after init?
+# TODO: remove in 2.0
 class Hotkey:
     """
     A hotkey to be listened to
@@ -44,8 +45,7 @@ class Hotkey:
         self.callback = callback
 
 
-# TODO: test removing executor; add sleep_time kwarg to class or listen? default to 0.1
-# TODO: add .close that unregisters hotkeys and ends tasks
+# TODO: remove in 2.0, make sure to also remove janus requirement
 class Listener:
     """
     Hotkey listener
@@ -165,5 +165,133 @@ class Listener:
     def _register_hotkey(self, keycode: int, modifiers: int = 0) -> bool:
         res = user32.RegisterHotKey(None, self._id_counter, modifiers, keycode)
         self._id_counter += 1
+
+        return res != 0
+
+
+class HotkeyListener:
+    """
+    Examples:
+        .. code-block:: py
+                import asyncio
+
+                from wizwalker import Keycode, HotkeyListener, ModifierKeys
+
+
+                async def main():
+                    listener = HotkeyListener()
+
+                    async def callback():
+                        print("a was pressed; removing it")
+                        listener.remove_hotkey(Keycode.A, modifiers=ModifierKeys.NOREPEAT)
+
+                    listener.add_hotkey(Keycode.A, callback, modifiers=ModifierKeys.NOREPEAT)
+
+                    listener.start()
+
+                    try:
+                        # your program here
+                        while True:
+                            await asyncio.sleep(1)
+
+                    finally:
+                        await listener.stop()
+
+
+                if __name__ == "__main__":
+                    asyncio.run(main())
+    """
+
+    def __init__(self, *, sleep_time: float = 0.1):
+        self.sleep_time = sleep_time
+
+        self._hotkeys = {}
+        self._callbacks = {}
+        self._callback_tasks = []
+
+        self._message_loop_task = None
+
+        self._id_counter = 1
+
+    def start(self):
+        if self._message_loop_task:
+            raise ValueError("This listener has already been started")
+
+        self._message_loop_task = asyncio.create_task(self._message_loop())
+
+    def stop(self):
+        # expected failure for hotkeys already unregistered
+        for hotkey_id in range(1, self._id_counter + 1):
+            user32.UnregisterHotKey(None, hotkey_id)
+
+        with suppress(asyncio.CancelledError):
+            if self._message_loop_task:
+                self._message_loop_task.cancel()
+
+            for task in self._callback_tasks:
+                task.cancel()
+
+    def add_hotkey(
+        self, key: Keycode, callback: Callable, *, modifiers: ModifierKeys = 0
+    ):
+        if self._register_hotkey(key.value, int(modifiers)):
+            # No repeat is not included in the return message
+            no_norepeat = modifiers & ~ModifierKeys.NOREPEAT
+            self._callbacks[key.value + no_norepeat] = callback
+
+        else:
+            raise ValueError(f"{key} with modifers {modifiers} already registered")
+
+    def remove_hotkey(self, key: Keycode, *, modifiers: ModifierKeys = 0):
+        if self._hotkeys.get(key.value + modifiers) is None:
+            raise ValueError(
+                f"No hotkey registered for key {key} with modifiers {modifiers}"
+            )
+
+        if not self._unregister_hotkey(key.value, int(modifiers)):
+            raise ValueError(
+                f"Unregistering hotkey failure for key {key} with modifiers {modifiers}"
+            )
+
+    async def _message_loop(self):
+        while True:
+            # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-peekmessagew
+            message = ctypes.wintypes.MSG()
+            is_message = user32.PeekMessageW(
+                ctypes.byref(message), None, 0x311, 0x314, 1,
+            )
+
+            if is_message:
+                modifiers = message.lParam & 0b1111111111111111
+                keycode = message.lParam >> 16
+
+                await self._handle_hotkey(keycode, modifiers)
+
+                user32.DispatchMessageW(ctypes.byref(message))
+
+            await asyncio.sleep(self.sleep_time)
+
+    async def _handle_hotkey(self, keycode: int, modifiers: int):
+        self._callback_tasks.append(
+            asyncio.create_task(self._callbacks[keycode + modifiers]())
+        )
+
+    def _register_hotkey(self, keycode: int, modifiers: int = 0) -> bool:
+        # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerhotkey
+        res = user32.RegisterHotKey(None, self._id_counter, modifiers, keycode)
+
+        success = res != 0
+
+        if success:
+            self._hotkeys[keycode + modifiers] = self._id_counter
+            self._id_counter += 1
+
+        return success
+
+    def _unregister_hotkey(self, keycode: int, modifiers: int = 0):
+        hotkey_id = self._hotkeys[keycode + modifiers]
+
+        # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-unregisterhotkey
+        res = user32.UnregisterHotKey(None, hotkey_id)
 
         return res != 0
