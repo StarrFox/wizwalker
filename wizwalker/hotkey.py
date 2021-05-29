@@ -28,19 +28,16 @@ class _GlobalHotkeyIdentifierManager:
             # all True
             if sum(self.hotkey_id_list) == id_list_len:
                 self.hotkey_id_list.append(True)
-                print(f"Giving out id {id_list_len + 1} {self.hotkey_id_list=}")
                 return id_list_len + 1
 
             # at least one False
             else:
                 index = self.hotkey_id_list.index(False)
                 self.hotkey_id_list[index] = True
-                print(f"Giving out id {index + 1} {self.hotkey_id_list=}")
                 return index + 1
 
     async def free_id(self, hotkey_id: int):
         async with self.hotkey_lock:
-            print(f"Freeing id {hotkey_id} {self.hotkey_id_list=}")
             self.hotkey_id_list[hotkey_id - 1] = False
 
             # all False

@@ -2,8 +2,9 @@ import asyncio
 from copy import copy
 from functools import cached_property
 from pathlib import Path
-from typing import List, Type
+from typing import List, Optional, Type
 
+import wizwalker
 from wizwalker import utils
 from .client import Client
 
@@ -35,6 +36,11 @@ class ClientHandler:
         Start a new client
         """
         utils.start_instance()
+
+    def get_foreground_client(self) -> Optional[wizwalker.Client]:
+        for client in self.clients:
+            if client.is_foreground:
+                return client
 
     def get_new_clients(self) -> List[Client]:
         """
