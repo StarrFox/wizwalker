@@ -273,7 +273,7 @@ class HotkeyListener:
         if await self._register_hotkey(key.value, int(modifiers)):
             # No repeat is not included in the return message
             no_norepeat = modifiers & ~ModifierKeys.NOREPEAT
-            self._callbacks[key.value + no_norepeat] = callback
+            self._callbacks[(key.value, no_norepeat)] = callback
 
         else:
             raise ValueError(f"{key} with modifers {modifiers} already registered")
@@ -311,7 +311,7 @@ class HotkeyListener:
 
     async def _handle_hotkey(self, keycode: int, modifiers: int):
         self._callback_tasks.append(
-            asyncio.create_task(self._callbacks[keycode + modifiers]())
+            asyncio.create_task(self._callbacks[(keycode, modifiers)]())
         )
 
     async def _register_hotkey(self, keycode: int, modifiers: int = 0) -> bool:
