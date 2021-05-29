@@ -174,7 +174,11 @@ class Window(PropertyClass):
 
         windows = []
         for addr in pointers:
-            windows.append(DynamicWindow(self.hook_handler, addr))
+            if addr == 0:
+                logger.error("0 address while reading children")
+
+            else:
+                windows.append(DynamicWindow(self.hook_handler, addr))
 
         return windows
 
