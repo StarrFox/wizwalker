@@ -12,6 +12,7 @@ _friend_list_entry = re.compile(
     r"<indent;\d+><Color;[\d\w]+><left><COLOR;[\w\d]+>(?P<name>[\w ]+)"
 )
 
+
 _friend_list_type_cycle = {
     "Online Friends": 0,
     "Friend Chat": 3,
@@ -218,91 +219,3 @@ async def teleport_to_friend_from_list(
 
     # close friends window
     await friends_window.write_flags(WindowFlags(2147483648))
-
-
-# --- [NewFriendsListWindow] NewFriendsListWindow
-# ---- [wndFriendsListScroll] Window
-
-# list container
-# ----- [listFriends] ControlList
-
-# close list
-# ---- [btnClose] ControlButton
-
-# cycle through different pages of list
-# ---- [btnArrowUp] ControlButton
-# ---- [btnArrowDown] ControlButton
-
-# ---- [MoreFriendsButton] ControlButton
-# ---- [PageNumber] ControlText
-
-# cycle though all friends -> online friends
-# ---- [btnListTypeLeft] ControlButton
-# ---- [btnListTypeRight] ControlButton
-
-# ---- [btnLeaveParty] ControlButton
-# ---- [Layout] Window
-
-# name of list
-# ----- [lblFriendsList] ControlText
-
-# ---- [btnLeaveChatChannel] ControlButton
-# ---- [btnInviteAllChatChannel] ControlButton
-
-
-# --- [wndCharacter] CharacterWindow
-
-# close character window
-# ---- [btnCharacterClose] ControlButton
-
-# ---- [ButtonLayout] WindowLayout
-# ----- [btnRemoveFriend] ControlButton
-# ----- [btnIgnore] ControlButton
-# ----- [btnReport] ControlButton
-# ----- [btnSendAway] ControlButton
-# ----- [btnRemoveChatChannel] ControlButton
-# ---- [FriendStatusRecent] ControlSprite
-# ---- [FriendStatusActive] ControlSprite
-# ---- [FriendStatusDormant] ControlSprite
-# ---- [ButtonLayout] WindowLayout
-# ----- [btnCharacterInspection] ControlButton
-# ----- [btnAddRemoveFriend] ControlButton
-
-# teleport to friend
-# ----- [btnGoToFriend] ControlButton
-
-# ----- [btnTrade] ControlButton
-# ----- [btnHatch] ControlButton
-# ----- [btnInvite] ControlButton
-# ----- [btnFriendFinder] ControlButton
-# ----- [btnSecureChat] ControlButton
-# ----- [btnQuickChat] ScrollablePopupButton
-# ----- [btnJoinChatChannel] ControlButton
-# ---- [lblCharacterName] ControlText
-# ---- [ClipWindow] Window
-# ----- [wndCharacterPortrait] PreviewWindow
-# ---- [FriendsSinceLabel] ControlText
-# ---- [FriendsSinceText] ControlText
-
-
-# - [MessageBoxModalWindow] MessageBoxWindow
-# -- [messageBoxBG] Window
-# --- [Top] ControlSprite
-# --- [Bottom] ControlSprite
-# --- [Left] ControlSprite
-# --- [Right] ControlSprite
-# --- [TopLeft] ControlSprite
-# --- [TopRight] ControlSprite
-# --- [BottomLeft] ControlSprite
-# --- [TopLeft] ControlSprite
-# --- [messageBoxLayout] WindowLayout
-# ---- [] Window
-# ----- [TitleText] ControlText
-# ---- [TextArea] Window
-# ----- [CaptionText] ControlText
-# ---- [ignoreCheckBox] ControlCheckBox
-# ---- [AdjustmentWindow] Window
-# ----- [Layout] WindowLayout
-# ------ [centerButton] ControlButton
-# ------ [leftButton] ControlButton
-# ------ [rightButton] ControlButton
