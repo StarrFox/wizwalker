@@ -23,14 +23,16 @@ class CombatCard:
         self,
         target: Union["CombatCard", "wizwalker.combat.CombatMember", None],
         *,
-        sleep_time: Optional[float] = 1.0
+        sleep_time: Optional[float] = 1.0,
+        debug_paint: bool = False,
     ):
         """
         Cast this Card on another Card; a Member or with no target
 
         Args:
             target: Card, Member, or None if there is no target
-            sleep_time: how long to sleep after enchants and between multicasts or None for no sleep
+            sleep_time: How long to sleep after enchants and between multicasts or None for no sleep
+            debug_paint: If the card should be highlighted before clicking
         """
         if isinstance(target, CombatCard):
             cards_len_before = len(await self.combat_handler.get_cards())
@@ -46,6 +48,9 @@ class CombatCard:
             )
 
             await asyncio.sleep(sleep_time)
+
+            if debug_paint:
+                await target._spell_window.debug_paint()
 
             await self.combat_handler.client.mouse_handler.click_window(
                 target._spell_window
