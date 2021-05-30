@@ -9,7 +9,7 @@ _friend_list_entry = re.compile(
     r"<Y;\d+><X;\d+><indent;0><Color;[\w\d]+><left>"
     r"<icon;FriendsList/Friend_Icon_List_0(?P<icon_list>[12])\."
     r"dds;\d+;\d+;(?P<icon_index>\d)+></left><Y;(?P<name_y>[-\d]+)><X;(?P<name_x>[-\d]+)>"
-    r"<indent;\d+><Color;[\d\w]+><left><COLOR;[\w\d]+>(?P<name>[\w ]+)"
+    r"<indent;\d+><Color;[\d\w]+>(<left>)?<COLOR;[\w\d]+>(?P<name>[\w ]+)"
 )
 
 
@@ -70,62 +70,61 @@ async def _cycle_to_online_friends(client, friends_list):
 
 
 async def _cycle_friends_list(
-    client, right_button, friends_list, page_number, icon, icon_list, name
+    client, right_button, friends_list, icon, icon_list, name, current_page
 ):
-    page_number_text = await page_number.maybe_text()
+    list_text = await friends_list.maybe_text()
 
-    current, total = map(
-        int,
-        page_number_text.replace("<center>", "")
-        .replace("</center>", "")
-        .replace(" ", "")
-        .split("/"),
-    )
+    match = None
+    idx = 0
 
-    for page in range(total):
-        list_text = await friends_list.maybe_text()
+    for idx, friend_entry in enumerate(list(_friend_list_entry.finditer(list_text))):
+        friend_icon = int(friend_entry.group("icon_index"))
+        friend_icon_list = int(friend_entry.group("icon_list"))
+        friend_name = friend_entry.group("name")
 
-        for friend_entry in _friend_list_entry.finditer(list_text):
-            friend_icon = int(friend_entry.group("icon_index"))
-            friend_icon_list = int(friend_entry.group("icon_list"))
-            friend_name = friend_entry.group("name")
+        if icon is not None and icon_list is not None and name:
+            if (
+                friend_icon == icon
+                and friend_icon_list == icon_list
+                and friend_name == name
+            ):
+                match = friend_entry
+                break
 
-            if icon is not None and icon_list is not None and name:
-                if (
-                    friend_icon == icon
-                    and friend_icon_list == icon_list
-                    and friend_name == name
-                ):
-                    return friend_entry
+        elif icon is not None and icon_list is not None:
+            if friend_icon == icon and friend_icon_list == icon_list:
+                match = friend_entry
+                break
 
-            elif icon is not None and icon_list is not None:
-                if friend_icon == icon and friend_icon_list == icon_list:
-                    return friend_entry
-
-            elif name:
-                if friend_name == name:
-                    return friend_entry
-
-            else:
-                raise RuntimeError("Invalid args")
-
-        if page < total:
-            await client.mouse_handler.click_window(right_button)
+        elif name:
+            if friend_name == name:
+                match = friend_entry
+                break
 
         else:
-            return None
+            raise RuntimeError("Invalid args")
+
+    if match:
+        target_page = (idx // 10) + 1
+
+        if target_page != current_page:
+            for _ in range(target_page - current_page):
+                await client.mouse_handler.click_window(right_button)
+
+    return match, idx
 
 
-async def _click_on_friend(client, friends_list, friend_name_x, friend_name_y):
+async def _click_on_friend(client, friends_list, friend_index):
     scaled_rect = await friends_list.scale_to_client()
     ui_scale = await client.render_context.ui_scale()
 
-    scaled_friend_name_x = friend_name_x * ui_scale
-    scaled_friend_name_y = friend_name_y * ui_scale
+    # 12 % 10 = 2 * 30 = 60 * ui_scale
+    scaled_friend_name_y = ((friend_index % 10) * 30) * ui_scale
 
     scaled_rect_center = scaled_rect.center()
     click_x = scaled_rect_center[0]
-    click_y = int(scaled_rect.y1 + scaled_friend_name_y + (scaled_friend_name_x / 2))
+    # 15 is half the size of each entry's click area
+    click_y = int(scaled_rect.y1 + scaled_friend_name_y + (15 * ui_scale))
 
     await client.mouse_handler.click(click_x, click_y)
     await asyncio.sleep(1)
@@ -196,14 +195,24 @@ async def teleport_to_friend_from_list(
     right_button = await _maybe_get_named_window(friends_window, "btnArrowDown")
     page_number = await _maybe_get_named_window(friends_window, "PageNumber")
 
-    friend = await _cycle_friends_list(
+    page_number_text = await page_number.maybe_text()
+
+    current_page, _ = map(
+        int,
+        page_number_text.replace("<center>", "")
+        .replace("</center>", "")
+        .replace(" ", "")
+        .split("/"),
+    )
+
+    friend, friend_index = await _cycle_friends_list(
         client,
         right_button,
         friends_list_window,
-        page_number,
         icon_index,
         icon_list,
         name,
+        current_page,
     )
 
     if friend is None:
@@ -211,8 +220,7 @@ async def teleport_to_friend_from_list(
             f"Could not find friend with icon {icon_index} icon list {icon_list} and/or name {name}"
         )
 
-    name_x, name_y = map(int, (friend.group("name_x"), friend.group("name_y")))
-    await _click_on_friend(client, friends_list_window, name_x, name_y)
+    await _click_on_friend(client, friends_list_window, friend_index)
 
     character_window = await _maybe_get_named_window(client.root_window, "wndCharacter")
     await _teleport_to_friend(client, character_window)
