@@ -13,7 +13,7 @@ class MouseHandler:
 
     def __init__(self, client: "wizwalker.Client"):
         self.client = client
-        self.click_lock = asyncio.Lock()
+        self.click_lock = None
 
     async def activate_mouseless(self):
         """
@@ -109,6 +109,10 @@ class MouseHandler:
             send_method = user32.PostMessageW
         else:
             send_method = user32.SendMessageW
+
+        # so MouseHandler can be inited in sync funcs like other __init__s
+        if self.click_lock is None:
+            self.click_lock = asyncio.Lock()
 
         # prevent multiple clicks from happening at the same time
         async with self.click_lock:

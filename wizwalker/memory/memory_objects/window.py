@@ -10,6 +10,7 @@ from .combat_participant import DynamicCombatParticipant
 from wizwalker import AddressOutOfRange, MemoryReadError, Rectangle, utils
 
 
+# TODO: Window.click
 class Window(PropertyClass):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
@@ -102,6 +103,9 @@ class Window(PropertyClass):
                 return child
 
         raise ValueError(f"No child named {name}")
+
+    async def is_visible(self):
+        return WindowFlags.visible in await self.flags()
 
     # This is here because checking in .children slows down window filtering majorly
     async def maybe_graphical_spell(
