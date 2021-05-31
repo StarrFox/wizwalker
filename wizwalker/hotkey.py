@@ -253,6 +253,7 @@ class Listener:
         return res != 0
 
 
+# TODO: fix issue with non-norepeats taking up message queue
 class HotkeyListener:
     """
     Examples:
