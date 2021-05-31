@@ -81,6 +81,12 @@ Listener
 .. autoclass:: Listener
    :members:
 
+HotkeyListener
+~~~~~~~~~~~~~~
+
+..autoclass:: HotkeyListener
+    :members:
+
 Memory
 ======
 
