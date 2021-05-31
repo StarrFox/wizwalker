@@ -148,7 +148,7 @@ async def _teleport_to_friend(client, character_window):
     await client.mouse_handler.click_window(close_button)
 
 
-# TODO: test if multipage works
+# TODO: add error if friend is busy message pops up
 async def teleport_to_friend_from_list(
     client, *, icon_list: int = None, icon_index: int = None, name: str = None
 ):
@@ -189,8 +189,7 @@ async def teleport_to_friend_from_list(
 
     # no friends online
     if not friends_list_text:
-        # TODO: change error
-        raise Exception("No friends online")
+        raise ValueError("No friends online")
 
     right_button = await _maybe_get_named_window(friends_window, "btnArrowDown")
     page_number = await _maybe_get_named_window(friends_window, "PageNumber")

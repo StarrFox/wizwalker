@@ -55,6 +55,14 @@ class CombatMember:
 
         raise ValueError("Couldn't find name child")
 
+    async def is_dead(self) -> bool:
+        """
+        If this member is dead
+        """
+        part = await self.get_participant()
+        stats = await part.game_stats()
+        return await stats.current_hitpoints() == 0
+
     async def is_client(self) -> bool:
         """
         If this member is the local client

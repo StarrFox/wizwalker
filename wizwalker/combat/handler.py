@@ -350,6 +350,22 @@ class CombatHandler:
         """
         Click the pass button
         """
+        pos_done_window = await self.client.root_window.get_windows_with_name(
+            "DoneWindow"
+        )
+        if pos_done_window:
+            done_window = pos_done_window[0]
+
+            if await done_window.is_visible():
+                pos_defeated_pass_button = await done_window.get_windows_with_name(
+                    "DefeatedPassButton"
+                )
+                defeated_pass_button = pos_defeated_pass_button[0]
+
+                return await self.client.mouse_handler.click_window(
+                    defeated_pass_button
+                )
+
         await self.client.mouse_handler.click_window_with_name("Focus")
 
     async def draw_button(self):
@@ -362,6 +378,22 @@ class CombatHandler:
         """
         Click the free button
         """
+        pos_done_window = await self.client.root_window.get_windows_with_name(
+            "DoneWindow"
+        )
+        if pos_done_window:
+            done_window = pos_done_window[0]
+
+            if await done_window.is_visible():
+                pos_defeated_flee_button = await done_window.get_windows_with_name(
+                    "DefeatedFleeButton"
+                )
+                defeated_flee_button = pos_defeated_flee_button[0]
+
+                return await self.client.mouse_handler.click_window(
+                    defeated_flee_button
+                )
+
         await self.client.mouse_handler.click_window_with_name("Flee")
 
 
