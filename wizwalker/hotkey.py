@@ -48,6 +48,57 @@ class _GlobalHotkeyIdentifierManager:
 _hotkey_id_manager = _GlobalHotkeyIdentifierManager()
 
 
+class _GlobalHotkeyMessageLoop:
+    def __init__(self):
+        self.messages = []
+        self.message_loop_task = None
+        self.connected_instances = 0
+
+    async def check_for_message(self, keycode: int, modifiers: int) -> bool:
+        if (keycode, modifiers) in self.messages:
+            self.messages.remove((keycode, modifiers))
+            return True
+
+        return False
+
+    async def message_loop(self):
+        while True:
+            # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-peekmessagew
+            message = ctypes.wintypes.MSG()
+            is_message = user32.PeekMessageW(
+                ctypes.byref(message), None, 0x311, 0x314, 1,
+            )
+
+            if is_message:
+                # get lower 16 bits
+                modifiers = message.lParam & 0b1111111111111111
+                # get higher 16 bits
+                keycode = message.lParam >> 16
+
+                self.messages.append((keycode, modifiers))
+
+                user32.DispatchMessageW(ctypes.byref(message))
+
+            await asyncio.sleep(0.1)
+
+    def connect(self):
+        if not self.message_loop_task:
+            self.message_loop_task = asyncio.create_task(self.message_loop())
+
+        self.connected_instances += 1
+
+    def disconnect(self):
+        self.connected_instances -= 1
+
+        if self.connected_instances == 0:
+            if self.message_loop_task:
+                with suppress(asyncio.CancelledError):
+                    self.message_loop_task.cancel()
+
+
+_hotkey_message_loop = _GlobalHotkeyMessageLoop()
+
+
 class ModifierKeys(IntFlag):
     """
     Key modifiers
@@ -248,9 +299,13 @@ class HotkeyListener:
         if self._message_loop_task:
             raise ValueError("This listener has already been started")
 
+        _hotkey_message_loop.connect()
+
         self._message_loop_task = asyncio.create_task(self._message_loop())
 
     async def stop(self):
+        _hotkey_message_loop.disconnect()
+
         for hotkey_id in self._hotkeys.values():
             res = user32.UnregisterHotKey(None, hotkey_id)
 
@@ -290,19 +345,9 @@ class HotkeyListener:
 
     async def _message_loop(self):
         while True:
-            # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-peekmessagew
-            message = ctypes.wintypes.MSG()
-            is_message = user32.PeekMessageW(
-                ctypes.byref(message), None, 0x311, 0x314, 1,
-            )
-
-            if is_message:
-                modifiers = message.lParam & 0b1111111111111111
-                keycode = message.lParam >> 16
-
-                await self._handle_hotkey(keycode, modifiers)
-
-                user32.DispatchMessageW(ctypes.byref(message))
+            for keycode, modifiers in self._callbacks.keys():
+                if await _hotkey_message_loop.check_for_message(keycode, modifiers):
+                    await self._handle_hotkey(keycode, modifiers)
 
             await asyncio.sleep(self.sleep_time)
 
