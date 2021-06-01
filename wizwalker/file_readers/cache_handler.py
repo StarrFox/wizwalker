@@ -145,7 +145,8 @@ class CacheHandler:
         except UnicodeDecodeError:
             return
 
-        split = decoded.splitlines()
+        # splitlines splits whitespace that lang files should not recognize as a newline
+        split = decoded.split("\r\n")
         parsed_lang = self._parse_lang_file(split)
 
         lang_map = await self._get_langcode_map()
