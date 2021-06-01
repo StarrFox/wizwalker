@@ -33,15 +33,9 @@ class CacheHandler:
         """
         return utils.get_cache_folder()
 
-    async def check_updated(
+    async def _check_updated(
         self, wad_file: Wad, files: Union[List[str], str]
     ) -> List[str]:
-        """
-        Checks if some wad files have changed since we last accessed them
-
-        Returns:
-            List of the file names that have updated
-        """
         if isinstance(files, str):
             files = [files]
 
@@ -64,6 +58,19 @@ class CacheHandler:
 
             else:
                 logger.info(f"{file_name} has not updated from {file_info.size}")
+
+        return res
+
+    async def check_updated(
+        self, wad_file: Wad, files: Union[List[str], str]
+    ) -> List[str]:
+        """
+        Checks if some wad files have changed since we last accessed them
+
+        Returns:
+            List of the file names that have updated
+        """
+        res = self._check_updated(wad_file, files)
 
         if has_updated:
             await self.write_wad_cache()
@@ -134,15 +141,14 @@ class CacheHandler:
         return lang_file_names
 
     async def _read_lang_file(self, root_wad: Wad, lang_file: str):
-        if not await self.check_updated(root_wad, lang_file):
-            return
-
         file_data = await root_wad.get_file(lang_file)
         parsed_lang = self._parse_lang_file(file_data)
 
         return parsed_lang
 
     async def _cache_lang_file(self, root_wad: Wad, lang_file: str):
+        if not await self.check_updated(root_wad, lang_file):
+            return
         parsed_lang = await self._read_lang_file(root_wad, lang_file)
         if parsed_lang is None:
             return
@@ -158,10 +164,13 @@ class CacheHandler:
 
         parsed_lang_map = {}
         for file_name in lang_file_names:
+            if not await self._check_updated(root_wad, file_name):
+                continue
             parsed_lang = await self._read_lang_file(root_wad, file_name)
             if parsed_lang is not None:
                 parsed_lang_map.update(parsed_lang)
 
+        await self.write_wad_cache()
         lang_map = await self._get_langcode_map()
         lang_map.update(parsed_lang_map)
         async with aiofiles.open(self.cache_dir / "langmap.json", "w+") as fp:
