@@ -155,7 +155,7 @@ class CacheHandler:
             await fp.write(json_data)
 
     async def _cache_lang_files(self, root_wad: Wad):
-        lang_file_names = await self._get_all_lang_file_names()
+        lang_file_names = await self._get_all_lang_file_names(self._root_wad)
 
         updated_files = await self.check_updated(root_wad, lang_file_names)
 
