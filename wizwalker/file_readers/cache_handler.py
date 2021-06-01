@@ -244,7 +244,9 @@ class CacheHandler:
             ValueError: If the langcode does not have a match
 
         """
-        lang_filename, code = langcode.split("_")
+        split_point = langcode.find("_")
+        lang_filename = langcode[:split_point]
+        code = langcode[split_point + 1 :]
 
         lang_files = await self._get_all_lang_file_names(self._root_wad)
 

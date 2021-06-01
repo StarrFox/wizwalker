@@ -8,7 +8,7 @@ from wizwalker.memory.memory_objects.enums import WindowFlags
 _friend_list_entry = re.compile(
     r"<Y;\d+><X;\d+><indent;0><Color;[\w\d]+><left>"
     r"<icon;FriendsList/Friend_Icon_List_0(?P<icon_list>[12])\."
-    r"dds;\d+;\d+;(?P<icon_index>\d)+></left><Y;(?P<name_y>[-\d]+)><X;(?P<name_x>[-\d]+)>"
+    r"dds;\d+;\d+;(?P<icon_index>\d+)></left><Y;(?P<name_y>[-\d]+)><X;(?P<name_x>[-\d]+)>"
     r"<indent;\d+><Color;[\d\w]+>(<left>)?<COLOR;[\w\d]+>(?P<name>[\w ]+)"
 )
 
