@@ -107,19 +107,10 @@ class CacheHandler:
 
     @staticmethod
     def _parse_lang_file(file_lines):
-        lang_name = file_lines[0].replace("1:", "")
+        header, *lines = file_lines
+        _, lang_name = header.split(":")
 
-        file_lines = file_lines[1:]
-
-        lang_mapping = {}
-
-        start = 0
-        for stop in range(3, len(file_lines), 3):
-            lang_key = file_lines[start]
-            lang_value = file_lines[stop - 1]
-
-            lang_mapping[lang_key] = lang_value
-            start = stop
+        lang_mapping = dict(zip(lines[::3], lines[2::3]))
 
         return {lang_name: lang_mapping}
 
