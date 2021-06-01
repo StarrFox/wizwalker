@@ -43,13 +43,11 @@ class CacheHandler:
             self._wad_cache = await self.get_wad_cache()
 
         res = []
-        has_updated = False
 
         for file_name in files:
             file_info = await wad_file.get_file_info(file_name)
 
             if self._wad_cache[wad_file.name][file_name] != file_info.size:
-                has_updated = True
                 logger.info(
                     f"{file_name} has updated. old: {self._wad_cache[wad_file.name][file_name]} new: {file_info.size}"
                 )
@@ -70,9 +68,9 @@ class CacheHandler:
         Returns:
             List of the file names that have updated
         """
-        res = self._check_updated(wad_file, files)
+        res = await self._check_updated(wad_file, files)
 
-        if has_updated:
+        if res:
             await self.write_wad_cache()
 
         return res
