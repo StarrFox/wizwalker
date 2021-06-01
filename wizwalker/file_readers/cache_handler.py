@@ -157,9 +157,7 @@ class CacheHandler:
     async def _cache_lang_files(self, root_wad: Wad):
         lang_file_names = await self._get_all_lang_file_names(self._root_wad)
 
-        updated_files = await self.check_updated(root_wad, lang_file_names)
-
-        for file_name in updated_files:
+        for file_name in lang_file_names:
             await self._cache_lang_file(root_wad, file_name)
 
     async def _get_langcode_map(self) -> dict:
