@@ -33,15 +33,9 @@ class CacheHandler:
         """
         return utils.get_cache_folder()
 
-    async def check_updated(
+    async def _check_updated(
         self, wad_file: Wad, files: Union[List[str], str]
     ) -> List[str]:
-        """
-        Checks if some wad files have changed since we last accessed them
-
-        Returns:
-            List of the file names that have updated
-        """
         if isinstance(files, str):
             files = [files]
 
@@ -49,13 +43,11 @@ class CacheHandler:
             self._wad_cache = await self.get_wad_cache()
 
         res = []
-        has_updated = False
 
         for file_name in files:
             file_info = await wad_file.get_file_info(file_name)
 
             if self._wad_cache[wad_file.name][file_name] != file_info.size:
-                has_updated = True
                 logger.info(
                     f"{file_name} has updated. old: {self._wad_cache[wad_file.name][file_name]} new: {file_info.size}"
                 )
@@ -65,7 +57,20 @@ class CacheHandler:
             else:
                 logger.info(f"{file_name} has not updated from {file_info.size}")
 
-        if has_updated:
+        return res
+
+    async def check_updated(
+        self, wad_file: Wad, files: Union[List[str], str]
+    ) -> List[str]:
+        """
+        Checks if some wad files have changed since we last accessed them
+
+        Returns:
+            List of the file names that have updated
+        """
+        res = await self._check_updated(wad_file, files)
+
+        if res:
             await self.write_wad_cache()
 
         return res
@@ -106,20 +111,21 @@ class CacheHandler:
         return json.loads(message_data)
 
     @staticmethod
-    def _parse_lang_file(file_lines):
-        lang_name = file_lines[0].replace("1:", "")
+    def _parse_lang_file(file_data):
+        try:
+            decoded = file_data.decode("utf-16")
 
-        file_lines = file_lines[1:]
+        # empty file
+        except UnicodeDecodeError:
+            return
 
-        lang_mapping = {}
+        # splitlines splits whitespace that lang files should not recognize as a newline
+        file_lines = decoded.split("\r\n")
 
-        start = 0
-        for stop in range(3, len(file_lines), 3):
-            lang_key = file_lines[start]
-            lang_value = file_lines[stop - 1]
+        header, *lines = file_lines
+        _, lang_name = header.split(":")
 
-            lang_mapping[lang_key] = lang_value
-            start = stop
+        lang_mapping = dict(zip(lines[::3], lines[2::3]))
 
         return {lang_name: lang_mapping}
 
@@ -132,21 +138,18 @@ class CacheHandler:
 
         return lang_file_names
 
-    async def _cache_lang_file(self, root_wad: Wad, lang_file: str):
+    async def _read_lang_file(self, root_wad: Wad, lang_file: str):
         file_data = await root_wad.get_file(lang_file)
+        parsed_lang = self._parse_lang_file(file_data)
 
+        return parsed_lang
+
+    async def _cache_lang_file(self, root_wad: Wad, lang_file: str):
         if not await self.check_updated(root_wad, lang_file):
             return
-
-        try:
-            decoded = file_data.decode("utf-16")
-
-        # empty file
-        except UnicodeDecodeError:
+        parsed_lang = await self._read_lang_file(root_wad, lang_file)
+        if parsed_lang is None:
             return
-
-        split = decoded.splitlines()
-        parsed_lang = self._parse_lang_file(split)
 
         lang_map = await self._get_langcode_map()
         lang_map.update(parsed_lang)
@@ -155,12 +158,22 @@ class CacheHandler:
             await fp.write(json_data)
 
     async def _cache_lang_files(self, root_wad: Wad):
-        lang_file_names = await self._get_all_lang_file_names()
+        lang_file_names = await self._get_all_lang_file_names(root_wad)
 
-        updated_files = await self.check_updated(root_wad, lang_file_names)
+        parsed_lang_map = {}
+        for file_name in lang_file_names:
+            if not await self._check_updated(root_wad, file_name):
+                continue
+            parsed_lang = await self._read_lang_file(root_wad, file_name)
+            if parsed_lang is not None:
+                parsed_lang_map.update(parsed_lang)
 
-        for file_name in updated_files:
-            await self._cache_lang_file(root_wad, file_name)
+        await self.write_wad_cache()
+        lang_map = await self._get_langcode_map()
+        lang_map.update(parsed_lang_map)
+        async with aiofiles.open(self.cache_dir / "langmap.json", "w+") as fp:
+            json_data = json.dumps(lang_map)
+            await fp.write(json_data)
 
     async def _get_langcode_map(self) -> dict:
         try:
