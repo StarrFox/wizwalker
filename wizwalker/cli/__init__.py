@@ -1,1 +1,1 @@
-from .console import WizWalkerConsole, start_console
+from .console import WizWalkerConsole, run_cmd
