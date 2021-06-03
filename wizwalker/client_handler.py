@@ -23,6 +23,12 @@ class ClientHandler:
     def __repr__(self):
         return f"<WizWalker {self.clients=}>"
 
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.close()
+
     @cached_property
     def install_location(self) -> Path:
         """
