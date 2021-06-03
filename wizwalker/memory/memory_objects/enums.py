@@ -293,3 +293,12 @@ class ObjectType(Enum):
 #     shadow = 1429009101
 #     fishing = 1488274711
 #     cantrips = 1760873841
+
+
+class PlayerStatus(Enum):
+    unknown = 0
+    offline = 1
+    link_dead = 2
+    transition = 3
+    online = 4
+    ignored = 5
