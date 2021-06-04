@@ -226,3 +226,24 @@ async def teleport_to_friend_from_list(
 
     # close friends window
     await friends_window.write_flags(WindowFlags(2147483648))
+
+
+async def get_window_from_path(root_window, name_path):
+    """
+    Returns a window by following a list of window names, the last window is returned
+    Returns False if any window in the path can't be found
+    """
+
+    async def _recurse_follow_path(window, path):
+        if len(path) == 0:
+            return window
+
+        for child in await window.children():
+            if await child.name() == path[0]:
+                found_window = await _recurse_follow_path(child, path[1:])
+                if found_window:
+                    return found_window
+
+        return False
+
+    return await _recurse_follow_path(root_window, name_path)
