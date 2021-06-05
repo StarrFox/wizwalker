@@ -227,7 +227,7 @@ def get_wiz_install() -> Path:
             winreg.HKEY_CURRENT_USER,
             r"Software\Microsoft\Windows\CurrentVersion\Uninstall\{A9E27FF5-6294-46A8-B8FD-77B1DECA3021}",
             0,
-            winreg.KEY_READ,
+            winreg.KEY_ALL_ACCESS,
         ) as key:
             install_location = Path(
                 winreg.QueryValueEx(key, "InstallLocation")[0]
