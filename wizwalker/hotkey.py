@@ -204,7 +204,7 @@ class Listener:
         modifiers = int(modifiers)
 
         # TODO: add to self._tasks and cancel in self.close
-        self._loop.create_task(self._callbacks[keycode + modifiers]())
+        self._loop.create_task(self._callbacks[(keycode, modifiers)]())
 
     # async for future proofing
     async def close(self):
@@ -239,7 +239,7 @@ class Listener:
             if self._register_hotkey(hotkey.keycode.value, int(hotkey.modifiers)):
                 # No repeat is not included in the return message
                 no_norepeat = hotkey.modifiers & ~ModifierKeys.NOREPEAT
-                self._callbacks[hotkey.keycode.value + no_norepeat] = hotkey.callback
+                self._callbacks[(hotkey.keycode.value, no_norepeat)] = hotkey.callback
 
             else:
                 raise HotkeyAlreadyRegistered(
