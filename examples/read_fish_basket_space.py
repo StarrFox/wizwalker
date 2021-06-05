@@ -26,18 +26,13 @@ async def read_fish_basket(client):
 
 
 async def main():
-    handler = ClientHandler()
-    client = handler.get_new_clients()[0]
-
-    try:
+    async with ClientHandler() as handler:
+        client = handler.get_new_clients()[0]
         print("Preparing")
         # we only need the root window hook
         await client.hook_handler.activate_root_window_hook()
 
         await read_fish_basket(client)
-    finally:
-        print("Closing")
-        await handler.close()
 
 
 if __name__ == "__main__":
