@@ -258,6 +258,7 @@ class HotkeyListener:
     """
     Examples:
         .. code-block:: py
+
                 import asyncio
 
                 from wizwalker import Keycode, HotkeyListener, ModifierKeys
@@ -297,6 +298,9 @@ class HotkeyListener:
         self._message_loop_task = None
 
     def start(self):
+        """
+        Start the listener
+        """
         if self._message_loop_task:
             raise ValueError("This listener has already been started")
 
@@ -305,6 +309,9 @@ class HotkeyListener:
         self._message_loop_task = asyncio.create_task(self._message_loop())
 
     async def stop(self):
+        """
+        Stop the listener
+        """
         _hotkey_message_loop.disconnect()
 
         for hotkey_id in self._hotkeys.values():
@@ -323,6 +330,14 @@ class HotkeyListener:
     async def add_hotkey(
         self, key: Keycode, callback: Callable, *, modifiers: ModifierKeys = 0
     ):
+        """
+        Add a hotkey to listen for
+
+        Args:
+            key: The keycode to use
+            callback: The hotkey callback
+            modifiers: The hotkey modifer keys
+        """
         if await self._register_hotkey(key.value, int(modifiers)):
             # No repeat is not included in the return message
             no_norepeat = modifiers & ~ModifierKeys.NOREPEAT
@@ -332,6 +347,13 @@ class HotkeyListener:
             raise ValueError(f"{key} with modifers {modifiers} already registered")
 
     async def remove_hotkey(self, key: Keycode, *, modifiers: ModifierKeys = 0):
+        """
+        Remove a hotkey from this listener
+
+        Args:
+            key: The keycode of the hotkey to stop listening to
+            modifiers: Modifers of the hotkey to stop listening to
+        """
         if self._hotkeys.get(key.value + modifiers) is None:
             raise ValueError(
                 f"No hotkey registered for key {key} with modifiers {modifiers}"
