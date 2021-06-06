@@ -84,7 +84,7 @@ Listener
 HotkeyListener
 ~~~~~~~~~~~~~~
 
-..autoclass:: HotkeyListener
+.. autoclass:: HotkeyListener
     :members:
 
 Memory
