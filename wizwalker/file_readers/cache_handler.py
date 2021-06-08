@@ -9,6 +9,7 @@ from loguru import logger
 
 from wizwalker import utils
 from .wad import Wad
+from .parsers import parse_template_id_file
 
 
 class CacheHandler:
@@ -75,8 +76,7 @@ class CacheHandler:
 
         return res
 
-    # TODO: rename in 2.0 to _cache
-    async def cache(self):
+    async def _cache(self):
         """
         Caches various file data
         """
@@ -90,7 +90,7 @@ class CacheHandler:
 
         if template_file:
             file_data = await root_wad.get_file("TemplateManifest.xml")
-            pharsed_template_ids = utils.pharse_template_id_file(file_data)
+            pharsed_template_ids = parse_template_id_file(file_data)
             del file_data
 
             async with aiofiles.open(self.cache_dir / "template_ids.json", "w+") as fp:
@@ -104,7 +104,7 @@ class CacheHandler:
         Returns:
             the loaded template ids
         """
-        await self.cache()
+        await self._cache()
         async with aiofiles.open(self.cache_dir / "template_ids.json") as fp:
             message_data = await fp.read()
 
@@ -129,7 +129,8 @@ class CacheHandler:
 
         return {lang_name: lang_mapping}
 
-    async def _get_all_lang_file_names(self, root_wad: Wad) -> List[str]:
+    @staticmethod
+    async def _get_all_lang_file_names(root_wad: Wad) -> List[str]:
         lang_file_names = []
 
         for file_name in await root_wad.names():
@@ -259,7 +260,9 @@ class CacheHandler:
         """
         split_point = langcode.find("_")
         lang_filename = langcode[:split_point]
-        code = langcode[split_point + 1 :]
+        # fmt: off
+        code = langcode[split_point + 1:]
+        # fmt: on
 
         lang_files = await self._get_all_lang_file_names(self._root_wad)
 

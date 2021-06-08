@@ -7,7 +7,7 @@ import click
 from click_default_group import DefaultGroup
 from loguru import logger
 
-from wizwalker import Wad, WizWalker, utils
+from wizwalker import Wad, utils
 from wizwalker.cli import run_cmd
 
 

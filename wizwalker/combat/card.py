@@ -102,8 +102,7 @@ class CombatCard:
         if sleep_time is not None:
             await asyncio.sleep(sleep_time)
 
-    # TODO: 2.0 rename get_* effects to just attr name i.e async def graphical_spell
-    async def get_graphical_spell(
+    async def graphical_spell(
         self,
     ) -> "wizwalker.memory.memory_objects.spell.DynamicGraphicalSpell":
         """
@@ -121,9 +120,9 @@ class CombatCard:
         """
         Wait for GraphicalSpell
         """
-        return await wizwalker.utils.wait_for_non_error(self.get_graphical_spell)
+        return await wizwalker.utils.wait_for_non_error(self.graphical_spell)
 
-    async def get_spell_effects(
+    async def spell_effects(
         self,
     ) -> List["wizwalker.memory.memory_objects.spell_effect.DynamicSpellEffect"]:
         spell = await self.wait_for_graphical_spell()

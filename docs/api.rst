@@ -69,18 +69,6 @@ ModifierKeys
 .. autoclass:: ModifierKeys
     :members:
 
-Hotkey
-~~~~~~
-
-.. autoclass:: Hotkey
-    :members:
-
-Listener
-~~~~~~~~
-
-.. autoclass:: Listener
-   :members:
-
 HotkeyListener
 ~~~~~~~~~~~~~~
 
@@ -136,5 +124,3 @@ Errors
 .. autoexception:: NotEnoughMana
 
 .. autoexception:: CardAlreadyEnchanted
-
-.. autoexception:: HotkeyAlreadyRegistered

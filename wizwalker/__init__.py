@@ -10,7 +10,6 @@ from .file_readers import CacheHandler, NifMap, Wad
 from .mouse_handler import MouseHandler
 from .client import Client
 from .client_handler import ClientHandler
-from .application import WizWalker
 from .hotkey import *
 from . import cli
 

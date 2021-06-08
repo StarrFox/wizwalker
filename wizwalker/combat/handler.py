@@ -1,6 +1,5 @@
 import asyncio
 from typing import Callable, List
-from warnings import warn
 
 from .member import CombatMember
 from .card import CombatCard
@@ -36,22 +35,6 @@ class CombatHandler:
             await self.wait_until_next_round(round_number)
 
         self._spell_check_boxes = None
-
-    # TODO: remove in 2.0
-    async def wait_for_hand_visible(self, sleep_time: float = 0.5):
-        """
-        Wait for the hand window to be visible
-        """
-        warn(
-            "This method is depreciated and will be removed in 2.0 please use wait_for_planning_phase instead",
-            DeprecationWarning,
-        )
-
-        hand = await self.client.root_window.get_windows_with_name("Hand")
-        # this window is always in ui tree
-        hand = hand[0]
-        while WindowFlags.visible not in await hand.flags():
-            await asyncio.sleep(sleep_time)
 
     async def wait_for_planning_phase(self, sleep_time: float = 0.5):
         """

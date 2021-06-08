@@ -1,5 +1,3 @@
-from warnings import warn
-
 import wizwalker
 
 
@@ -12,14 +10,6 @@ class CombatMember:
         self.combat_handler = combat_handler
 
         self._combatant_control = combatant_control
-
-    # TODO: remove in 2.0
-    async def get_particpant(self):
-        warn(
-            "get_particpant will be removed in 2.0 please use get_participant instead",
-            DeprecationWarning,
-        )
-        return await self.get_participant()
 
     async def get_participant(self):
         """

@@ -385,8 +385,6 @@ class Client:
         Args:
             xyz: xyz to teleport to
             yaw: yaw to set or None to not change
-
-        Keyword Args:
             move_after: If the client should rotate some to update the player model position
         """
         await self.body.write_position(xyz)
