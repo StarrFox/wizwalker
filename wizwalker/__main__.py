@@ -89,9 +89,7 @@ def wad():
 
 @wad.command(short_help="Unarchive a wad into a directory")
 @click.argument("input_wad", type=str)
-@click.argument(
-    "output_dir", type=click.Path(exists=True, file_okay=False), default="."
-)
+@click.argument("output_dir", type=click.Path(file_okay=False), default=".")
 def unarchive(input_wad, output_dir):
     """
     Unarchive a wad into a directory
