@@ -297,6 +297,13 @@ class HotkeyListener:
 
         self._message_loop_task = None
 
+    @property
+    def is_running(self) -> bool:
+        """
+        If this hotkey listener is running
+        """
+        return self._message_loop_task is not None
+
     def start(self):
         """
         Start the listener
@@ -323,6 +330,7 @@ class HotkeyListener:
         with suppress(asyncio.CancelledError):
             if self._message_loop_task:
                 self._message_loop_task.cancel()
+                self._message_loop_task = None
 
             for task in self._callback_tasks:
                 task.cancel()
