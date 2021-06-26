@@ -319,6 +319,8 @@ class CombatHandler:
         """
         try:
             card = await self.get_card_named(name)
+            if not await card.is_castable():
+                return False
 
             if on_member:
                 target = await self.get_member_named(on_member)
