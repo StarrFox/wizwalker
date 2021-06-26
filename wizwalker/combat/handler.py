@@ -326,6 +326,8 @@ class CombatHandler:
 
             elif on_card:
                 target = await self.get_card_named(on_card)
+                if await target.is_enchanted():
+                    return False
                 await card.cast(target)
 
             elif on_client:
