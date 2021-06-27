@@ -138,6 +138,8 @@ class NotEnoughPips(WizWalkerCombatError):
     are available
     """
 
+    def __init__(self):
+        super().__init__("Not enough pips to cast that.")
 
 class NotEnoughMana(WizWalkerCombatError):
     """
@@ -145,6 +147,8 @@ class NotEnoughMana(WizWalkerCombatError):
     is available
     """
 
+    def __init__(self):
+        super().__init__("Not enough mana to do that.")
 
 class CardAlreadyEnchanted(WizWalkerError):
     """
