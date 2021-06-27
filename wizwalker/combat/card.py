@@ -18,7 +18,6 @@ class CombatCard:
 
         self._spell_window = spell_window
 
-    # TODO: add checks before casting
     async def cast(
         self,
         target: Union["CombatCard", "wizwalker.combat.CombatMember", None],
@@ -34,7 +33,21 @@ class CombatCard:
             sleep_time: How long to sleep after enchants and between multicasts or None for no sleep
             debug_paint: If the card should be highlighted before clicking
         """
+        if not await target.is_castable():
+            graphical_spell = await self.wait_for_graphical_spell()
+            ranks = await graphical_spell.rank()
+            client = await self.combat_handler.get_client_member()
+            if await client.mana() < ranks.regular_rank: # til shads don't consume mana
+                raise NotEnoughMana()
+            elif await client.normal_pips() + await client.power_pips() * 2 < ranks.regular_rank:
+                raise NotEnoughPips()
+            else:
+                raise WizWalkerCombatError()
+            
         if isinstance(target, CombatCard):
+            if await target.is_enchanted():
+                raise CardAlreadyEnchanted()
+
             cards_len_before = len(await self.combat_handler.get_cards())
 
             await self.combat_handler.client.mouse_handler.click_window(
