@@ -704,6 +704,7 @@ def pharse_nav_data(file_data: bytes):
     return vertices, edges
 
 
+# TODO: remove in 2.0
 async def send_hotkey(window_handle: int, modifers: List[Keycode], key: Keycode):
     """
     Send a hotkey
