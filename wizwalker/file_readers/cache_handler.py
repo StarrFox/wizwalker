@@ -129,7 +129,8 @@ class CacheHandler:
 
         return {lang_name: lang_mapping}
 
-    async def _get_all_lang_file_names(self, root_wad: Wad) -> List[str]:
+    @staticmethod
+    async def _get_all_lang_file_names(root_wad: Wad) -> List[str]:
         lang_file_names = []
 
         for file_name in await root_wad.names():
