@@ -17,6 +17,7 @@ from .memory_reader import MemoryReader
 MAX_STRING = 5_000
 
 
+# TODO: add .find_instances that find instances of whichever class used it
 class MemoryObject(MemoryReader):
     """
     Class for any represented classes from memory
