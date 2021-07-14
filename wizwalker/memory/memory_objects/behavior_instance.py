@@ -1,6 +1,7 @@
 from wizwalker.memory.memory_object import PropertyClass, DynamicMemoryObject
 
 
+# TODO: 0x58 = behavior template
 class BehaviorInstance(PropertyClass):
     """
     Base class for behavior instances

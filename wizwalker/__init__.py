@@ -15,3 +15,5 @@ from . import cli
 
 logger.disable("wizwalker")
 logging.getLogger("pymem").setLevel(logging.FATAL)
+
+# TODO: update cmd2 to latest ver

@@ -188,6 +188,7 @@ class SimpleHook(AutoBotBaseHook):
                 await self.free(getattr(self, export[0]))
 
 
+# TODO: depreciate in favor of ClientObject -> behaviors -> animationbehavior -> 0x70 (body)
 class PlayerHook(SimpleHook):
     pattern = rb"\xF2\x0F\x10\x40\x58\xF2"
     exports = [("player_struct", 8)]
