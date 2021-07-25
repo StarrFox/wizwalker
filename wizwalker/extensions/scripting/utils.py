@@ -3,6 +3,7 @@ import re
 from contextlib import suppress
 
 from wizwalker.memory.memory_objects.enums import WindowFlags
+from wizwalker.utils import maybe_wait_for_value_with_timeout
 
 
 _friend_list_entry = re.compile(
@@ -11,14 +12,6 @@ _friend_list_entry = re.compile(
     r"dds;\d+;\d+;(?P<icon_index>\d+)></left><Y;(?P<name_y>[-\d]+)><X;(?P<name_x>[-\d]+)>"
     r"<indent;\d+><Color;[\d\w]+>(<left>)?<COLOR;[\w\d]+>(?P<name>[\w ]+)"
 )
-
-
-_friend_list_type_cycle = {
-    "Online Friends": 0,
-    "Friend Chat": 3,
-    "All Friends": 2,
-    "Ignored": 1,
-}
 
 
 async def paint_window_for(window, time: float = 2):
@@ -55,18 +48,21 @@ async def _maybe_get_named_window(parent, name: str):
 async def _cycle_to_online_friends(client, friends_list):
     list_label = await _maybe_get_named_window(friends_list, "lblFriendsList")
 
-    current_text = await list_label.maybe_text()
+    async def _get_text():
+        current_text = await list_label.maybe_text()
 
-    if current_text is None:
-        raise Exception("Friend's list has no label")
+        if current_text is None:
+            raise Exception("Friend's list has no label")
 
-    current_page = current_text.replace("<center>", "").replace("</center>", "")
+        return current_text.replace("<center>", "").replace("</center>", "")
 
     right_button = await _maybe_get_named_window(friends_list, "btnListTypeRight")
 
-    for _ in range(_friend_list_type_cycle[current_page]):
+    while (current_page := await _get_text()) != "Online Friends":
         await client.mouse_handler.click_window(right_button)
-        await asyncio.sleep(1)
+        await maybe_wait_for_value_with_timeout(
+            _get_text, value=current_page, inverse_value=True, timeout=5
+        )
 
 
 async def _cycle_friends_list(
