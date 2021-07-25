@@ -422,7 +422,7 @@ def get_logs_folder() -> Path:
     return log_dir
 
 
-def get_foreground_window() -> Optional[int]:
+def get_foreground_window_handle() -> Optional[int]:
     """
     Get the window currently in the forground
 
@@ -432,7 +432,7 @@ def get_foreground_window() -> Optional[int]:
     return user32.GetForegroundWindow()
 
 
-def set_foreground_window(window_handle: int) -> bool:
+def set_foreground_window_handle(window_handle: int) -> bool:
     """
     Bring a window to the foreground
 
@@ -445,7 +445,7 @@ def set_foreground_window(window_handle: int) -> bool:
     return user32.SetForegroundWindow(window_handle) != 0
 
 
-def get_window_title(handle: int, max_size: int = 100) -> str:
+def get_window_handle_title(handle: int, max_size: int = 100) -> str:
     """
     Get a window's title bar text
 
@@ -462,7 +462,7 @@ def get_window_title(handle: int, max_size: int = 100) -> str:
     return window_title.value
 
 
-def set_window_title(handle: int, window_title: str):
+def set_window_handle_title(handle: int, window_title: str):
     """
     Set a window's title bar text
 
@@ -474,7 +474,7 @@ def set_window_title(handle: int, window_title: str):
     user32.SetWindowTextW(handle, window_title)
 
 
-def get_window_rectangle(handle: int) -> Rectangle:
+def get_window_handle_rectangle(handle: int) -> Rectangle:
     """
     Get a window's Rectangle
 
@@ -524,10 +524,10 @@ def get_all_wizard_handles() -> list:
         if target_class == class_name.value:
             return True
 
-    return get_windows_from_predicate(callback)
+    return get_window_handles_by_predicate(callback)
 
 
-def get_windows_from_predicate(predicate: Callable) -> list:
+def get_window_handles_by_predicate(predicate: Callable) -> list:
     """
     Get all windows that match a predicate
 
@@ -562,25 +562,6 @@ def get_windows_from_predicate(predicate: Callable) -> list:
     user32.EnumWindows(callback, 0)
 
     return handles
-
-
-async def send_hotkey(window_handle: int, modifers: List[Keycode], key: Keycode):
-    """
-    Send a hotkey
-
-    Args:
-        window_handle: Handle to the window to send the hotkey to
-        modifers: Keys to hold down
-        key: The key to press
-    """
-    for modifier in modifers:
-        user32.SendMessageW(window_handle, 0x100, modifier.value, 0)
-
-    user32.SendMessageW(window_handle, 0x100, key.value, 0)
-    user32.SendMessageW(window_handle, 0x101, key.value, 0)
-
-    for modifier in modifers:
-        user32.SendMessageW(window_handle, 0x101, modifier.value, 0)
 
 
 async def timed_send_key(window_handle: int, key: Keycode, seconds: float):
