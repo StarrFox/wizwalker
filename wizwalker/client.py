@@ -27,9 +27,9 @@ from .mouse_handler import MouseHandler
 from .utils import (
     XYZ,
     check_if_process_running,
-    get_window_handle_title,
-    set_window_handle_title,
-    get_window_handle_rectangle,
+    get_window_title,
+    set_window_title,
+    get_window_rectangle,
 )
 
 
@@ -71,11 +71,11 @@ class Client:
         """
         Get or set this window's title
         """
-        return get_window_handle_title(self.window_handle)
+        return get_window_title(self.window_handle)
 
     @title.setter
     def title(self, window_title: str):
-        set_window_handle_title(self.window_handle, window_title)
+        set_window_title(self.window_handle, window_title)
 
     @property
     def is_foreground(self) -> bool:
@@ -84,21 +84,21 @@ class Client:
 
         Set this to True to bring it to the foreground
         """
-        return utils.get_foreground_window_handle() == self.window_handle
+        return utils.get_foreground_window() == self.window_handle
 
     @is_foreground.setter
     def is_foreground(self, value: bool):
         if value is False:
             return
 
-        utils.set_foreground_window_handle(self.window_handle)
+        utils.set_foreground_window(self.window_handle)
 
     @property
     def window_rectangle(self):
         """
         Get this client's window rectangle
         """
-        return get_window_handle_rectangle(self.window_handle)
+        return get_window_rectangle(self.window_handle)
 
     @cached_property
     def process_id(self) -> int:

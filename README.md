@@ -28,28 +28,6 @@ $ poetry shell
 $ wizwalker
 ```
 
-## building
-You'll need the dev install (see above) for this to work
-
-### exe
-```shell
-# Admin if needed
-$ pyinstaller -F --uac-admin --name WizWalker wizwalker/__main__.py
-# Normal
-$ pyinstaller -F --name WizWalker wizwalker/__main__.py
-```
-
-### wheel and source
-```shell
-$ poetry build
-```
-
-### Docs
-```shell
-$ cd docs
-$ make html
-```
-
 ## console commands
 wizwalker: Runs the wizwalker cli
 
