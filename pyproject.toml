@@ -21,7 +21,7 @@ cmd2 = "^1.5.0"
 
 [tool.poetry.dev-dependencies]
 sphinx = "^4.1.1"
-amunra-sphinx-theme = "^0.2"
+sphinx-rtd-theme = "^0.5.2"
 
 [tool.poetry.scripts]
 wizwalker = "wizwalker.__main__:main"
