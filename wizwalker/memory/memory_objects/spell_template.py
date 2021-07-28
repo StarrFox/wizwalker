@@ -100,26 +100,38 @@ class SpellTemplate(PropertyClass):
     async def pve(self) -> bool:
         return await self.read_value_from_offset(369, "bool")
 
-    async def write_pve(self, _pv_e: bool):
-        await self.write_value_to_offset(369, _pv_e, "bool")
+    async def write_pve(self, pve: bool):
+        await self.write_value_to_offset(369, pve, "bool")
 
-    async def battlegrounds_only(self) -> bool:
+    async def no_pvp_enchant(self) -> bool:
         return await self.read_value_from_offset(370, "bool")
 
-    async def write_battlegrounds_only(self, battlegrounds_only: bool):
-        await self.write_value_to_offset(370, battlegrounds_only, "bool")
+    async def write_no_pvp_enchant(self, no_pvp_enchant: bool):
+        await self.write_value_to_offset(370, no_pvp_enchant, "bool")
 
-    async def treasure(self) -> bool:
+    async def no_pve_enchant(self) -> bool:
         return await self.read_value_from_offset(371, "bool")
 
-    async def write_treasure(self, treasure: bool):
-        await self.write_value_to_offset(371, treasure, "bool")
+    async def write_no_pve_enchant(self, no_pve_enchant: bool):
+        await self.write_value_to_offset(371, no_pve_enchant, "bool")
 
-    async def no_discard(self) -> bool:
+    async def battlegrounds_only(self) -> bool:
         return await self.read_value_from_offset(372, "bool")
 
+    async def write_battlegrounds_only(self, battlegrounds_only: bool):
+        await self.write_value_to_offset(372, battlegrounds_only, "bool")
+
+    async def treasure(self) -> bool:
+        return await self.read_value_from_offset(373, "bool")
+
+    async def write_treasure(self, treasure: bool):
+        await self.write_value_to_offset(373, treasure, "bool")
+
+    async def no_discard(self) -> bool:
+        return await self.read_value_from_offset(374, "bool")
+
     async def write_no_discard(self, no_discard: bool):
-        await self.write_value_to_offset(372, no_discard, "bool")
+        await self.write_value_to_offset(374, no_discard, "bool")
 
     async def leaves_play_when_cast(self) -> bool:
         return await self.read_value_from_offset(492, "bool")
@@ -267,6 +279,12 @@ class SpellTemplate(PropertyClass):
 
     async def write_use_gloss(self, use_gloss: bool):
         await self.write_value_to_offset(448, use_gloss, "bool")
+
+    async def ignore_dispel(self) -> bool:
+        return await self.read_value_from_offset(736, "bool")
+
+    async def write_ignore_dispel(self, ignore_dispel: bool):
+        await self.write_value_to_offset(736, ignore_dispel, "bool")
 
 
 class DynamicSpellTemplate(DynamicMemoryObject, SpellTemplate):

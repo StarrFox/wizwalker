@@ -251,6 +251,12 @@ class Duel(PropertyClass):
     async def write_r_n0(self, r_n0: float):
         await self.write_value_to_offset(544, r_n0, "float")
 
+    async def full_party_group(self) -> bool:
+        return await self.read_value_from_offset(548, "bool")
+
+    async def write_full_party_group(self, full_party_group: bool):
+        await self.write_value_to_offset(548, full_party_group, "bool")
+
 
 class CurrentDuel(Duel):
     async def read_base_address(self) -> int:

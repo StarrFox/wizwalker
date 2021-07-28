@@ -114,6 +114,12 @@ class SpellEffect(PropertyClass):
     async def write_protected(self, protected: bool):
         await self.write_value_to_offset(168, protected, "bool")
 
+    async def converted(self) -> bool:
+        return await self.read_value_from_offset(169, "bool")
+
+    async def write_converted(self, converted: bool):
+        await self.write_value_to_offset(169, converted, "bool")
+
     async def rank(self) -> int:
         return await self.read_value_from_offset(208, "int")
 
