@@ -141,6 +141,10 @@ async def _teleport_to_friend(client, character_window):
 
     await client.mouse_handler.click_window(yes_button)
     # we need to click the close button within the 1 second of the teleport animation
+
+    # TODO: check for busy message error here -> race condition with needing to also click the close button
+    #  could try forcing a zone wait since the busy condition will be handled here
+
     await client.mouse_handler.click_window(close_button)
 
 

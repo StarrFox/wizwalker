@@ -166,7 +166,7 @@ class WizWalkerConsole(cmd2.Cmd):
         Click a certain x, y
         """
         for client in self.client_handler.clients:
-            self.run_coro(client.click(args.x, args.y))
+            self.run_coro(client.mouse_handler.click(args.x, args.y))
 
         self.write("Completed click")
 
@@ -175,6 +175,7 @@ class WizWalkerConsole(cmd2.Cmd):
         "class_name", help="Class name to find instances of"
     )
 
+    @cmd2.with_argparser(findinstances_parser)
     def do_findinstances(self, args):
         """
         Find instances of a class
