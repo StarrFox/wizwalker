@@ -220,6 +220,15 @@ class SpellEffects(Enum):
     modify_incoming_damage_over_time = 135
     modify_incoming_heal_over_time = 136
     modify_card_damage_by_rank = 137
+    push_converted_charm = 138
+    steal_converted_charm = 139
+    push_converted_ward = 140
+    steal_converted_ward = 141
+    push_converted_over_time = 142
+    steal_converted_over_time = 143
+    remove_converted_charm = 144
+    remove_converted_ward = 145
+    remove_converted_over_time = 146
 
 
 class EffectTarget(Enum):

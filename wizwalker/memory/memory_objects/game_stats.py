@@ -727,6 +727,12 @@ class GameStats(PropertyClass):
     async def write_friendly_player(self, friendly_player: bool):
         await self.write_value_to_offset(984, friendly_player, "bool")
 
+    async def emoji_skin_tone(self) -> int:
+        return await self.read_value_from_offset(988, "int")
+
+    async def write_emoji_skin_tone(self, emoji_skin_tone: int):
+        await self.write_value_to_offset(988, emoji_skin_tone, "int")
+
 
 class CurrentGameStats(GameStats):
     async def read_base_address(self) -> int:
