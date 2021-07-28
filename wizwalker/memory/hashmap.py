@@ -128,8 +128,13 @@ class Property(DynamicMemoryObject):
     async def index(self) -> int:
         return await self.read_value_from_offset(0x50, "int")
 
-    async def name(self) -> str:
-        return await self.read_string_from_offset(0x58)
+    async def name(self) -> Optional[str]:
+        addr = await self.read_value_from_offset(0x58, "long long")
+
+        if addr is None:
+            return None
+
+        return await self.read_null_terminated_string(addr, 100)
 
     async def hash(self) -> int:
         return await self.read_value_from_offset(0x64, "int")
@@ -221,6 +226,10 @@ async def get_hash_map(client: "wizwalker.Client") -> dict:
 
         if data:
             name = await data.name()
+
+            if "*" in name:
+                continue
+
             size = await data.size()
             is_pointer = await data.is_pointer()
             is_ref = await data.is_ref()
