@@ -8,6 +8,12 @@ HASHCALLPATTERN = rb"\xE8....\x48\x3B\x18\x74\x12"
 
 
 class HashNode(DynamicMemoryObject):
+    def __eq__(self, other):
+        return self.base_address == other.base_address
+
+    def __hash__(self):
+        return hash(self.base_address)
+
     async def left(self) -> Optional["HashNode"]:
         addr = await self.read_value_from_offset(0x0, "long long")
 
@@ -51,6 +57,10 @@ class NodeData(DynamicMemoryObject):
     async def alloc_thing(self):
         # TODO
         pass
+
+    async def allocator(self):
+        vtable = await self.read_value_from_offset(0x0, "long long")
+        return await self.read_typed(vtable + 0x10, "long long")
 
     async def name(self) -> str:
         return await self.read_string_from_offset(0x38)
@@ -107,8 +117,8 @@ class FieldContainer(DynamicMemoryObject):
 
         return res
 
+    # TODO
     async def functions(self):
-        # TODO
         pass
 
 
@@ -207,7 +217,9 @@ async def _read_all_nodes(client, root_addr):
 
     first_node = await root_node.parent()
 
-    return await _get_children_nodes(first_node, nodes)
+    all_nodes = await _get_children_nodes(first_node, nodes)
+
+    return all_nodes
 
 
 async def get_hash_nodes(client: "wizwalker.Client") -> set[HashNode]:
@@ -215,85 +227,17 @@ async def get_hash_nodes(client: "wizwalker.Client") -> set[HashNode]:
     return await _read_all_nodes(client, root_node)
 
 
-async def get_hash_map(client: "wizwalker.Client") -> dict:
+async def get_hash_map(client: "wizwalker.Client") -> dict[str, HashNode]:
     nodes = await get_hash_nodes(client)
 
     hash_map = {}
 
     for node in nodes:
         data = await node.node_data()
-        hash_ = await node.hash()
 
         if data:
             name = await data.name()
 
-            if "*" in name:
-                continue
-
-            size = await data.size()
-            is_pointer = await data.is_pointer()
-            is_ref = await data.is_ref()
-
-            field_container = await data.field_container()
-
-            if field_container:
-                has_singleton = await field_container.has_singleton()
-                offset = await field_container.offset()
-
-                base = await field_container.base_class()
-
-                if base:
-                    base_type = await base.type()
-
-                    if base_type:
-                        base_name = await base_type.name()
-
-                else:
-                    base_name = None
-
-                properties = await field_container.properties()
-
-                prop_info = {}
-                for prop in properties:
-                    prop_name = await prop.name()
-                    prop_index = await prop.index()
-                    prop_offset = await prop.offset()
-                    prop_hash = await prop.hash()
-                    prop_flags = await prop.flags()
-                    prop_note = await prop.note()
-
-                    prop_type = await prop.type()
-
-                    if prop_type:
-                        prop_type_name = await prop_type.name()
-
-                    else:
-                        prop_type_name = None
-
-                    prop_info[prop_name] = {
-                        "index": prop_index,
-                        "offset": prop_offset,
-                        "hash": prop_hash,
-                        "flags": prop_flags,
-                        "note": prop_note,
-                        "type": prop_type_name,
-                    }
-
-            else:
-                has_singleton = None
-                offset = None
-                base_name = None
-                prop_info = None
-
-            hash_map[name] = {
-                "size": size,
-                "is_pointer": is_pointer,
-                "is_ref": is_ref,
-                "hash": hash_,
-                "has_singleton": has_singleton,
-                "offset": offset,
-                "base_class": base_name,
-                "properties": prop_info,
-            }
+            hash_map[name] = node
 
     return hash_map
