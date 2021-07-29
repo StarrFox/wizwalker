@@ -192,10 +192,28 @@ def order_clients(clients):
     return sorted(clients, key=sort_clients)
 
 
+_OVERRIDE_PATH = None
+
+
+def override_wiz_install_location(path: str):
+    """
+    Override the path returned by get_wiz_install
+
+    Args:
+        path: The path to override with
+    """
+    # hacking old behavior so I dont have to actually fix the issue
+    global _OVERRIDE_PATH
+    _OVERRIDE_PATH = path
+
+
 def get_wiz_install() -> Path:
     """
     Get the game install root dir
     """
+    if _OVERRIDE_PATH:
+        return Path(_OVERRIDE_PATH).absolute()
+
     try:
         with winreg.OpenKey(
             winreg.HKEY_CURRENT_USER,
