@@ -2,6 +2,7 @@ import struct
 from enum import Enum
 from typing import Any, List, Type
 
+import wizwalker
 from wizwalker.constants import type_format_dict
 from wizwalker.errors import (
     AddressOutOfRange,
@@ -15,6 +16,24 @@ from .memory_reader import MemoryReader
 
 
 MAX_STRING = 5_000
+
+
+class _GlobalTypeDb:
+    def __init__(self):
+        self.clear()
+
+    def get_prop_map(self, name: str) -> dict:
+        return self.prop_maps.get(name)
+
+    def add_prop_map(self, name: str, map: dict):
+        if self.prop_maps.get(name):
+            raise ValueError(f"{name} already has a property map")
+
+        self.prop_maps[name] = map
+
+    # noinspection PyAttributeOutsideInit
+    def clear(self):
+        self.prop_maps = {}
 
 
 # TODO: add .find_instances that find instances of whichever class used it
@@ -324,6 +343,44 @@ class DynamicMemoryObject(MemoryObject):
 
     def __repr__(self):
         return f"<{type(self).__name__} {self.base_address=}>"
+
+
+class RawMemoryObject(DynamicMemoryObject):
+    def __init__(
+        self,
+        hook_handler: HookHandler,
+        base_address: int,
+        hash_data: "wizwalker.memory.hashmap.NodeData",
+    ):
+        super().__init__(hook_handler, base_address)
+        self.hash_data = hash_data
+
+    def __getattribute__(self, item: str):
+        try:
+            return super().__getattribute__(item)
+        except AttributeError:
+            pass
+
+    async def _get_prop_map(self) -> dict[str]:
+        return {}
+
+    async def _get_prop(self, name: str):
+        prop_map = await self._get_prop_map()
+
+        if name not in prop_map.keys():
+            class_name = await self.name()
+            raise AttributeError(
+                f"MemoryObject '{class_name}' has no attribute '{name}'"
+            )
+
+        return await prop_map[name]
+
+    async def name(self) -> str:
+        return await self.hash_data.name()
+
+    async def get_bases(self) -> list[str]:
+        bases = await self.hash_data.get_bases()
+        return [await base.name() for base in bases]
 
 
 class PropertyClass(MemoryObject):
