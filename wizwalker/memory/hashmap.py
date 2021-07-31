@@ -109,6 +109,14 @@ class FieldContainer(DynamicMemoryObject):
 
         return NodeData(self.hook_handler, addr)
 
+    async def pointer_version(self) -> Optional["NodeData"]:
+        addr = await self.read_value_from_offset(0x30)
+
+        if not addr:
+            return None
+
+        return NodeData(self.hook_handler, addr)
+
     async def properties(self) -> list["Property"]:
         res = []
 
@@ -120,6 +128,9 @@ class FieldContainer(DynamicMemoryObject):
     # TODO
     async def functions(self):
         pass
+
+    async def name(self) -> str:
+        return await self.read_string_from_offset(0xB8)
 
 
 class Property(DynamicMemoryObject):
