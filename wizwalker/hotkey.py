@@ -158,8 +158,7 @@ class HotkeyListener:
         """
         return self._message_loop_task is not None
 
-    # TODO: 2.0: make async
-    def start(self):
+    async def start(self):
         """
         Start the listener
         """
@@ -170,11 +169,8 @@ class HotkeyListener:
 
         self._message_loop_task = asyncio.create_task(self._message_loop())
 
-        # this is because making this method async would be breaking
-        loop = asyncio.get_event_loop()
-
         for keycode, modifiers in self._hotkeys:
-            loop.create_task(self._register_hotkey(keycode, modifiers))
+            await self._register_hotkey(keycode, modifiers)
 
     async def stop(self):
         """

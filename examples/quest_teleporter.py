@@ -28,7 +28,7 @@ class Quester(wizwalker.ClientHandler):
             modifiers=ModifierKeys.SHIFT | ModifierKeys.NOREPEAT,
         )
 
-        listener.start()
+        await listener.start()
 
         while True:
             await asyncio.sleep(1)

@@ -189,6 +189,9 @@ def order_clients(clients):
     return sorted(clients, key=sort_clients)
 
 
+# TODO: fix the actual issue here, passing install defaults to ClientHandler/Client
+#  doubt anyone would be working with two different installs at the same time but
+#  it should be supported anyway
 _OVERRIDE_PATH = None
 
 

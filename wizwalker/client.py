@@ -1,6 +1,6 @@
 import asyncio
 from functools import cached_property
-from typing import Callable, List, Optional
+from typing import Callable, Optional
 
 import pymem
 
@@ -179,8 +179,6 @@ class Client:
             return self._world_view_window
 
         pos = await self.root_window.get_windows_with_name("WorldView")
-        # TODO: test this claim on login screen
-        # world view always exists
         self._world_view_window = pos[0]
         return self._world_view_window
 
@@ -287,7 +285,7 @@ class Client:
 
         if not maybe_space_window:
             # TODO: replace error
-            raise ValueError("must open inventory screen to get")
+            raise ValueError("Must open inventory screen to get")
 
         text = await maybe_space_window[0].maybe_text()
         text = text.replace("<center>", "")
