@@ -54,6 +54,21 @@ class HashNode(DynamicMemoryObject):
 
 
 class NodeData(DynamicMemoryObject):
+    # Note: helper method
+    async def get_bases(self) -> list["FieldContainer"]:
+        fields = await self.field_container()
+
+        if not fields:
+            return []
+
+        bases = []
+        current_base = fields
+        while base_type := await current_base.base_class():
+            bases.append(base_type)
+            current_base = base_type
+
+        return bases
+
     async def alloc_thing(self):
         # TODO
         pass
