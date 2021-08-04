@@ -145,7 +145,7 @@ class FieldContainer(DynamicMemoryObject):
         pass
 
     async def name(self) -> str:
-        return await self.read_string_from_offset(0xB8)
+        return await self.read_string_from_offset(0xB8, sso_size=10)
 
 
 class Property(DynamicMemoryObject):
@@ -157,9 +157,13 @@ class Property(DynamicMemoryObject):
 
         return FieldContainer(self.hook_handler, addr)
 
-    async def container():
-        # TODO
-        pass
+    async def container(self) -> Optional["ContainerConstructor"]:
+        addr = await self.read_value_from_offset(0x40, "long long")
+
+        if not addr:
+            return None
+
+        return ContainerConstructor(self.hook_handler, addr)
 
     async def index(self) -> int:
         return await self.read_value_from_offset(0x50, "int")
@@ -196,6 +200,50 @@ class Property(DynamicMemoryObject):
         # TODO
         pass
 
+    async def enum_options(self) -> Optional[dict[str, int]]:
+        start = await self.read_value_from_offset(0x98, "long long")
+
+        if not start:
+            return None
+
+        end = await self.read_value_from_offset(0xA0, "long long")
+        total_size = end - start
+
+        current = start
+        enum_opts = {}
+        for entry in range(total_size // 0x48):
+            value = await self.read_typed(current + 0x20, "int")
+            name = await self.read_string(current + 0x28)
+
+            enum_opts[name] = value
+
+            current += 0x48
+
+        return enum_opts
+
+
+class ContainerConstructor(DynamicMemoryObject):
+    async def name(self) -> str:
+        vtable = await self.read_value_from_offset(0x0, "long long")
+        lea_func_addr = await self.read_typed(vtable + 0x8, "long long")
+
+        # 48 8D 05 [41 4A 15 02]
+
+        # 3 is the length of the instruct before data
+        name_offset = await self.read_typed(lea_func_addr + 3, "int")
+
+        # 7 is the length of the instruction
+        return await self.read_null_terminated_string(
+            lea_func_addr + 7 + name_offset, max_size=50
+        )
+
+    async def is_dynamic(self) -> bool:
+        vtable = await self.read_value_from_offset(0x0, "long long")
+        get_dynamic_func_addr = await self.read_typed(vtable + 0x20, "long long")
+        res_byte = await self.read_bytes(get_dynamic_func_addr + 1, 1)
+
+        return res_byte == b"\x01"
+
 
 async def _get_root_node(client):
     handler: "wizwalker.memory.HookHandler" = client.hook_handler
@@ -205,17 +253,15 @@ async def _get_root_node(client):
     )
 
     # E8 [B2 43 00 00]
-
     call_offset = await handler.read_typed(hash_call_addr + 1, "int")
 
-    # 5 is the length of the lea instruction
+    # 5 is the length of the call instruction
     call_addr = hash_call_addr + call_offset + 5
 
-    # 48 8B 05 BF 0A F7 01
-
+    # 48 8B 05 [BF 0A F7 01]
     hashmap_offset = await handler.read_typed(call_addr + 53, "int")
 
-    # 50 is start of the call instruction and 7 is the length of it
+    # 50 is start of the lea instruction and 7 is the length of it
     hashmap_addr = call_addr + 50 + hashmap_offset + 7
 
     return await handler.read_typed(hashmap_addr, "long long")

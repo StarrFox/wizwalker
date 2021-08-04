@@ -18,24 +18,6 @@ from .memory_reader import MemoryReader
 MAX_STRING = 5_000
 
 
-class _GlobalTypeDb:
-    def __init__(self):
-        self.clear()
-
-    def get_prop_map(self, name: str) -> dict:
-        return self.prop_maps.get(name)
-
-    def add_prop_map(self, name: str, map: dict):
-        if self.prop_maps.get(name):
-            raise ValueError(f"{name} already has a property map")
-
-        self.prop_maps[name] = map
-
-    # noinspection PyAttributeOutsideInit
-    def clear(self):
-        self.prop_maps = {}
-
-
 # TODO: add .find_instances that find instances of whichever class used it
 class MemoryObject(MemoryReader):
     """
@@ -135,14 +117,16 @@ class MemoryObject(MemoryReader):
         base_address = await self.read_base_address()
         await self.write_string(base_address + offset, string, encoding)
 
-    async def read_string(self, address: int, encoding: str = "utf-8") -> str:
+    async def read_string(
+        self, address: int, encoding: str = "utf-8", *, sso_size: int = 16
+    ) -> str:
         string_len = await self.read_typed(address + 16, "int")
 
         if not 1 <= string_len <= MAX_STRING:
             return ""
 
         # strings larger than 16 bytes are pointers
-        if string_len >= 16:
+        if string_len >= sso_size:
             string_address = await self.read_typed(address, "long long")
         else:
             string_address = address
@@ -153,10 +137,12 @@ class MemoryObject(MemoryReader):
             return ""
 
     async def read_string_from_offset(
-        self, offset: int, encoding: str = "utf-8"
+        self, offset: int, encoding: str = "utf-8", *, sso_size: int = 16
     ) -> str:
         base_address = await self.read_base_address()
-        return await self.read_string(base_address + offset, encoding)
+        return await self.read_string(
+            base_address + offset, encoding, sso_size=sso_size
+        )
 
     async def write_string(self, address: int, string: str, encoding: str = "utf-8"):
         string_len_addr = address + 16
@@ -345,44 +331,6 @@ class DynamicMemoryObject(MemoryObject):
         return f"<{type(self).__name__} {self.base_address=}>"
 
 
-class RawMemoryObject(DynamicMemoryObject):
-    def __init__(
-        self,
-        hook_handler: HookHandler,
-        base_address: int,
-        hash_data: "wizwalker.memory.hashmap.NodeData",
-    ):
-        super().__init__(hook_handler, base_address)
-        self.hash_data = hash_data
-
-    def __getattribute__(self, item: str):
-        try:
-            return super().__getattribute__(item)
-        except AttributeError:
-            pass
-
-    async def _get_prop_map(self) -> dict[str]:
-        return {}
-
-    async def _get_prop(self, name: str):
-        prop_map = await self._get_prop_map()
-
-        if name not in prop_map.keys():
-            class_name = await self.name()
-            raise AttributeError(
-                f"MemoryObject '{class_name}' has no attribute '{name}'"
-            )
-
-        return await prop_map[name]
-
-    async def name(self) -> str:
-        return await self.hash_data.name()
-
-    async def get_bases(self) -> list[str]:
-        bases = await self.hash_data.get_bases()
-        return [await base.name() for base in bases]
-
-
 class PropertyClass(MemoryObject):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
@@ -419,3 +367,51 @@ class PropertyClass(MemoryObject):
         # some of the class names can be quite long
         # i.e ClientShadowCreatureLevelTransitionCinematicAction
         return await self.read_null_terminated_string(type_name_addr, 60)
+
+
+class PropertyContainer:
+    def __init__(self):
+        pass
+
+    def __getattribute__(self, item: str):
+        try:
+            return super().__getattribute__(item)
+        except AttributeError:
+            pass
+
+
+class RawMemoryObject(DynamicMemoryObject):
+    _prop_instances = {}
+
+    def __init__(
+        self,
+        hook_handler: HookHandler,
+        base_address: int,
+        hash_data: "wizwalker.memory.hashmap.NodeData",
+    ):
+        super().__init__(hook_handler, base_address)
+        self.hash_data = hash_data
+
+    async def _generate_property_map(self):
+        pass
+
+    async def _get_prop_map(self) -> dict:
+        return {}
+
+    async def _get_prop(self, name: str):
+        prop_map = await self._get_prop_map()
+
+        if name not in prop_map.keys():
+            class_name = await self.name()
+            raise AttributeError(
+                f"MemoryObject '{class_name}' has no attribute '{name}'"
+            )
+
+        return await prop_map[name]
+
+    async def name(self) -> str:
+        return await self.hash_data.name()
+
+    async def get_bases(self) -> list[str]:
+        bases = await self.hash_data.get_bases()
+        return [await base.name() for base in bases]

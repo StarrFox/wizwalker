@@ -7,8 +7,9 @@ import click
 from click_default_group import DefaultGroup
 from loguru import logger
 
-from wizwalker import Wad, utils
-from wizwalker.cli import run_cmd
+from wizwalker import Wad, utils, ClientHandler
+from wizwalker.memory.hashmap import get_hash_map
+from wizwalker.cli import run_cmd, dump_class
 
 
 logger.enable("wizwalker")
@@ -68,6 +69,54 @@ def start_wiz(instances, logins):
         exit(1)
 
     asyncio.run(utils.start_instances_with_login(instances, logins))
+
+
+@main.group()
+def dump():
+    """
+    Class dumping commands
+    """
+    pass
+
+
+@dump.command()
+@click.argument("file_path", type=click.Path(dir_okay=False), default="dumped.txt")
+def file(file_path):
+    """
+    Dump classes to file
+    """
+    file_path = Path(file_path)
+
+    if file_path.exists():
+        if not click.confirm(f"{file_path} already exists overwrite it?", default=True):
+            exit(0)
+
+    async def _dump():
+        async with ClientHandler() as ch:
+            clients = ch.get_new_clients()
+
+            if not clients:
+                click.echo("No open wizard101 instances to read from")
+                return
+
+            client = clients[0]
+
+            hash_map = await get_hash_map(client)
+
+            out = file_path.open("w+")
+
+            with click.progressbar(
+                list(hash_map.items()),
+                show_pos=True,
+                show_percent=False,
+                item_show_func=lambda i: i[0][:40] if i else i,
+                show_eta=False,
+            ) as items:
+                for name, node in items:
+                    out.write(await dump_class(name, node))
+                    out.write("\n")
+
+    asyncio.run(_dump())
 
 
 @main.group()
