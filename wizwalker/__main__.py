@@ -151,6 +151,45 @@ def json_(file_path, indent):
     asyncio.run(_dump())
 
 
+@dump.command()
+@click.argument("file_one", type=click.Path(dir_okay=False, exists=True))
+@click.argument("file_two", type=click.Path(dir_okay=False, exists=True))
+def compare(file_one, file_two):
+    """
+    Compare two json dumps
+    """
+    file_one = Path(file_one)
+    file_two = Path(file_two)
+
+    loaded_file_one = json.load(file_one.open())
+    loaded_file_two = json.load(file_two.open())
+
+    for class_name in loaded_file_two.keys():
+        if class_name not in loaded_file_one.keys():
+            click.echo(f"New class {class_name}")
+
+    for class_name in loaded_file_one.keys():
+        # classes without properties
+        if not loaded_file_one[class_name].get("properties"):
+            continue
+
+        old_props = loaded_file_one[class_name]["properties"]
+        new_props = loaded_file_two[class_name]["properties"]
+
+        for prop in new_props.keys():
+            if prop not in old_props.keys():
+                click.echo(f"New property {prop} on {class_name}")
+
+            elif (new_offset := new_props[prop]["offset"]) != old_props[prop]["offset"]:
+                click.echo(
+                    f"New offset {new_offset} on property {prop} on {class_name}"
+                )
+
+        for prop in old_props.keys():
+            if prop not in new_props.keys():
+                click.echo(f"Deleted property {prop} on {class_name}")
+
+
 @main.group()
 def wad():
     """

@@ -33,7 +33,7 @@ class MemoryReader:
 
         self._symbol_table = {}
 
-    # TODO: 2.0 make this a property
+    @property
     def is_running(self) -> bool:
         """
         If the process we're reading/writing to/from is running
@@ -260,7 +260,7 @@ class MemoryReader:
         except pymem.exception.MemoryReadError:
             # we don't want to run is running for every read
             # so we just check after we error
-            if not self.is_running():
+            if not self.is_running:
                 raise ClientClosedError()
             else:
                 raise MemoryReadError(address)
@@ -281,7 +281,7 @@ class MemoryReader:
             )
         except pymem.exception.MemoryWriteError:
             # see read_bytes
-            if not self.is_running():
+            if not self.is_running:
                 raise ClientClosedError()
             else:
                 raise MemoryWriteError(address)
