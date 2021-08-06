@@ -4,8 +4,10 @@ import re
 import struct
 from typing import Any, Union
 
+import pefile
 import pymem
 import pymem.exception
+import pymem.process
 import pymem.ressources.structure
 from loguru import logger
 
@@ -29,6 +31,9 @@ class MemoryReader:
     def __init__(self, process: pymem.Pymem):
         self.process = process
 
+        self._symbol_table = {}
+
+    # TODO: 2.0 make this a property
     def is_running(self) -> bool:
         """
         If the process we're reading/writing to/from is running
@@ -49,6 +54,25 @@ class MemoryReader:
         function = functools.partial(func, *args, **kwargs)
 
         return await loop.run_in_executor(None, function)
+
+    def _get_symbols(self, file_path: str, *, force_reload: bool = False):
+        if (dll_table := self._symbol_table.get(file_path)) and not force_reload:
+            return dll_table
+
+        # exe_path = utils.get_wiz_install() / "Bin" / "WizardGraphicalClient.exe"
+        pe = pefile.PE(file_path)
+
+        symbols = {}
+
+        for exp in pe.DIRECTORY_ENTRY_EXPORT.symbols:
+            if exp.name:
+                symbols[exp.name.decode("utf-8")] = exp.address
+
+            else:
+                symbols[f"Ordinal {exp.ordinal}"] = exp.address
+
+        self._symbol_table[file_path] = symbols
+        return symbols
 
     @staticmethod
     def _scan_page_return_all(handle, address, pattern):
@@ -149,6 +173,50 @@ class MemoryReader:
             return found_addresses
         else:
             return found_addresses[0]
+
+    async def get_address_from_symbol(
+        self,
+        module_name: str,
+        symbol_name: str,
+        *,
+        module_dir: str = None,
+        force_reload: bool = False,
+    ) -> int:
+        """
+        Get an addres from a module using it's symbol
+
+        Args:
+            module_name: Name of the module
+            symbol_name: Name of the symbol
+            module_dir: Dir the module is within
+            force_reload: Force export table reload
+
+        Returns:
+            The address of the symbol in memory
+
+        Raises:
+            ValueError: No symbol/module with that name
+        """
+        if not module_dir:
+            module_dir = utils.get_system_directory()
+
+        file_path = module_dir / module_name
+
+        if not file_path.exists():
+            raise ValueError(f"No module named {module_name}")
+
+        symbols = await self.run_in_executor(
+            self._get_symbols, file_path, force_reload=force_reload
+        )
+
+        if not (symbol := symbols.get(symbol_name)):
+            raise ValueError(f"No symbol named {symbol_name} in module {module_name}")
+
+        module = pymem.process.module_from_name(
+            self.process.process_handle, module_name
+        )
+
+        return module.lpBaseOfDll + symbol
 
     async def allocate(self, size: int) -> int:
         """
