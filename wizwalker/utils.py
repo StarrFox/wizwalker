@@ -443,6 +443,21 @@ def get_logs_folder() -> Path:
 
 
 def get_foreground_window_handle() -> Optional[int]:
+def get_system_directory(max_size: int = 100) -> Path:
+    """
+    Get the windows system directory
+
+    Args:
+        max_size: Max size of the string
+    """
+    # https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getsystemdirectoryw
+    buffer = ctypes.create_unicode_buffer(max_size)
+    kernel32.GetSystemDirectoryW(buffer, max_size)
+
+    return Path(buffer.value)
+
+
+def get_foreground_window() -> Optional[int]:
     """
     Get the window currently in the forground
 

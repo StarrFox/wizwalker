@@ -359,7 +359,7 @@ class User32GetClassInfoBaseHook(AutoBotBaseHook):
 
     async def alloc(self, size: int) -> int:
         if self._autobot_addr is None:
-            addr = await self.pattern_scan(self.AUTOBOT_PATTERN, module="user32.dll")
+            addr = await self.get_address_from_symbol("user32.dll", "GetClassInfoExA")
             # this is so all instances have the address
             User32GetClassInfoBaseHook._autobot_addr = addr
 
@@ -400,6 +400,39 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
 
         self.toggle_bool_addrs = ()
 
+    async def hook(self):
+        """
+        Writes jump_bytecode to jump address and hook bytecode to hook address
+        """
+        User32GetClassInfoBaseHook._hooked_instances += 1
+
+        self.jump_address = await self.get_jump_address()
+        self.hook_address = await self.get_hook_address(50)
+
+        logger.debug(f"Got hook address {self.hook_address} in {type(self)}")
+        logger.debug(f"Got jump address {self.jump_address} in {type(self)}")
+
+        self.hook_bytecode = await self.get_hook_bytecode()
+        self.jump_bytecode = await self.get_jump_bytecode()
+
+        logger.debug(f"Got hook bytecode {self.hook_bytecode} in {type(self)}")
+        logger.debug(f"Got jump bytecode {self.jump_bytecode} in {type(self)}")
+
+        self.jump_original_bytecode = await self.read_bytes(
+            self.jump_address, len(self.jump_bytecode)
+        )
+
+        logger.debug(
+            f"Got jump original bytecode {self.jump_original_bytecode} in {type(self)}"
+        )
+
+        await self.prehook()
+
+        await self.write_bytes(self.hook_address, self.hook_bytecode)
+        await self.write_bytes(self.jump_address, self.jump_bytecode)
+
+        await self.posthook()
+
     async def posthook(self):
         bool_one_address = await self.pattern_scan(
             rb"\x00\xFF\x50\x18\x66\xC7", module="WizardGraphicalClient.exe"
@@ -425,6 +458,12 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
     async def free_mouse_pos_addr(self):
         await self.free(self.mouse_pos_addr)
 
+    async def get_jump_address(self) -> int:
+        """
+        gets the address to write jump at
+        """
+        return await self.get_address_from_symbol("user32.dll", "GetCursorPos")
+
     async def get_jump_bytecode(self) -> bytes:
         # distance = end - start
         distance = self.hook_address - self.jump_address
@@ -447,10 +486,6 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
         # fmt: on
 
         return bytecode
-
-    async def get_pattern(self) -> Tuple[bytes, str]:
-        # other processes love hooking this function
-        return rb"[\xBA\xE9]....[\x44\x41][\x8D\xB8]..(..)?\x48\xFF\x25", "user32.dll"
 
     async def unhook(self):
         await super().unhook()
