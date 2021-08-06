@@ -442,7 +442,6 @@ def get_logs_folder() -> Path:
     return log_dir
 
 
-def get_foreground_window_handle() -> Optional[int]:
 def get_system_directory(max_size: int = 100) -> Path:
     """
     Get the windows system directory
@@ -455,6 +454,16 @@ def get_system_directory(max_size: int = 100) -> Path:
     kernel32.GetSystemDirectoryW(buffer, max_size)
 
     return Path(buffer.value)
+
+
+def get_foreground_window_handle() -> Optional[int]:
+    """
+    Get the window currently in the forground
+
+    Returns:
+        Handle to the window currently in the forground
+    """
+    return user32.GetForegroundWindow()
 
 
 def get_foreground_window() -> Optional[int]:
