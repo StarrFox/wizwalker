@@ -125,7 +125,7 @@ class FieldContainer(DynamicMemoryObject):
         return NodeData(self.hook_handler, addr)
 
     async def pointer_version(self) -> Optional["NodeData"]:
-        addr = await self.read_value_from_offset(0x30)
+        addr = await self.read_value_from_offset(0x30, "long long")
 
         if not addr:
             return None
@@ -305,11 +305,13 @@ async def get_hash_map(client: "wizwalker.Client") -> dict[str, HashNode]:
     hash_map = {}
 
     for node in nodes:
+        if await node.is_leaf():
+            continue
+
         data = await node.node_data()
 
         if data:
             name = await data.name()
-
             hash_map[name] = node
 
     return hash_map

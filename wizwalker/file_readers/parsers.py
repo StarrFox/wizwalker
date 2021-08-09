@@ -73,6 +73,7 @@ def parse_node_data(file_data: bytes) -> dict:
     return node_data
 
 
+# TODO: add new impl from testing/python/wiz/nav_parser_2
 # implemented from https://github.com/PeechezNCreem/navwiz/
 # this licence covers the below function
 # Boost Software License - Version 1.0 - August 17th, 2003
