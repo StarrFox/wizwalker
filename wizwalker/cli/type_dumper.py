@@ -23,7 +23,7 @@ async def _dump_enum_options_to_string(
 
 
 async def _dump_properties_to_string(
-    field_container: "wizwalker.memory.hashmap.FieldContainer", prefix: str = None
+    field_container: "wizwalker.memory.type_tree.PropertyList", prefix: str = None
 ) -> str:
     if prefix is None:
         prefix = ""
@@ -60,7 +60,7 @@ async def _dump_properties_to_string(
 
 
 async def dump_class_to_string(
-    name: str, node: "wizwalker.memory.hashmap.HashNode"
+    name: str, node: "wizwalker.memory.type_tree.HashNode"
 ) -> str:
     res = f"{name}"
 
@@ -128,7 +128,7 @@ async def _dump_properties_to_json(field_container) -> dict[str, dict]:
 
 
 async def dump_class_to_json(
-    name: str, node: "wizwalker.memory.hashmap.HashNode"
+    name: str, node: "wizwalker.memory.type_tree.HashNode"
 ) -> dict[str, dict]:
     data = await node.node_data()
 

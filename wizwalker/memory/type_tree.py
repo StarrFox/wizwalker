@@ -56,7 +56,7 @@ class HashNode(DynamicMemoryObject):
 class Type(DynamicMemoryObject):
     # Note: helper method
     async def get_bases(self) -> list["PropertyList"]:
-        fields = await self.field_container()
+        fields = await self.property_list()
 
         if not fields:
             return []
