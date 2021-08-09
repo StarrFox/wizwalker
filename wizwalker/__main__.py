@@ -9,7 +9,7 @@ from click_default_group import DefaultGroup
 from loguru import logger
 
 from wizwalker import Wad, utils, ClientHandler
-from wizwalker.memory.hashmap import get_hash_map
+from wizwalker.memory.type_tree import get_hash_map
 from wizwalker.cli import run_cmd, dump_class_to_string, dump_class_to_json
 
 

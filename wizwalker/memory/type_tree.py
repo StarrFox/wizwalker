@@ -44,18 +44,18 @@ class HashNode(DynamicMemoryObject):
     async def hash(self) -> int:
         return await self.read_value_from_offset(0x20, "int")
 
-    async def node_data(self) -> Optional["NodeData"]:
+    async def node_data(self) -> Optional["Type"]:
         addr = await self.read_value_from_offset(0x28, "long long")
 
         if not addr:
             return None
 
-        return NodeData(self.hook_handler, addr)
+        return Type(self.hook_handler, addr)
 
 
-class NodeData(DynamicMemoryObject):
+class Type(DynamicMemoryObject):
     # Note: helper method
-    async def get_bases(self) -> list["FieldContainer"]:
+    async def get_bases(self) -> list["PropertyList"]:
         fields = await self.field_container()
 
         if not fields:
@@ -80,6 +80,9 @@ class NodeData(DynamicMemoryObject):
     async def name(self) -> str:
         return await self.read_string_from_offset(0x38)
 
+    async def hash(self) -> int:
+        return await self.read_value_from_offset(0x58, "int")
+
     async def size(self) -> int:
         return await self.read_value_from_offset(0x60, "int")
 
@@ -92,45 +95,45 @@ class NodeData(DynamicMemoryObject):
     async def is_ref(self) -> bool:
         return await self.read_value_from_offset(0x89, "bool")
 
-    async def field_container(self) -> Optional["FieldContainer"]:
+    async def property_list(self) -> Optional["PropertyList"]:
         addr = await self.read_value_from_offset(0x90, "long long")
 
         if not addr:
             return None
 
-        return FieldContainer(self.hook_handler, addr)
+        return PropertyList(self.hook_handler, addr)
 
 
-class FieldContainer(DynamicMemoryObject):
-    async def has_singleton(self) -> bool:
+class PropertyList(DynamicMemoryObject):
+    async def is_singleton(self) -> bool:
         return await self.read_value_from_offset(0x9, "bool")
 
     async def offset(self) -> int:
         return await self.read_value_from_offset(0x10, "int")
 
-    async def base_class(self) -> Optional["FieldContainer"]:
+    async def base_class_list(self) -> Optional["PropertyList"]:
         addr = await self.read_value_from_offset(0x18, "long long")
 
         if not addr:  # No base class
             return None
 
-        return FieldContainer(self.hook_handler, addr)
+        return PropertyList(self.hook_handler, addr)
 
-    async def type(self) -> Optional["NodeData"]:
+    async def type(self) -> Optional["Type"]:
         addr = await self.read_value_from_offset(0x20, "long long")
 
         if not addr:
             return None
 
-        return NodeData(self.hook_handler, addr)
+        return Type(self.hook_handler, addr)
 
-    async def pointer_version(self) -> Optional["NodeData"]:
-        addr = await self.read_value_from_offset(0x30, "long long")
+    async def pointer_version(self) -> Optional["Type"]:
+        addr = await self.read_value_from_offset(0x30)
 
         if not addr:
             return None
 
-        return NodeData(self.hook_handler, addr)
+        return Type(self.hook_handler, addr)
 
     async def properties(self) -> list["Property"]:
         res = []
@@ -149,21 +152,21 @@ class FieldContainer(DynamicMemoryObject):
 
 
 class Property(DynamicMemoryObject):
-    async def field_container(self) -> Optional["FieldContainer"]:
+    async def parent_list(self) -> Optional["PropertyList"]:
         addr = await self.read_value_from_offset(0x38, "long long")
 
         if not addr:
             return None
 
-        return FieldContainer(self.hook_handler, addr)
+        return PropertyList(self.hook_handler, addr)
 
-    async def container(self) -> Optional["ContainerConstructor"]:
+    async def container(self) -> Optional["Container"]:
         addr = await self.read_value_from_offset(0x40, "long long")
 
         if not addr:
             return None
 
-        return ContainerConstructor(self.hook_handler, addr)
+        return Container(self.hook_handler, addr)
 
     async def index(self) -> int:
         return await self.read_value_from_offset(0x50, "int")
@@ -176,19 +179,22 @@ class Property(DynamicMemoryObject):
 
         return await self.read_null_terminated_string(addr, 100)
 
-    async def hash(self) -> int:
+    async def name_hash(self) -> int:
+        return await self.read_value_from_offset(0x60, "int")
+
+    async def full_hash(self) -> int:
         return await self.read_value_from_offset(0x64, "int")
 
     async def offset(self) -> int:
         return await self.read_value_from_offset(0x68, "int")
 
-    async def type(self) -> Optional["NodeData"]:
+    async def type(self) -> Optional["Type"]:
         addr = await self.read_value_from_offset(0x70, "long long")
 
         if not addr:
             return None
 
-        return NodeData(self.hook_handler, addr)
+        return Type(self.hook_handler, addr)
 
     async def flags(self) -> int:
         return await self.read_value_from_offset(0x80, "int")
@@ -197,8 +203,7 @@ class Property(DynamicMemoryObject):
         return await self.read_string_from_offset(0x88)
 
     async def ps_info(self):
-        # TODO
-        pass
+        return await self.read_string_from_offset(0x90)
 
     async def enum_options(self) -> Optional[dict[str, int]]:
         start = await self.read_value_from_offset(0x98, "long long")
@@ -222,7 +227,7 @@ class Property(DynamicMemoryObject):
         return enum_opts
 
 
-class ContainerConstructor(DynamicMemoryObject):
+class Container(DynamicMemoryObject):
     async def name(self) -> str:
         vtable = await self.read_value_from_offset(0x0, "long long")
         lea_func_addr = await self.read_typed(vtable + 0x8, "long long")
@@ -259,12 +264,12 @@ async def _get_root_node(client):
     call_addr = hash_call_addr + call_offset + 5
 
     # 48 8B 05 [BF 0A F7 01]
-    hashmap_offset = await handler.read_typed(call_addr + 53, "int")
+    hashtree_offset = await handler.read_typed(call_addr + 53, "int")
 
     # 50 is start of the lea instruction and 7 is the length of it
-    hashmap_addr = call_addr + 50 + hashmap_offset + 7
+    hashtree_addr = call_addr + 50 + hashtree_offset + 7
 
-    return await handler.read_typed(hashmap_addr, "long long")
+    return await handler.read_typed(hashtree_addr, "long long")
 
 
 async def _get_children_nodes(node: HashNode, nodes: set):
