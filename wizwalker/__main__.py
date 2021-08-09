@@ -9,6 +9,7 @@ from loguru import logger
 
 from wizwalker import Wad, WizWalker, utils
 from wizwalker.cli import start_console
+from wizwalker.memory.type_tree import get_hash_map
 
 
 logger.enable("wizwalker")
