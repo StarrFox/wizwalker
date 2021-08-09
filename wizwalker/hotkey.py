@@ -53,6 +53,7 @@ class _GlobalHotkeyMessageLoop:
         self.messages = []
         self.message_loop_task = None
         self.connected_instances = 0
+        self._message_loop_delay = 0.1
 
     async def check_for_message(self, keycode: int, modifiers: int) -> bool:
         if (keycode, modifiers) in self.messages:
@@ -79,7 +80,7 @@ class _GlobalHotkeyMessageLoop:
 
                 user32.DispatchMessageW(ctypes.byref(message))
 
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(self._message_loop_delay)
 
     def connect(self):
         if not self.message_loop_task:
@@ -94,6 +95,9 @@ class _GlobalHotkeyMessageLoop:
             if self.message_loop_task:
                 with suppress(asyncio.CancelledError):
                     self.message_loop_task.cancel()
+
+    def set_message_loop_delay(self, new_delay: float):
+        self._message_loop_delay = new_delay
 
 
 _hotkey_message_loop = _GlobalHotkeyMessageLoop()
@@ -253,7 +257,6 @@ class Listener:
         return res != 0
 
 
-# TODO: fix issue with non-norepeats taking up message queue
 class HotkeyListener:
     """
     Examples:
@@ -380,6 +383,16 @@ class HotkeyListener:
             )
 
         del self._hotkeys[(key.value, modifiers)]
+
+    @staticmethod
+    async def set_global_message_loop_delay(delay: float):
+        """
+        Set the global message loop delay
+
+        Args:
+            delay: The message loop delay
+        """
+        _hotkey_message_loop.set_message_loop_delay(delay)
 
     # async so it isn't a breaking change later
     async def clear(self):
