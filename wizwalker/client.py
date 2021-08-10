@@ -7,8 +7,7 @@ import pymem
 from . import (
     CacheHandler,
     Keycode,
-    MemoryReadError,
-    ReadingEnumFailed,
+    WizWalkerMemoryError,
     utils,
 )
 from .constants import WIZARD_SPEED
@@ -223,7 +222,7 @@ class Client:
         """
         try:
             duel_phase = await self.duel.duel_phase()
-        except (ReadingEnumFailed, MemoryReadError):
+        except WizWalkerMemoryError:
             return False
         else:
             return duel_phase is not DuelPhase.ended
