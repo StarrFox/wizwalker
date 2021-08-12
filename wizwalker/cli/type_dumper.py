@@ -1,10 +1,4 @@
-import re
-
 import wizwalker
-
-
-PROPERTY_NAME_PREFIX = re.compile(r"m_(\w(?=[^a-z]))?")
-ENUM_NAME_PREFIX = re.compile(r"(^[^_]+_)|(^\w(?=[^a-z]))")
 
 
 async def _dump_enum_options_to_string(
@@ -16,7 +10,6 @@ async def _dump_enum_options_to_string(
     res = ""
 
     for name, value in enum_options.items():
-        name = ENUM_NAME_PREFIX.sub("", name)
         res += f"{prefix}{name} = {value}"
 
     return res
@@ -41,7 +34,6 @@ async def _dump_properties_to_string(
         is_dynamic = await container.is_dynamic()
 
         name = await prop.name()
-        name = PROPERTY_NAME_PREFIX.sub("", name)
 
         enum_options = await prop.enum_options()
 
@@ -74,7 +66,7 @@ async def dump_class_to_string(
 
     res += f" {base_names}"
 
-    fields = await data.field_container()
+    fields = await data.property_list()
 
     if not fields:
         return res
@@ -89,7 +81,6 @@ async def _dump_enum_options_to_json(enum_options) -> dict:
     res = {}
 
     for name, value in enum_options.items():
-        name = ENUM_NAME_PREFIX.sub("", name)
         res[name] = value
 
     return res
@@ -109,7 +100,6 @@ async def _dump_properties_to_json(field_container) -> dict[str, dict]:
         is_dynamic = await container.is_dynamic()
 
         name = await prop.name()
-        name = PROPERTY_NAME_PREFIX.sub("", name)
 
         res[name] = {
             "type": type_name,
@@ -142,7 +132,7 @@ async def dump_class_to_json(
 
     res[name]["bases"] = base_names
 
-    fields = await data.field_container()
+    fields = await data.property_list()
 
     if not fields:
         return res
