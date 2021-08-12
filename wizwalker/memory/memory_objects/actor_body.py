@@ -118,7 +118,7 @@ class ActorBody(PropertyClass):
         """
         await self.write_value_to_offset(112, scale, "float")
         
-     async def model_update_scheduled(self) -> bool:
+    async def model_update_scheduled(self) -> bool:
         """
         If this body should have their model resynced with it's position
 
