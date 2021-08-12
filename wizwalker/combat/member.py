@@ -5,7 +5,7 @@ class CombatMember:
     def __init__(
         self,
         combat_handler: "wizwalker.combat.CombatHandler",
-        combatant_control: "wizwalker.memory.DynamicWindow",
+        combatant_control: "wizwalker.memory.AddressedWindow",
     ):
         self.combat_handler = combat_handler
 
@@ -24,7 +24,7 @@ class CombatMember:
         part = await self.get_participant()
         return await part.game_stats()
 
-    async def get_health_text_window(self) -> "wizwalker.memory.DynamicWindow":
+    async def get_health_text_window(self) -> "wizwalker.memory.AddressedWindow":
         """
         Get the health text window
         Useful for targeting
@@ -35,7 +35,7 @@ class CombatMember:
 
         raise ValueError("Couldn't find health child")
 
-    async def get_name_text_window(self) -> "wizwalker.memory.DynamicWindow":
+    async def get_name_text_window(self) -> "wizwalker.memory.AddressedWindow":
         """
         Get the name text window
         """

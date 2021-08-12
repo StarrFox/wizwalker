@@ -1,16 +1,13 @@
 from typing import Optional
 
 import wizwalker
-from .memory_object import DynamicMemoryObject
+from .memory_object import AddressedMemoryObject
 
 
 HASHCALLPATTERN = rb"\xE8....\x48\x3B\x18\x74\x12"
 
 
-class HashNode(DynamicMemoryObject):
-    def __eq__(self, other):
-        return self.base_address == other.base_address
-
+class HashNode(AddressedMemoryObject):
     def __hash__(self):
         return hash(self.base_address)
 
@@ -53,9 +50,15 @@ class HashNode(DynamicMemoryObject):
         return Type(self.hook_handler, addr)
 
 
-class Type(DynamicMemoryObject):
+class Type(AddressedMemoryObject):
+    _bases = None
+
     # Note: helper method
     async def get_bases(self) -> list["PropertyList"]:
+        # so it only needs to be read once
+        if self._bases:
+            return self._bases
+
         fields = await self.property_list()
 
         if not fields:
@@ -63,10 +66,11 @@ class Type(DynamicMemoryObject):
 
         bases = []
         current_base = fields
-        while base_type := await current_base.base_class():
+        while base_type := await current_base.base_class_list():
             bases.append(base_type)
             current_base = base_type
 
+        self._bases = bases
         return bases
 
     async def alloc_thing(self):
@@ -104,7 +108,7 @@ class Type(DynamicMemoryObject):
         return PropertyList(self.hook_handler, addr)
 
 
-class PropertyList(DynamicMemoryObject):
+class PropertyList(AddressedMemoryObject):
     async def is_singleton(self) -> bool:
         return await self.read_value_from_offset(0x9, "bool")
 
@@ -151,7 +155,7 @@ class PropertyList(DynamicMemoryObject):
         return await self.read_string_from_offset(0xB8, sso_size=10)
 
 
-class Property(DynamicMemoryObject):
+class Property(AddressedMemoryObject):
     async def parent_list(self) -> Optional["PropertyList"]:
         addr = await self.read_value_from_offset(0x38, "long long")
 
@@ -227,7 +231,7 @@ class Property(DynamicMemoryObject):
         return enum_opts
 
 
-class Container(DynamicMemoryObject):
+class Container(AddressedMemoryObject):
     async def name(self) -> str:
         vtable = await self.read_value_from_offset(0x0, "long long")
         lea_func_addr = await self.read_typed(vtable + 0x8, "long long")
@@ -304,7 +308,7 @@ async def get_hash_nodes(client: "wizwalker.Client") -> set[HashNode]:
     return await _read_all_nodes(client, root_node)
 
 
-async def get_hash_map(client: "wizwalker.Client") -> dict[str, HashNode]:
+async def get_type_tree(client: "wizwalker.Client") -> dict[str, HashNode]:
     nodes = await get_hash_nodes(client)
 
     hash_map = {}

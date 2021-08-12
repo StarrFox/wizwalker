@@ -1,4 +1,4 @@
-from wizwalker.memory.memory_object import PropertyClass, DynamicMemoryObject
+from wizwalker.memory.memory_object import PropertyClass, AddressedMemoryObject
 
 
 class BehaviorTemplate(PropertyClass):
@@ -25,7 +25,7 @@ class BehaviorTemplate(PropertyClass):
         await self.write_string_to_offset(72, behavior_name)
 
 
-class DynamicBehaviorTemplate(DynamicMemoryObject, BehaviorTemplate):
+class AddressedBehaviorTemplate(AddressedMemoryObject, BehaviorTemplate):
     """
     Dynamic behavior template that can be given an address
     """

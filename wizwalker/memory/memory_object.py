@@ -95,7 +95,7 @@ class MemoryObject(MemoryReader):
         return await self.read_linked_list(address + offset)
 
 
-class DynamicMemoryObject(MemoryObject):
+class AddressedMemoryObject(MemoryObject):
     def __init__(self, hook_handler: HookHandler, base_address: int):
         super().__init__(hook_handler)
 
@@ -107,11 +107,14 @@ class DynamicMemoryObject(MemoryObject):
 
         self.base_address = base_address
 
-    async def read_base_address(self) -> int:
-        return self.base_address
+    def __eq__(self, other):
+        return self.base_address == other.base_address
 
     def __repr__(self):
         return f"<{type(self).__name__} {self.base_address=}>"
+
+    async def read_base_address(self) -> int:
+        return self.base_address
 
 
 class PropertyClass(MemoryObject):

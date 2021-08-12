@@ -1,8 +1,8 @@
 from typing import List
 
-from wizwalker.memory.memory_object import PropertyClass, DynamicMemoryObject
+from wizwalker.memory.memory_object import PropertyClass, AddressedMemoryObject
 from .enums import ObjectType
-from .behavior_template import DynamicBehaviorTemplate
+from .behavior_template import AddressedBehaviorTemplate
 
 
 class WizGameObjectTemplate(PropertyClass):
@@ -10,12 +10,12 @@ class WizGameObjectTemplate(PropertyClass):
         raise NotImplementedError()
 
     # TODO: add all behavior template types
-    async def behaviors(self) -> List[DynamicBehaviorTemplate]:
+    async def behaviors(self) -> List[AddressedBehaviorTemplate]:
         behaviors = []
         for addr in await self.read_dynamic_vector(72):
             # they sometimes set these to 0
             if addr != 0:
-                behaviors.append(DynamicBehaviorTemplate(self.hook_handler, addr))
+                behaviors.append(AddressedBehaviorTemplate(self.hook_handler, addr))
 
         return behaviors
 
@@ -122,5 +122,5 @@ class WizGameObjectTemplate(PropertyClass):
     #     return await self.read_value_from_offset(528, "class SharedPointer<class LeashOffsetOverride>")
 
 
-class DynamicWizGameObjectTemplate(DynamicMemoryObject, WizGameObjectTemplate):
+class AddressedWizGameObjectTemplate(AddressedMemoryObject, WizGameObjectTemplate):
     pass

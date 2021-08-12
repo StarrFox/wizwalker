@@ -3,10 +3,10 @@ from contextlib import suppress
 
 from loguru import logger
 
-from wizwalker.memory.memory_object import DynamicMemoryObject, PropertyClass
+from wizwalker.memory.memory_object import AddressedMemoryObject, PropertyClass
 from .enums import WindowFlags, WindowStyle
-from .spell import DynamicGraphicalSpell
-from .combat_participant import DynamicCombatParticipant
+from .spell import AddressedGraphicalSpell
+from .combat_participant import AddressedCombatParticipant
 from wizwalker import AddressOutOfRange, MemoryReadError, Rectangle, utils
 
 
@@ -38,13 +38,13 @@ class Window(PropertyClass):
 
         return rect.scale_to_client(parent_rects, ui_scale)
 
-    async def get_windows_with_type(self, type_name: str) -> List["DynamicWindow"]:
+    async def get_windows_with_type(self, type_name: str) -> List["AddressedWindow"]:
         async def _pred(window):
             return await window.maybe_read_type_name() == type_name
 
         return await self.get_windows_with_predicate(_pred)
 
-    async def get_windows_with_name(self, name: str) -> List["DynamicWindow"]:
+    async def get_windows_with_name(self, name: str) -> List["AddressedWindow"]:
         async def _pred(window):
             return await window.name() == name
 
@@ -60,7 +60,7 @@ class Window(PropertyClass):
 
     async def get_windows_with_predicate(
         self, predicate: Callable
-    ) -> List["DynamicWindow"]:
+    ) -> List["AddressedWindow"]:
         """
         async def my_pred(window) -> bool:
             if await window.name() == "friend's list":
@@ -87,7 +87,7 @@ class Window(PropertyClass):
 
         return windows
 
-    async def get_parents(self) -> List["DynamicWindow"]:
+    async def get_parents(self) -> List["AddressedWindow"]:
         parents = []
         current = self
         while (parent := await current.parent()) is not None:
@@ -96,7 +96,7 @@ class Window(PropertyClass):
 
         return parents
 
-    async def get_child_by_name(self, name: str) -> "DynamicWindow":
+    async def get_child_by_name(self, name: str) -> "AddressedWindow":
         children = await self.children()
         for child in children:
             if await child.name() == name:
@@ -110,7 +110,7 @@ class Window(PropertyClass):
     # This is here because checking in .children slows down window filtering majorly
     async def maybe_graphical_spell(
         self, *, check_type: bool = False
-    ) -> Optional[DynamicGraphicalSpell]:
+    ) -> Optional[AddressedGraphicalSpell]:
         if check_type:
             type_name = await self.maybe_read_type_name()
             if type_name != "SpellCheckBox":
@@ -121,7 +121,7 @@ class Window(PropertyClass):
         if addr == 0:
             return None
 
-        return DynamicGraphicalSpell(self.hook_handler, addr)
+        return AddressedGraphicalSpell(self.hook_handler, addr)
 
     # see maybe_graphical_spell
     # note: not defined
@@ -136,7 +136,7 @@ class Window(PropertyClass):
     # See maybe_graphical_spell
     async def maybe_combat_participant(
         self, *, check_type: bool = False
-    ) -> Optional[DynamicCombatParticipant]:
+    ) -> Optional[AddressedCombatParticipant]:
         if check_type:
             type_name = await self.maybe_read_type_name()
             if type_name != "CombatantDataControl":
@@ -149,7 +149,7 @@ class Window(PropertyClass):
         if addr == 0:
             return None
 
-        return DynamicCombatParticipant(self.hook_handler, addr)
+        return AddressedCombatParticipant(self.hook_handler, addr)
 
     # See maybe_graphical_spell
     async def maybe_text(self, *, check_type: bool = False) -> str:
@@ -169,7 +169,7 @@ class Window(PropertyClass):
     async def write_name(self, name: str):
         await self.write_string_to_offset(80, name)
 
-    async def children(self) -> List["DynamicWindow"]:
+    async def children(self) -> List["AddressedWindow"]:
         try:
             pointers = await self.read_shared_vector(112)
         except (ValueError, MemoryReadError):
@@ -182,17 +182,17 @@ class Window(PropertyClass):
                 logger.error("0 address while reading children")
 
             else:
-                windows.append(DynamicWindow(self.hook_handler, addr))
+                windows.append(AddressedWindow(self.hook_handler, addr))
 
         return windows
 
-    async def parent(self) -> Optional["DynamicWindow"]:
+    async def parent(self) -> Optional["AddressedWindow"]:
         addr = await self.read_value_from_offset(136, "long long")
         # the root window has no parents
         if addr == 0:
             return None
 
-        return DynamicWindow(self.hook_handler, addr)
+        return AddressedWindow(self.hook_handler, addr)
 
     async def style(self) -> WindowStyle:
         style = await self.read_value_from_offset(152, "long")
@@ -276,7 +276,7 @@ class Window(PropertyClass):
         await self.write_vector(176, parent_offset, 4, "int")
 
 
-class DynamicWindow(DynamicMemoryObject, Window):
+class AddressedWindow(AddressedMemoryObject, Window):
     pass
 
 

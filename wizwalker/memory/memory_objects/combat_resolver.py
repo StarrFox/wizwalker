@@ -1,7 +1,7 @@
 from typing import List, Optional
 
-from wizwalker.memory.memory_object import PropertyClass, DynamicMemoryObject
-from .spell_effect import DynamicSpellEffect
+from wizwalker.memory.memory_object import PropertyClass, AddressedMemoryObject
+from .spell_effect import AddressedSpellEffect
 
 
 class CombatResolver(PropertyClass):
@@ -14,21 +14,21 @@ class CombatResolver(PropertyClass):
     async def write_bool_global_effect(self, bool_global_effect: bool):
         await self.write_value_to_offset(112, bool_global_effect, "bool")
 
-    async def global_effect(self) -> Optional[DynamicSpellEffect]:
+    async def global_effect(self) -> Optional[AddressedSpellEffect]:
         addr = await self.read_value_from_offset(120, "long long")
 
         if addr == 0:
             return None
 
-        return DynamicSpellEffect(self.hook_handler, addr)
+        return AddressedSpellEffect(self.hook_handler, addr)
 
-    async def battlefield_effects(self) -> List[DynamicSpellEffect]:
+    async def battlefield_effects(self) -> List[AddressedSpellEffect]:
         effects = []
         for addr in await self.read_shared_vector(136):
-            effects.append(DynamicSpellEffect(self.hook_handler, addr))
+            effects.append(AddressedSpellEffect(self.hook_handler, addr))
 
         return effects
 
 
-class DynamicCombatResolver(DynamicMemoryObject, CombatResolver):
+class AddressedCombatResolver(AddressedMemoryObject, CombatResolver):
     pass

@@ -12,7 +12,7 @@ class CombatCard:
     """
 
     def __init__(
-        self, combat_handler, spell_window: "wizwalker.memory.window.DynamicWindow",
+        self, combat_handler, spell_window: "wizwalker.memory.window.AddressedWindow",
     ):
         self.combat_handler = combat_handler
 
@@ -104,7 +104,7 @@ class CombatCard:
 
     async def graphical_spell(
         self,
-    ) -> "wizwalker.memory.memory_objects.spell.DynamicGraphicalSpell":
+    ) -> "wizwalker.memory.memory_objects.spell.AddressedGraphicalSpell":
         """
         The GraphicalSpell with information about this card
         """
@@ -116,7 +116,7 @@ class CombatCard:
 
     async def wait_for_graphical_spell(
         self,
-    ) -> "wizwalker.memory.memory_objects.spell.DynamicGraphicalSpell":
+    ) -> "wizwalker.memory.memory_objects.spell.AddressedGraphicalSpell":
         """
         Wait for GraphicalSpell
         """
@@ -124,7 +124,7 @@ class CombatCard:
 
     async def spell_effects(
         self,
-    ) -> List["wizwalker.memory.memory_objects.spell_effect.DynamicSpellEffect"]:
+    ) -> List["wizwalker.memory.memory_objects.spell_effect.AddressedSpellEffect"]:
         spell = await self.wait_for_graphical_spell()
         return await spell.spell_effects()
 

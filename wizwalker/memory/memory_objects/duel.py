@@ -2,21 +2,21 @@ from typing import List, Optional
 
 from wizwalker.utils import XYZ
 from wizwalker.memory.memory_object import PropertyClass
-from .combat_participant import DynamicCombatParticipant
+from .combat_participant import AddressedCombatParticipant
 from .enums import DuelExecutionOrder, DuelPhase, SigilInitiativeSwitchMode
-from .combat_resolver import DynamicCombatResolver
+from .combat_resolver import AddressedCombatResolver
 
 
 class Duel(PropertyClass):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 
-    async def participant_list(self,) -> List[DynamicCombatParticipant]:
+    async def participant_list(self,) -> List[AddressedCombatParticipant]:
         pointers = await self.read_shared_vector(80)
 
         participants = []
         for addr in pointers:
-            participants.append(DynamicCombatParticipant(self.hook_handler, addr))
+            participants.append(AddressedCombatParticipant(self.hook_handler, addr))
 
         return participants
 
@@ -62,13 +62,13 @@ class Duel(PropertyClass):
     async def write_first_team_to_act(self, first_team_to_act: int):
         await self.write_value_to_offset(148, first_team_to_act, "int")
 
-    async def combat_resolver(self) -> Optional[DynamicCombatResolver]:
+    async def combat_resolver(self) -> Optional[AddressedCombatResolver]:
         addr = await self.read_value_from_offset(104, "long long")
 
         if addr == 0:
             return None
 
-        return DynamicCombatResolver(self.hook_handler, addr)
+        return AddressedCombatResolver(self.hook_handler, addr)
 
     async def pvp(self) -> bool:
         return await self.read_value_from_offset(144, "bool")

@@ -9,7 +9,7 @@ from click_default_group import DefaultGroup
 from loguru import logger
 
 from wizwalker import Wad, utils, ClientHandler
-from wizwalker.memory.type_tree import get_hash_map
+from wizwalker.memory.type_tree import get_type_tree
 from wizwalker.cli import run_cmd, dump_class_to_string, dump_class_to_json
 
 
@@ -91,7 +91,7 @@ def text(file_path):
 
             client = clients[0]
 
-            hash_map = await get_hash_map(client)
+            hash_map = await get_type_tree(client)
 
             out = file_path.open("w+")
 
@@ -132,7 +132,7 @@ def json_(file_path, indent):
 
             client = clients[0]
 
-            hash_map = await get_hash_map(client)
+            hash_map = await get_type_tree(client)
 
             res = {}
 
