@@ -1,7 +1,12 @@
+import re
 from pathlib import Path
 
 import wizwalker
 from wizwalker.memory.type_tree import get_type_tree, Type
+
+
+PROPERTY_NAME_PREFIX = re.compile(r"m_(\w(?=[^a-z]))?")
+ENUM_NAME_PREFIX = re.compile(r"(^[^_]+_)|(^\w(?=[^a-z]))")
 
 
 class ClassGenerator:

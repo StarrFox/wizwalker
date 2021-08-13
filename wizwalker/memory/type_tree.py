@@ -142,7 +142,7 @@ class PropertyList(AddressedMemoryObject):
     async def properties(self) -> list["Property"]:
         res = []
 
-        for addr in await self.read_shared_vector(0x58):
+        for addr in await self.read_shared_vector_from_offset(0x58):
             res.append(Property(self.hook_handler, addr))
 
         return res
