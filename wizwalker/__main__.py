@@ -10,8 +10,8 @@ from loguru import logger
 
 from wizwalker import Wad, WizWalker, utils, ClientHandler
 from wizwalker.cli import start_console
-from wizwalker.cli.type_dumper import dump_class_to_string, dump_class_to_json
 from wizwalker.memory.type_tree import get_type_tree
+from wizwalker.memory import TextTypeDumper, JsonTypeDumper
 
 
 logger.enable("wizwalker")
@@ -96,21 +96,9 @@ def text(file_path):
                 return
 
             client = clients[0]
-
-            hash_map = await get_type_tree(client)
-
-            out = file_path.open("w+")
-
-            with click.progressbar(
-                list(hash_map.items()),
-                show_pos=True,
-                show_percent=False,
-                item_show_func=lambda i: i[0][:40] if i else i,
-                show_eta=False,
-            ) as items:
-                for name, node in items:
-                    out.write(await dump_class_to_string(name, node))
-                    out.write("\n")
+            type_tree = await get_type_tree(client)
+            dumper = TextTypeDumper(type_tree)
+            await dumper.dump(file_path)
 
     asyncio.run(_dump())
 
@@ -137,22 +125,9 @@ def json_(file_path, indent):
                 return
 
             client = clients[0]
-
-            hash_map = await get_type_tree(client)
-
-            res = {}
-
-            with click.progressbar(
-                list(hash_map.items()),
-                show_pos=True,
-                show_percent=False,
-                item_show_func=lambda i: i[0][:40] if i else i,
-                show_eta=False,
-            ) as items:
-                for name, node in items:
-                    res.update(await dump_class_to_json(name, node))
-
-            json.dump(res, file_path.open("w+"), indent=indent)
+            type_tree = await get_type_tree(client)
+            dumper = JsonTypeDumper(type_tree)
+            await dumper.dump(file_path)
 
     asyncio.run(_dump())
 
