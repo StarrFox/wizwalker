@@ -209,7 +209,7 @@ class Property(AddressedMemoryObject):
     async def ps_info(self):
         return await self.read_string_from_offset(0x90)
 
-    async def enum_options(self) -> Optional[dict[str, int]]:
+    async def enum_options(self) -> Optional[dict[str, int | str]]:
         start = await self.read_value_from_offset(0x98, "long long")
 
         if not start:
@@ -221,10 +221,12 @@ class Property(AddressedMemoryObject):
         current = start
         enum_opts = {}
         for entry in range(total_size // 0x48):
-            value = await self.read_typed(current + 0x20, "int")
             name = await self.read_string(current + 0x28)
 
-            enum_opts[name] = value
+            if string_value := await self.read_string(current):
+                enum_opts[name] = string_value
+            else:
+                enum_opts[name] = await self.read_typed(current + 0x20, "int")
 
             current += 0x48
 
