@@ -27,20 +27,6 @@ class TypeDumper:
 
             if property_list:
                 for property_ in await property_list.properties():
-                    property_name = await property_.name()
-                    property_type = await property_.type()
-
-                    container = await property_.container()
-
-                    property_info = {
-                        "type": await property_type.name(),
-                        "offset": await property_.offset(),
-                        "flags": await property_.flags(),
-                        "container": await container.name(),
-                        "dynamic": await container.is_dynamic(),
-                        "pointer": await property_type.is_pointer(),
-                    }
-
                     enum_options = await property_.enum_options()
 
                     formatted_enum_options = []
@@ -51,6 +37,10 @@ class TypeDumper:
                                     enum_option_name, enum_option_value
                                 )
                             )
+
+                    property_name, property_info = await self.get_property_info(
+                        property_
+                    )
 
                     formatted_properties.append(
                         await self.format_property(
@@ -77,6 +67,24 @@ class TypeDumper:
     async def get_class_info(node_data: "wizwalker.memory.type_tree.Type"):
         bases = await node_data.get_bases()
         return [await base.name() for base in bases]
+
+    @staticmethod
+    async def get_property_info(property_: "wizwalker.memory.type_tree.Property"):
+        property_name = await property_.name()
+        property_type = await property_.type()
+
+        container = await property_.container()
+
+        property_info = {
+            "type": await property_type.name(),
+            "offset": await property_.offset(),
+            "flags": await property_.flags(),
+            "container": await container.name(),
+            "dynamic": await container.is_dynamic(),
+            "pointer": await property_type.is_pointer(),
+        }
+
+        return property_name, property_info
 
     async def format_enum_option(self, name: str, value: int):
         raise NotImplemented()
