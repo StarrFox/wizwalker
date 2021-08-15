@@ -20,7 +20,6 @@ class WadFileInfo:
     crc: int
 
 
-# TODO: implement context manager (should it and .close be async?)
 class Wad:
     def __init__(self, path: Union[Path, str]):
         self.file_path = Path(path)
@@ -48,6 +47,13 @@ class Wad:
 
     def __repr__(self):
         return f"<Wad {self.name=}>"
+
+    async def __aenter__(self):
+        await self.open()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     async def size(self) -> int:
         """
@@ -84,10 +90,10 @@ class Wad:
         self._file_pointer.close()
         self._file_pointer = None
 
+    # fmt: off
     async def _read(self, start: int, size: int) -> bytes:
-        # fmt: off
         return self._mmap[start: start + size]
-        # fmt: on
+    # fmt: on
 
     def _refresh_journal(self):
         if self._refreshed_once:
