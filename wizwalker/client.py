@@ -83,6 +83,10 @@ class Client:
         If this client is the foreground window
 
         Set this to True to bring it to the foreground
+
+        Notes:
+            These conditions must be true to set the foreground
+            https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setforegroundwindow#remarks
         """
         return utils.get_foreground_window_handle() == self.window_handle
 
