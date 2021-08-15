@@ -10,8 +10,6 @@ repository = "https://github.com/StarrFox/wizwalker"
 [tool.poetry.dependencies]
 python = "^3.10"
 loguru = "^0.5.1"
-aioconsole = "^0.3.1"
-aiofiles = "^0.7.0"
 pymem = "1.8.4"
 appdirs = "^1.4.4"
 click = "^8.0.1"

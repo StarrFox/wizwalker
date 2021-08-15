@@ -3,38 +3,37 @@ import functools
 import struct
 import zlib
 from pathlib import Path
-from typing import List, Union
+from typing import Optional, Union
+from mmap import mmap, ACCESS_READ
 
-import aiofiles
-
-from wizwalker.utils import get_wiz_install
+from wizwalker.utils import get_wiz_install, run_in_executor
 
 
 class WadFileInfo:
-    def __init__(self, *, name, offset, size, is_zip, crc, unzipped_size):
+    __slots__ = ["name", "offset", "size", "zipped_size", "is_zip", "crc"]
+
+    def __init__(self, name, offset, size, zipped_size, is_zip, crc):
         self.name = name
         self.offset = offset
         self.size = size
+        self.zipped_size = zipped_size
         self.is_zip = is_zip
         self.crc = crc
-        self.unzipped_size = unzipped_size
 
 
 class Wad:
     def __init__(self, path: Union[Path, str]):
-        if isinstance(path, str):
-            path = Path(path)
-
         self.name = path.with_suffix("").name
+        self.file_path = Path(path)
 
-        self.file_path = path
-        if not self.file_path.exists():
-            raise ValueError(f"{self.file_path} not found.")
-
-        self._file_list = []
-        self._refreshed_once = False
-        self._open = False
+        self._file_map = {}
         self._file_pointer = None
+        self._mmap = None
+        self._read_lock = asyncio.Lock()
+
+        self._refreshed_once = False
+
+        self._size = None
 
     @classmethod
     def from_game_data(cls, name: str):
@@ -44,11 +43,8 @@ class Wad:
         Args:
             name: name of the wad
         """
-        if not name.endswith(".wad"):
-            name += ".wad"
-
         file_path = get_wiz_install() / "Data" / "GameData" / name
-        return cls(file_path)
+        return cls(file_path.with_suffix(".wad"))
 
     def __repr__(self):
         return f"<Wad {self.name=}>"
@@ -57,45 +53,40 @@ class Wad:
         """
         Total size of this wad
         """
-        if not self._open:
+        if not self._file_pointer:
             await self.open()
 
-        return sum(file.size for file in self._file_list)
+        if self._size:
+            return self._size
 
-    async def names(self) -> List[str]:
+        self._size = sum(file.size for file in self._file_map.values())
+        return self._size
+
+    async def names(self) -> list[str]:
         """
         List of all file names in this wad
         """
-        if not self._open:
+        if not self._file_pointer:
             await self.open()
 
-        return [file.name for file in self._file_list]
+        return list(self._file_map.keys())
 
     async def open(self):
+        if self._file_pointer:
+            raise RuntimeError("This Wad is already opened")
+
         # noinspection PyTypeChecker
-        # TODO: why is this stored but not used in half the methods
         self._file_pointer = open(self.file_path, "rb")
-        await self._run_in_executor(self._refresh_journal)
-        self._open = True
+        self._mmap = mmap(self._file_pointer.fileno(), 0, access=ACCESS_READ)
+        await run_in_executor(self._refresh_journal)
 
     def close(self):
         self._file_pointer.close()
-        self._open = False
 
-    @staticmethod
-    async def _run_in_executor(func, *args, **kwargs):
-        """
-        Run a function within an executor
-
-        Args:
-            func: The function to run
-            args: Args to pass to the function
-            kwargs: Kwargs to pass to the function
-        """
-        loop = asyncio.get_event_loop()
-        function = functools.partial(func, *args, **kwargs)
-
-        return await loop.run_in_executor(None, function)
+    async def _read(self, start: int, size: int) -> bytes:
+        # fmt: off
+        return self._mmap[start: start + size]
+        # fmt: on
 
     def _refresh_journal(self):
         if self._refreshed_once:
@@ -103,66 +94,68 @@ class Wad:
 
         self._refreshed_once = True
 
-        fp = self._file_pointer
-
         # KIWAD id string
-        fp.seek(5)
-        version = struct.unpack("<l", fp.read(4))[0]
-        file_num = struct.unpack("<l", fp.read(4))[0]
+        file_offset = 5
+
+        # fmt: off
+        version, file_num = struct.unpack(
+            "<ll", self._mmap[file_offset: file_offset + 8]
+        )
+
+        file_offset += 8
 
         if version >= 2:
-            fp.read(1)
+            file_offset += 1
 
         for _ in range(file_num):
-            offset = struct.unpack("<l", fp.read(4))[0]
-            size = struct.unpack("<l", fp.read(4))[0]
-            zsize = struct.unpack("<l", fp.read(4))[0]
-            is_zip = struct.unpack("?", fp.read(1))[0]
-            crc = struct.unpack("<l", fp.read(4))[0]
-            name_length = struct.unpack("<l", fp.read(4))[0]
-            name = (fp.read(name_length)).decode("utf-8")[:-1]
-
-            self._file_list.append(
-                WadFileInfo(
-                    name=name,
-                    offset=offset,
-                    size=size,
-                    is_zip=is_zip,
-                    crc=crc,
-                    unzipped_size=zsize,
-                )
+            # no reason to use struct.calcsize
+            offset, size, zipped_size, is_zip, crc, name_length = struct.unpack(
+                "<lll?ll", self._mmap[file_offset: file_offset + 21]
             )
 
-    async def get_file(self, name: str) -> bytes:
+            # 21 is the size of all the data we just read
+            file_offset += 21
+
+            name: str = self._mmap[file_offset: file_offset + name_length].decode(
+                "utf-8"
+            )
+            name.rstrip("\x00")
+
+            # fmt: on
+
+            file_offset += name_length
+
+            self._file_map[name] = WadFileInfo(
+                name, offset, size, zipped_size, is_zip, crc
+            )
+
+    async def get_file(self, name: str) -> Optional[bytes]:
         """
         Get the data contents of the named file
 
         Args:
             name: name of the file to get
+
+        Returns:
+            Bytes of the file or None for "unpatched" dummy files
         """
-        if not self._open:
+        if not self._file_pointer:
             await self.open()
 
-        target_file = None
-        for file in self._file_list:
-            if file.name == name:
-                target_file = file
+        target_file = await self.get_file_info(name)
 
-        if not target_file:
-            raise ValueError(f"File {name} not found.")
+        if target_file.is_zip:
+            data = await self._read(target_file.offset, target_file.zipped_size)
 
-        async with aiofiles.open(self.file_path, "rb") as fp:
-            await fp.seek(target_file.offset)
-            raw_data = await fp.read(target_file.size)
+        else:
+            data = await self._read(target_file.offset, target_file.size)
 
-            if target_file.is_zip:
-                try:
-                    data = zlib.decompress(raw_data)
-                except zlib.error:
-                    data = raw_data
+        # unpatched file
+        if data[:4] == b"\x00\x00\x00\x00":
+            return None
 
-            else:
-                data = raw_data
+        if target_file.is_zip:
+            data = await run_in_executor(zlib.decompress, data)
 
         return data
 
@@ -173,15 +166,10 @@ class Wad:
         Args:
             name: name of the file to get info on
         """
-        if not self._open:
+        if not self._file_pointer:
             await self.open()
 
-        target_file = None
-        for file in self._file_list:
-            if file.name == name:
-                target_file = file
-
-        if not target_file:
+        if not (target_file := self._file_map.get(name)):
             raise ValueError(f"File {name} not found.")
 
         return target_file
@@ -202,20 +190,30 @@ class Wad:
         if not path.is_dir():
             raise ValueError(f"{path} is not a directory.")
 
-        for file in self._file_list:
-            dirs = file.name.split("/")
-            # not a base level file
-            if len(dirs) != 1:
-                current = path
-                for next_dir in dirs[:-1]:
-                    current = current / next_dir
-                    current.mkdir(exist_ok=True)
+        await run_in_executor(self._unarchive, path)
 
-            file_path = path / file.name
-            file_data = await self.get_file(file.name)
+    def _unarchive(self, path):
+        with open(self.file_path, "rb") as fp:
+            with mmap(fp.fileno(), 0, access=ACCESS_READ) as mm:
+                for file in self._file_map.values():
+                    file_path = path / file.name
+                    file_path.parent.mkdir(parents=True, exist_ok=True)
 
-            async with aiofiles.open(file_path, "wb") as fp:
-                await fp.write(file_data)
+                    if file.is_zip:
+                        data = mm[file.offset: file.offset + file.zipped_size]
+
+                    else:
+                        data = mm[file.offset: file.offset + file.size]
+
+                    # unpatched file
+                    if data[:4] == b"\x00\x00\x00\x00":
+                        file_path.touch()
+                        continue
+
+                    if file.is_zip:
+                        data = zlib.decompress(data)
+
+                    file_path.write_bytes(data)
 
     @classmethod
     async def from_directory(self, path: Union[Path, str]):

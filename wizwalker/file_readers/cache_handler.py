@@ -4,7 +4,6 @@ from functools import cached_property
 from pathlib import Path
 from typing import List, Optional, Union
 
-import aiofiles
 from loguru import logger
 
 from wizwalker import utils
@@ -93,9 +92,9 @@ class CacheHandler:
             pharsed_template_ids = parse_template_id_file(file_data)
             del file_data
 
-            async with aiofiles.open(self.cache_dir / "template_ids.json", "w+") as fp:
+            with open(self.cache_dir / "template_ids.json", "w+") as fp:
                 json_data = json.dumps(pharsed_template_ids)
-                await fp.write(json_data)
+                await utils.run_in_executor(fp.write, json_data)
 
     async def get_template_ids(self) -> dict:
         """
@@ -105,8 +104,8 @@ class CacheHandler:
             the loaded template ids
         """
         await self._cache()
-        async with aiofiles.open(self.cache_dir / "template_ids.json") as fp:
-            message_data = await fp.read()
+        with open(self.cache_dir / "template_ids.json") as fp:
+            message_data = await utils.run_in_executor(fp.read)
 
         return json.loads(message_data)
 
@@ -141,6 +140,10 @@ class CacheHandler:
 
     async def _read_lang_file(self, root_wad: Wad, lang_file: str):
         file_data = await root_wad.get_file(lang_file)
+
+        if not file_data:
+            raise ValueError(f"{lang_file} has not yet been loaded")
+
         parsed_lang = self._parse_lang_file(file_data)
 
         return parsed_lang
@@ -154,9 +157,9 @@ class CacheHandler:
 
         lang_map = await self._get_langcode_map()
         lang_map.update(parsed_lang)
-        async with aiofiles.open(self.cache_dir / "langmap.json", "w+") as fp:
+        with open(self.cache_dir / "langmap.json", "w+") as fp:
             json_data = json.dumps(lang_map)
-            await fp.write(json_data)
+            await utils.run_in_executor(fp.write, json_data)
 
     async def _cache_lang_files(self, root_wad: Wad):
         lang_file_names = await self._get_all_lang_file_names(root_wad)
@@ -172,14 +175,14 @@ class CacheHandler:
         await self.write_wad_cache()
         lang_map = await self._get_langcode_map()
         lang_map.update(parsed_lang_map)
-        async with aiofiles.open(self.cache_dir / "langmap.json", "w+") as fp:
+        with open(self.cache_dir / "langmap.json", "w+") as fp:
             json_data = json.dumps(lang_map)
-            await fp.write(json_data)
+            await utils.run_in_executor(fp.write, json_data)
 
     async def _get_langcode_map(self) -> dict:
         try:
-            async with aiofiles.open(self.cache_dir / "langmap.json") as fp:
-                data = await fp.read()
+            with open(self.cache_dir / "langmap.json") as fp:
+                data = await utils.run_in_executor(fp.read)
                 return json.loads(data)
 
         # file not found
@@ -205,8 +208,8 @@ class CacheHandler:
             a dict with the current cache data
         """
         try:
-            async with aiofiles.open(self.cache_dir / "wad_cache.data") as fp:
-                data = await fp.read()
+            with open(self.cache_dir / "wad_cache.data") as fp:
+                data = await utils.run_in_executor(fp.read)
 
         # file not found
         except OSError:
@@ -229,9 +232,9 @@ class CacheHandler:
         """
         Writes wad cache to disk
         """
-        async with aiofiles.open(self.cache_dir / "wad_cache.data", "w+") as fp:
+        with open(self.cache_dir / "wad_cache.data", "w+") as fp:
             json_data = json.dumps(self._wad_cache)
-            await fp.write(json_data)
+            await utils.run_in_executor(fp.write, json_data)
 
     async def get_template_name(self, template_id: int) -> Optional[str]:
         """
