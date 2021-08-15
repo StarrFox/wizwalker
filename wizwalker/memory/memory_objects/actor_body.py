@@ -117,7 +117,7 @@ class ActorBody(PropertyClass):
             scale: The scale to write
         """
         await self.write_value_to_offset(112, scale, "float")
-        
+
     # Note: internal offset
     async def model_update_scheduled(self) -> bool:
         """
