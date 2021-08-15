@@ -1,6 +1,6 @@
 from typing import List
 
-from wizwalker.memory.memory_object import AddressedMemoryObject, PropertyClass
+from wizwalker.memory.memory_object import PropertyClass
 from .enums import DelayOrder, SpellSourceType
 from .spell_effect import AddressedSpellEffect
 
@@ -287,5 +287,5 @@ class SpellTemplate(PropertyClass):
         await self.write_value_to_offset(736, ignore_dispel, "bool")
 
 
-class AddressedSpellTemplate(AddressedMemoryObject, SpellTemplate):
+class AddressedSpellTemplate(SpellTemplate):
     pass

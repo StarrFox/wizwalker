@@ -1,4 +1,4 @@
-from wizwalker.memory.memory_object import AddressedMemoryObject, PropertyClass
+from wizwalker.memory.memory_object import PropertyClass
 from .enums import PlayerStatus
 
 

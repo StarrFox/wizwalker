@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from wizwalker.memory.memory_object import AddressedMemoryObject, PropertyClass
+from wizwalker.memory.memory_object import PropertyClass
 from .enums import PipAquiredByEnum
 from .game_stats import AddressedGameStats
 from .spell import AddressedHand
@@ -635,5 +635,5 @@ class CombatParticipant(PropertyClass):
         await self.write_value_to_offset(828, mob_level, "int")
 
 
-class AddressedCombatParticipant(AddressedMemoryObject, CombatParticipant):
+class AddressedCombatParticipant(CombatParticipant):
     pass

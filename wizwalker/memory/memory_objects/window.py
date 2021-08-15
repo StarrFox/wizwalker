@@ -3,7 +3,7 @@ from contextlib import suppress
 
 from loguru import logger
 
-from wizwalker.memory.memory_object import AddressedMemoryObject, PropertyClass
+from wizwalker.memory.memory_object import PropertyClass
 from .enums import WindowFlags, WindowStyle
 from .spell import AddressedGraphicalSpell
 from .combat_participant import AddressedCombatParticipant
@@ -276,7 +276,7 @@ class Window(PropertyClass):
         await self.write_vector(176, parent_offset, 4, "int")
 
 
-class AddressedWindow(AddressedMemoryObject, Window):
+class AddressedWindow(Window):
     pass
 
 

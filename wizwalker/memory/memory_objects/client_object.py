@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from wizwalker import XYZ
-from wizwalker.memory.memory_object import PropertyClass, AddressedMemoryObject
+from wizwalker.memory.memory_object import PropertyClass
 from .game_stats import AddressedGameStats
 from .game_object_template import AddressedWizGameObjectTemplate
 from .behavior_instance import AddressedBehaviorInstance
@@ -315,7 +315,7 @@ class CurrentClientObject(ClientObject):
         return await self.hook_handler.read_current_client_base()
 
 
-class AddressedClientObject(AddressedMemoryObject, ClientObject):
+class AddressedClientObject(ClientObject):
     """
     Dynamic client object that can take an address
     """

@@ -1,13 +1,13 @@
 from typing import Optional
 
 import wizwalker
-from .memory_object import AddressedMemoryObject
+from .memory_object import MemoryObject
 
 
 HASHCALLPATTERN = rb"\xE8....\x48\x3B\x18\x74\x12"
 
 
-class HashNode(AddressedMemoryObject):
+class HashNode(MemoryObject):
     def __hash__(self):
         return hash(self.base_address)
 
@@ -50,7 +50,7 @@ class HashNode(AddressedMemoryObject):
         return Type(self.hook_handler, addr)
 
 
-class Type(AddressedMemoryObject):
+class Type(MemoryObject):
     _bases = None
 
     # Note: helper method
@@ -108,7 +108,7 @@ class Type(AddressedMemoryObject):
         return PropertyList(self.hook_handler, addr)
 
 
-class PropertyList(AddressedMemoryObject):
+class PropertyList(MemoryObject):
     async def is_singleton(self) -> bool:
         return await self.read_value_from_offset(0x9, "bool")
 
@@ -132,7 +132,7 @@ class PropertyList(AddressedMemoryObject):
         return Type(self.hook_handler, addr)
 
     async def pointer_version(self) -> Optional["Type"]:
-        addr = await self.read_value_from_offset(0x30)
+        addr = await self.read_value_from_offset(0x30, "long long")
 
         if not addr:
             return None
@@ -155,7 +155,7 @@ class PropertyList(AddressedMemoryObject):
         return await self.read_string_from_offset(0xB8, sso_size=10)
 
 
-class Property(AddressedMemoryObject):
+class Property(MemoryObject):
     async def parent_list(self) -> Optional["PropertyList"]:
         addr = await self.read_value_from_offset(0x38, "long long")
 
@@ -233,7 +233,7 @@ class Property(AddressedMemoryObject):
         return enum_opts
 
 
-class Container(AddressedMemoryObject):
+class Container(MemoryObject):
     async def name(self) -> str:
         vtable = await self.read_value_from_offset(0x0, "long long")
         lea_func_addr = await self.read_typed(vtable + 0x8, "long long")

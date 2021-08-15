@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Optional
 
-from wizwalker.memory.memory_object import AddressedMemoryObject, PropertyClass
+from wizwalker.memory.memory_object import PropertyClass
 from .enums import DelayOrder
 from .spell_template import AddressedSpellTemplate
 from .spell_effect import AddressedSpellEffect
@@ -183,11 +183,11 @@ class GraphicalSpell(Spell):
         raise NotImplementedError()
 
 
-class AddressedSpell(AddressedMemoryObject, Spell):
+class AddressedSpell(Spell):
     pass
 
 
-class AddressedGraphicalSpell(AddressedMemoryObject, GraphicalSpell):
+class AddressedGraphicalSpell(GraphicalSpell):
     pass
 
 
@@ -203,5 +203,5 @@ class Hand(PropertyClass):
         return spells
 
 
-class AddressedHand(AddressedMemoryObject, Hand):
+class AddressedHand(Hand):
     pass

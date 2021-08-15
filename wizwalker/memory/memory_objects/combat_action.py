@@ -1,6 +1,6 @@
 from typing import Optional
 
-from wizwalker.memory.memory_object import MemoryObject, AddressedMemoryObject
+from wizwalker.memory.memory_object import MemoryObject
 from .spell import AddressedSpell
 
 
@@ -183,5 +183,5 @@ class CombatAction(MemoryObject):
     #     return await self.read_value_from_offset(352, "class TargetCritHit")
 
 
-class AddressedCombatAction(AddressedMemoryObject, CombatAction):
+class AddressedCombatAction(CombatAction):
     pass

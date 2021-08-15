@@ -1,6 +1,6 @@
 from typing import List
 
-from wizwalker.memory.memory_object import PropertyClass, AddressedMemoryObject
+from wizwalker.memory.memory_object import PropertyClass
 
 
 class PlayDeck(PropertyClass):
@@ -22,7 +22,7 @@ class PlayDeck(PropertyClass):
         return spell_data
 
 
-class AddressedPlayDeck(AddressedMemoryObject, PlayDeck):
+class AddressedPlayDeck(PlayDeck):
     pass
 
 
@@ -37,5 +37,5 @@ class PlaySpellData(PropertyClass):
         return await self.read_value_from_offset(76, "unsigned int")
 
 
-class AddressedPlaySpellData(AddressedMemoryObject, PlaySpellData):
+class AddressedPlaySpellData(PlaySpellData):
     pass

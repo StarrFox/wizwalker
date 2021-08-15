@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from wizwalker.memory.memory_object import PropertyClass, AddressedMemoryObject
+from wizwalker.memory.memory_object import PropertyClass
 from .spell_effect import AddressedSpellEffect
 
 
@@ -30,5 +30,5 @@ class CombatResolver(PropertyClass):
         return effects
 
 
-class AddressedCombatResolver(AddressedMemoryObject, CombatResolver):
+class AddressedCombatResolver(CombatResolver):
     pass

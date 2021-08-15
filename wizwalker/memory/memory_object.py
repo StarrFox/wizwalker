@@ -3,21 +3,58 @@ from enum import Enum
 from typing import Any, Type
 
 from wizwalker.errors import MemoryReadError
-from .handler import HookHandler
 from .memory_reader import MemoryReader
 
 
-# TODO: add .find_instances that find instances of whichever class used it
 class MemoryObject(MemoryReader):
     """
     Class for any represented classes from memory
     """
 
-    def __init__(self, hook_handler: HookHandler):
+    def __init__(self, hook_handler: MemoryReader, base_address: int = None):
         super().__init__(hook_handler.process)
+
+        # sanity check
+        if base_address == 0:
+            raise RuntimeError(
+                f"Dynamic object {type(self).__name__} passed 0 base address."
+            )
+
         self.hook_handler = hook_handler
+        self.base_address = base_address
+
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return False
+
+        if not self.base_address or other.base_address:
+            return False
+
+        return self.base_address == other.base_address
+
+    async def find_other_instances(self, *, force_module: str = None):
+        base_address = await self.read_base_address()
+        vtable_bytes = await self.read_bytes(base_address, 8)
+
+        other_instances = []
+
+        for addr in await self.pattern_scan(
+            vtable_bytes, return_multiple=True, module=force_module
+        ):
+            # don't include the base object
+            if addr == base_address:
+                continue
+
+            other_instances.append(type(self)(self.hook_handler, addr))
+
+        return other_instances
 
     async def read_base_address(self) -> int:
+        # so subclasses can have dynamic base addresses
+        # i.e Current* objects
+        if self.base_address:
+            return self.base_address
+
         raise NotImplementedError()
 
     async def read_value_from_offset(self, offset: int, data_type: str) -> Any:
@@ -95,28 +132,7 @@ class MemoryObject(MemoryReader):
         return await self.read_linked_list(address + offset)
 
 
-class AddressedMemoryObject(MemoryObject):
-    def __init__(self, hook_handler: HookHandler, base_address: int):
-        super().__init__(hook_handler)
-
-        # sanity check
-        if base_address == 0:
-            raise RuntimeError(
-                f"Dynamic object {type(self).__name__} passed 0 base address."
-            )
-
-        self.base_address = base_address
-
-    def __eq__(self, other):
-        return self.base_address == other.base_address
-
-    def __repr__(self):
-        return f"<{type(self).__name__} {self.base_address=}>"
-
-    async def read_base_address(self) -> int:
-        return self.base_address
-
-
+# TODO: move this?
 class PropertyClass(MemoryObject):
     async def read_base_address(self) -> int:
         raise NotImplementedError()

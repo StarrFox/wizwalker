@@ -1,6 +1,6 @@
 from typing import List
 
-from wizwalker.memory.memory_object import AddressedMemoryObject, PropertyClass
+from wizwalker.memory.memory_object import PropertyClass
 from .enums import SpellEffects, EffectTarget
 
 
@@ -144,5 +144,5 @@ class SpellEffect(PropertyClass):
         return effects
 
 
-class AddressedSpellEffect(AddressedMemoryObject, SpellEffect):
+class AddressedSpellEffect(SpellEffect):
     pass

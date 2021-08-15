@@ -1,6 +1,6 @@
 from typing import List
 
-from wizwalker.memory.memory_object import PropertyClass, AddressedMemoryObject
+from wizwalker.memory.memory_object import PropertyClass
 from .enums import ObjectType
 from .behavior_template import AddressedBehaviorTemplate
 
@@ -122,5 +122,5 @@ class WizGameObjectTemplate(PropertyClass):
     #     return await self.read_value_from_offset(528, "class SharedPointer<class LeashOffsetOverride>")
 
 
-class AddressedWizGameObjectTemplate(AddressedMemoryObject, WizGameObjectTemplate):
+class AddressedWizGameObjectTemplate(WizGameObjectTemplate):
     pass

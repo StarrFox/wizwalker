@@ -1,4 +1,4 @@
-from wizwalker.memory.memory_object import PropertyClass, AddressedMemoryObject
+from wizwalker.memory.memory_object import PropertyClass
 
 
 class ClientZone(PropertyClass):
@@ -40,7 +40,7 @@ class ClientZone(PropertyClass):
         await self.write_string_to_offset(88, zone_name)
 
 
-class AddressedClientZone(AddressedMemoryObject, ClientZone):
+class AddressedClientZone(ClientZone):
     """
     Dynamic client zone that can take an address
     """
