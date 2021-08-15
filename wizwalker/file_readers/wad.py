@@ -2,6 +2,7 @@ import asyncio
 import functools
 import struct
 import zlib
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Union
 from mmap import mmap, ACCESS_READ
@@ -9,22 +10,21 @@ from mmap import mmap, ACCESS_READ
 from wizwalker.utils import get_wiz_install, run_in_executor
 
 
+@dataclass
 class WadFileInfo:
-    __slots__ = ["name", "offset", "size", "zipped_size", "is_zip", "crc"]
-
-    def __init__(self, name, offset, size, zipped_size, is_zip, crc):
-        self.name = name
-        self.offset = offset
-        self.size = size
-        self.zipped_size = zipped_size
-        self.is_zip = is_zip
-        self.crc = crc
+    name: str
+    offset: int
+    size: int
+    zipped_size: int
+    is_zip: bool
+    crc: int
 
 
+# TODO: implement context manager (should it and .close be async?)
 class Wad:
     def __init__(self, path: Union[Path, str]):
-        self.name = path.with_suffix("").name
         self.file_path = Path(path)
+        self.name = self.file_path.stem
 
         self._file_map = {}
         self._file_pointer = None
@@ -82,11 +82,12 @@ class Wad:
 
     def close(self):
         self._file_pointer.close()
+        self._file_pointer = None
 
     async def _read(self, start: int, size: int) -> bytes:
         # fmt: off
         return self._mmap[start: start + size]
-    # fmt: on
+        # fmt: on
 
     def _refresh_journal(self):
         if self._refreshed_once:
@@ -169,7 +170,9 @@ class Wad:
         if not self._file_pointer:
             await self.open()
 
-        if not (target_file := self._file_map.get(name)):
+        try:
+            target_file = self._file_map[name]
+        except KeyError:
             raise ValueError(f"File {name} not found.")
 
         return target_file
@@ -181,14 +184,7 @@ class Wad:
         Args:
             path: path to the directory to unpack the wad
         """
-        if isinstance(path, str):
-            path = Path(path)
-
-        if not path.exists():
-            raise ValueError(f"{path} does not exist.")
-
-        if not path.is_dir():
-            raise ValueError(f"{path} is not a directory.")
+        path = Path(path)
 
         if not self._file_pointer:
             await self.open()
@@ -219,15 +215,14 @@ class Wad:
                     file_path.write_bytes(data)
 
     @classmethod
-    async def from_directory(self, path: Union[Path, str]):
+    async def from_directory(cls, path: Union[Path, str]):
         """
         Create a Wad object from a directory
 
         Args:
             path: Path to directory to archive
         """
-        if isinstance(path, str):
-            path = Path(path)
+        path = Path(path)
 
         if not path.exists():
             raise ValueError(f"{path} does not exist.")
