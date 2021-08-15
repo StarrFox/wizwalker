@@ -16,7 +16,7 @@ class WadFileInfo:
     offset: int
     size: int
     zipped_size: int
-    is_zip: int
+    is_zip: bool
     crc: int
 
 
