@@ -23,8 +23,8 @@ class WadFileInfo:
 # TODO: implement context manager (should it and .close be async?)
 class Wad:
     def __init__(self, path: Union[Path, str]):
-        self.name = path.stem
         self.file_path = Path(path)
+        self.name = self.file_path.stem
 
         self._file_map = {}
         self._file_pointer = None
