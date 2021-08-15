@@ -86,7 +86,7 @@ class Wad:
     async def _read(self, start: int, size: int) -> bytes:
         # fmt: off
         return self._mmap[start: start + size]
-        # fmt: on
+    # fmt: on
 
     def _refresh_journal(self):
         if self._refreshed_once:
@@ -119,7 +119,7 @@ class Wad:
             name: str = self._mmap[file_offset: file_offset + name_length].decode(
                 "utf-8"
             )
-            name.rstrip("\x00")
+            name = name.rstrip("\x00")
 
             # fmt: on
 
@@ -189,6 +189,9 @@ class Wad:
 
         if not path.is_dir():
             raise ValueError(f"{path} is not a directory.")
+
+        if not self._file_pointer:
+            await self.open()
 
         await run_in_executor(self._unarchive, path)
 
