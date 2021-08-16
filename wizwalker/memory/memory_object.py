@@ -47,7 +47,7 @@ class MemoryObject(MemoryReader):
         if string_end == 0:
             return ""
         elif string_end == -1:
-            raise WizWalkerMemoryError(
+            raise MemoryReadError(
                 f"Couldn't read string at {address}; no end byte."
             )
 
