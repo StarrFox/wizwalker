@@ -3,7 +3,6 @@ import sys
 from pathlib import Path
 import json
 
-import aiofiles
 import click
 from click_default_group import DefaultGroup
 from loguru import logger
@@ -193,7 +192,7 @@ def unarchive(input_wad, output_dir):
     input_wad automatically fills in the rest of the path so you only need the name; i.e "root"
     output_dir defaults to the current directory
     """
-    wad_file = Wad.from_game_data(input_wad)
+    wad = Wad.from_game_data(input_wad)
     path = Path(output_dir)
 
     if not path.exists():
@@ -202,30 +201,17 @@ def unarchive(input_wad, output_dir):
         else:
             exit(0)
 
-    async def _unarchive_wad():
-        # we don't use wad_file.unarchive so we can have this nice progress bar
-        with click.progressbar(
-            await wad_file.names(),
-            show_pos=True,
-            item_show_func=lambda i: i.split("/")[-1] if i else i,
-            show_eta=False,
-        ) as names:
-            for file_name in names:
-                dirs = file_name.split("/")
-                # not a base level file
-                if len(dirs) != 1:
-                    current = path
-                    for next_dir in dirs[:-1]:
-                        current = current / next_dir
-                        current.mkdir(exist_ok=True)
+    click.echo("Unarchiving...")
 
-                file_path = path / file_name
-                file_data = await wad_file.get_file(file_name)
+    import time
 
-                async with aiofiles.open(file_path, "wb") as fp:
-                    await fp.write(file_data)
+    start = time.perf_counter()
+    asyncio.run(wad.unarchive(path))
+    end = time.perf_counter()
 
-    asyncio.run(_unarchive_wad())
+    click.echo(
+        f"Unarchived {len(wad._file_map.keys())} files in {int(end - start)} seconds"
+    )
 
 
 @wad.command(short_help="Extract a single file from a wad")
@@ -245,11 +231,17 @@ def extract(input_wad, file_name):
         except ValueError:
             click.echo(f"No file named {file_name} found.")
         else:
+            if not file_data:
+                click.echo(
+                    f"{file_name} has not yet been patched by the game; must get the game to load it"
+                )
+                exit(0)
+
             relitive_file_name = file_name.split("/")[-1]
 
-            async with aiofiles.open(relitive_file_name, "wb+") as fp:
+            with open(relitive_file_name, "wb+") as fp:
                 click.echo("Writing...")
-                await fp.write(file_data)
+                fp.write(file_data)
 
     asyncio.run(_extract_file())
 

@@ -1,20 +1,4 @@
 [[package]]
-name = "aioconsole"
-version = "0.3.1"
-description = "Asynchronous console and interfaces for asyncio"
-category = "main"
-optional = false
-python-versions = ">=3.6"
-
-[[package]]
-name = "aiofiles"
-version = "0.7.0"
-description = "File support for asyncio."
-category = "main"
-optional = false
-python-versions = ">=3.6,<4.0"
-
-[[package]]
 name = "alabaster"
 version = "0.7.12"
 description = "A configurable sidebar-enabled Sphinx theme"
@@ -452,16 +436,9 @@ dev = ["pytest (>=4.6.2)", "black (>=19.3b0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "f340d23fc634d3a1196e4af134ddba7acdcf8a1c03205c25a9c48624254c6977"
+content-hash = "4f98c0b6defad201a7a5e94f6fc0b15172861c2b8499242f748a6e337d1f5f6d"
 
 [metadata.files]
-aioconsole = [
-    {file = "aioconsole-0.3.1.tar.gz", hash = "sha256:7c038bb40b7690bf5be6b17154830b7bff25e7be1c02d8420a346c3efbd5d8e5"},
-]
-aiofiles = [
-    {file = "aiofiles-0.7.0-py3-none-any.whl", hash = "sha256:c67a6823b5f23fcab0a2595a289cec7d8c863ffcb4322fb8cd6b90400aedfdbc"},
-    {file = "aiofiles-0.7.0.tar.gz", hash = "sha256:a1c4fc9b2ff81568c83e21392a82f344ea9d23da906e4f6a52662764545e19d4"},
-]
 alabaster = [
     {file = "alabaster-0.7.12-py2.py3-none-any.whl", hash = "sha256:446438bdcca0e05bd45ea2de1668c1d9b032e1a9154c2c259092d77031ddd359"},
     {file = "alabaster-0.7.12.tar.gz", hash = "sha256:a661d72d58e6ea8a57f7a86e37d86716863ee5e92788398526d58b26a4e4dc02"},

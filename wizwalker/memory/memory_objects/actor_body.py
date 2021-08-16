@@ -118,6 +118,25 @@ class ActorBody(PropertyClass):
         """
         await self.write_value_to_offset(112, scale, "float")
 
+    # Note: internal offset
+    async def model_update_scheduled(self) -> bool:
+        """
+        If this body should have their model resynced with it's position
+
+        Returns:
+            Boolean representing state
+        """
+        return await self.read_value_from_offset(136, "bool")
+
+    async def write_model_update_scheduled(self, state: bool):
+        """
+        Writes if this body should have their model resynced with it's position
+
+        Args:
+            state: The boolean to write
+        """
+        await self.write_value_to_offset(136, state, "bool")
+
 
 class CurrentActorBody(ActorBody):
     """

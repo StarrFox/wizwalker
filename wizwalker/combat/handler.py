@@ -121,7 +121,7 @@ class CombatHandler:
         """
 
         async def _pred(card):
-            return name.lower() == (await card.name()).lower()
+            return name.lower() == (await card.display_name()).lower()
 
         possible = await self.get_cards_with_predicate(_pred)
 

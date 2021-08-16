@@ -73,7 +73,6 @@ def parse_node_data(file_data: bytes) -> dict:
     return node_data
 
 
-# TODO: add new impl from testing/python/wiz/nav_parser_2
 # implemented from https://github.com/PeechezNCreem/navwiz/
 # this licence covers the below function
 # Boost Software License - Version 1.0 - August 17th, 2003
@@ -100,15 +99,24 @@ def parse_node_data(file_data: bytes) -> dict:
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 def parse_nav_data(file_data: bytes):
+    vertex_count_bytes = file_data[:2]
     file_data = file_data[2:]
 
-    vertex_count_bytes = file_data[:4]
-    file_data = file_data[4:]
+    vertex_max_bytes = file_data[:2]
+    file_data = file_data[2:]
 
-    vertex_count = struct.unpack("<i", vertex_count_bytes)[0]
+    # is always 0
+    unknown = file_data[:2]
+    file_data = file_data[2:]
+
+    vertex_count = struct.unpack("<h", vertex_count_bytes)[0]
+    vertex_max = struct.unpack("<h", vertex_max_bytes)[0]
 
     vertices = []
-    for idx in range(vertex_count):
+
+    idx = 0
+
+    while idx <= vertex_count:
         position_bytes = file_data[:12]
         file_data = file_data[12:]
 
@@ -121,9 +129,10 @@ def parse_nav_data(file_data: bytes):
         vertex_index = struct.unpack("<h", vertex_index_bytes)[0]
 
         if vertex_index != idx:
-            raise RuntimeError(
-                f"vertex index doesnt match expected: {idx} got: {vertex_index}"
-            )
+            vertices.pop()
+            vertex_count -= 1
+        else:
+            idx += 1
 
     edge_count_bytes = file_data[:4]
     file_data = file_data[4:]

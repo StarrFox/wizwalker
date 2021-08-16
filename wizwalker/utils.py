@@ -1,6 +1,7 @@
 import asyncio
 import ctypes
 import ctypes.wintypes
+import functools
 import math
 import subprocess
 
@@ -30,6 +31,21 @@ async def async_sorted(iterable, /, *, key=None, reverse=False):
     return [
         i[0] for i in sorted(evaluated.items(), key=lambda it: it[1], reverse=reverse)
     ]
+
+
+async def run_in_executor(func, *args, **kwargs):
+    """
+    Run a function within an executor
+
+    Args:
+        func: The function to run
+        args: Args to pass to the function
+        kwargs: Kwargs to pass to the function
+    """
+    loop = asyncio.get_event_loop()
+    function = functools.partial(func, *args, **kwargs)
+
+    return await loop.run_in_executor(None, function)
 
 
 class XYZ:
