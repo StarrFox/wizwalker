@@ -1,5 +1,4 @@
 import asyncio
-import functools
 import struct
 import zlib
 from dataclasses import dataclass
@@ -95,6 +94,7 @@ class Wad:
         return self._mmap[start: start + size]
     # fmt: on
 
+    # fmt: off
     def _refresh_journal(self):
         if self._refreshed_once:
             return
@@ -104,7 +104,6 @@ class Wad:
         # KIWAD id string
         file_offset = 5
 
-        # fmt: off
         version, file_num = struct.unpack(
             "<ll", self._mmap[file_offset: file_offset + 8]
         )
@@ -128,13 +127,12 @@ class Wad:
             )
             name = name.rstrip("\x00")
 
-            # fmt: on
-
             file_offset += name_length
 
             self._file_map[name] = WadFileInfo(
                 name, offset, size, zipped_size, is_zip, crc
             )
+    # fmt: on
 
     async def get_file(self, name: str) -> Optional[bytes]:
         """
@@ -165,6 +163,9 @@ class Wad:
             data = await run_in_executor(zlib.decompress, data)
 
         return data
+
+    async def write_file(self):
+        raise NotImplementedError()
 
     async def get_file_info(self, name: str) -> WadFileInfo:
         """
@@ -205,10 +206,10 @@ class Wad:
                     file_path.parent.mkdir(parents=True, exist_ok=True)
 
                     if file.is_zip:
-                        data = mm[file.offset: file.offset + file.zipped_size]
+                        data = mm[file.offset : file.offset + file.zipped_size]
 
                     else:
-                        data = mm[file.offset: file.offset + file.size]
+                        data = mm[file.offset : file.offset + file.size]
 
                     # unpatched file
                     if data[:4] == b"\x00\x00\x00\x00":
@@ -220,20 +221,49 @@ class Wad:
 
                     file_path.write_bytes(data)
 
+    async def archive(self):
+        raise NotImplementedError()
+
     @classmethod
-    async def from_directory(cls, path: Union[Path, str]):
+    async def from_directory(cls, path: Union[Path, str], wad_name: str):
         """
         Create a Wad object from a directory
 
         Args:
             path: Path to directory to archive
+            wad_name: Name of the wad
         """
         path = Path(path)
 
-        if not path.exists():
-            raise ValueError(f"{path} does not exist.")
-
         if not path.is_dir():
+            if not path.exists():
+                raise FileNotFoundError(path)
+
             raise ValueError(f"{path} is not a directory.")
+
+        # TODO: move to a different function when implemented
+        journal = {}
+        blocks = []
+        for file in path.glob("**/*"):  # probably safe from race condition
+            # sub_path = f"{file.relative_to(path)}\x00".encode("utf-8")
+            sub_path = file.relative_to(path)
+            crc = 0  # not used
+            is_zip = sub_path.suffix not in (
+                ".mp3",
+                ".ogg",
+            )  # this check is probably not complete
+            offset = 0  # impossible to get at this point
+            data = file.read_bytes()
+            size = len(data)
+            if is_zip:
+                data = zlib.compress(data)
+                zsize = len(data)
+            else:
+                zsize = -1
+
+            journal[sub_path] = WadFileInfo(
+                sub_path.name, offset, size, zsize, is_zip, crc
+            )
+            blocks.append(data)
 
         raise NotImplemented()
