@@ -1,6 +1,7 @@
 import asyncio
 import ctypes
 import ctypes.wintypes
+import functools
 import io
 import math
 import struct
@@ -9,6 +10,7 @@ import subprocess
 # noinspection PyCompatibility
 import winreg
 import zlib
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Iterable, List, Optional
 
@@ -28,30 +30,33 @@ async def async_sorted(iterable, /, *, key=None, reverse=False):
     if key is None:
         return sorted(iterable, reverse=reverse)
 
-    evaluated = {}
-
-    for item in iterable:
-        evaluated[item] = await key(item)
-
-    return [
-        i[0] for i in sorted(evaluated.items(), key=lambda it: it[1], reverse=reverse)
-    ]
+    key_item_pairs = [(await key(item), item) for item in iterable]
+    return [item for _, item in sorted(key_item_pairs, reverse=reverse)]
 
 
+async def run_in_executor(func, *args, **kwargs):
+    """
+    Run a function within an executor
+
+    Args:
+        func: The function to run
+        args: Args to pass to the function
+        kwargs: Kwargs to pass to the function
+    """
+    loop = asyncio.get_event_loop()
+    function = functools.partial(func, *args, **kwargs)
+
+    return await loop.run_in_executor(None, function)
+
+
+@dataclass
 class XYZ:
-    def __init__(self, x: float, y: float, z: float):
-        self.x = x
-        self.y = y
-        self.z = z
+    x: float
+    y: float
+    z: float
 
     def __sub__(self, other):
         return self.distance(other)
-
-    def __str__(self):
-        return f"<XYZ ({self.x}, {self.y}, {self.z})>"
-
-    def __repr__(self):
-        return str(self)
 
     def __iter__(self):
         return iter((self.x, self.y, self.z))
@@ -88,18 +93,12 @@ class XYZ:
         return self.yaw(other)
 
 
+@dataclass
 class Rectangle:
-    def __init__(self, x1: int, y1: int, x2: int, y2: int):
-        self.x1 = x1
-        self.y1 = y1
-        self.x2 = x2
-        self.y2 = y2
-
-    def __str__(self):
-        return f"<Rectangle ({self.x1}, {self.y1}, {self.x2}, {self.y2})>"
-
-    def __repr__(self):
-        return str(self)
+    x1: float
+    y1: float
+    x2: float
+    y2: float
 
     def __iter__(self):
         return iter((self.x1, self.x2, self.y1, self.y2))
@@ -115,21 +114,17 @@ class Rectangle:
         Returns:
             The scaled rectangle
         """
-        x1_sum = self.x1
-        y1_sum = self.y1
+        rects = [self, *parents]
 
-        for rect in parents:
-            x1_sum += rect.x1
-            y1_sum += rect.y1
+        x_factor = factor * sum(rect.x1 for rect in rects)
+        y_factor = factor * sum(rect.y1 for rect in rects)
 
-        converted = Rectangle(
-            int(x1_sum * factor),
-            int(y1_sum * factor),
-            int(((self.x2 - self.x1) * factor) + (x1_sum * factor)),
-            int(((self.y2 - self.y1) * factor) + (y1_sum * factor)),
+        return Rectangle(
+            int(x_factor),
+            int(y_factor),
+            int(x_factor + factor * (self.x2 - self.x1)),
+            int(y_factor + factor * (self.y2 - self.y1)),
         )
-
-        return converted
 
     def center(self):
         """
@@ -138,10 +133,10 @@ class Rectangle:
         Returns:
             The center point
         """
-        center_x = ((self.x2 - self.x1) // 2) + self.x1
-        center_y = ((self.y2 - self.y1) // 2) + self.y1
-
-        return center_x, center_y
+        return (
+            (self.x1 + self.x2) // 2,
+            (self.y1 + self.y2) // 2,
+        )
 
     def paint_on_screen(self, window_handle: int, *, rgb: tuple = (255, 0, 0)):
         """
@@ -152,28 +147,17 @@ class Rectangle:
             window_handle: Handle to the window to paint the rectangle on
         """
         paint_struct = PAINTSTRUCT()
-        # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdc
-        device_context = user32.GetDC(window_handle)
-        brush = gdi32.CreateSolidBrush(ctypes.wintypes.RGB(*rgb))
-
         user32.BeginPaint(window_handle, ctypes.byref(paint_struct))
 
-        # left, top = top left corner; right, bottom = bottom right corner
-        draw_rect = ctypes.wintypes.RECT()
-        draw_rect.left = self.x1
-        draw_rect.top = self.y1
-        draw_rect.right = self.x2
-        draw_rect.bottom = self.y2
+        device_context = user32.GetDC(window_handle)
+        gdi32.SetDCBrushColor(device_context, ctypes.wintypes.RGB(*rgb))
+        brush = gdi32.GetStockObject(18)
 
-        # https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-createrectrgnindirect
-        region = gdi32.CreateRectRgnIndirect(ctypes.byref(draw_rect))
-        # https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-fillrgn
-        gdi32.FillRgn(device_context, region, brush)
+        rect = ctypes.wintypes.RECT(self.x1, self.y1, self.x2, self.y2)
+        user32.FillRect(device_context, ctypes.byref(rect), brush)
 
         user32.EndPaint(window_handle, ctypes.byref(paint_struct))
         user32.ReleaseDC(window_handle, device_context)
-        gdi32.DeleteObject(brush)
-        gdi32.DeleteObject(region)
 
 
 class PAINTSTRUCT(ctypes.Structure):
