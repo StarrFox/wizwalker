@@ -468,6 +468,10 @@ def set_foreground_window_handle(window_handle: int) -> bool:
 
     Returns:
         False if the operation failed True otherwise
+
+    Notes:
+        These conditions must be true to set the foreground
+        https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setforegroundwindow#remarks
     """
     return user32.SetForegroundWindow(window_handle) != 0
 
