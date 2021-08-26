@@ -98,7 +98,9 @@ class Rectangle:
     def __iter__(self):
         return iter((self.x1, self.x2, self.y1, self.y2))
 
-    def scale_to_client(self, parents: Iterable["Rectangle"], factor: float) -> "Rectangle":
+    def scale_to_client(
+        self, parents: Iterable["Rectangle"], factor: float
+    ) -> "Rectangle":
         """
         Scale this rectangle base on parents and a scale factor
 
@@ -589,7 +591,9 @@ def get_window_handles_by_predicate(predicate: Callable) -> list:
         return 1
 
     enumwindows_func_type = ctypes.WINFUNCTYPE(
-        ctypes.c_bool, ctypes.c_int, ctypes.POINTER(ctypes.c_int),
+        ctypes.c_bool,
+        ctypes.c_int,
+        ctypes.POINTER(ctypes.c_int),
     )
 
     callback = enumwindows_func_type(callback)

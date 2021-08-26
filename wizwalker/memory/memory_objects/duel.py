@@ -11,7 +11,9 @@ class Duel(PropertyClass):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 
-    async def participant_list(self,) -> List[DynamicCombatParticipant]:
+    async def participant_list(
+        self,
+    ) -> List[DynamicCombatParticipant]:
         pointers = await self.read_shared_vector(80)
 
         participants = []
