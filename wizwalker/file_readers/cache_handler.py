@@ -1,6 +1,6 @@
 import json
 from collections import defaultdict
-from functools import cached_property
+from functools import cached_property, partial
 from pathlib import Path
 from typing import List, Optional, Union
 
@@ -17,7 +17,7 @@ class CacheHandler:
         self._template_ids = None
         self._node_cache = None
 
-        self._root_wad = Wad.from_game_data("root")
+        self._root_wad = Wad.from_game_data("Root")
 
     @cached_property
     def install_location(self) -> Path:
@@ -47,12 +47,13 @@ class CacheHandler:
         for file_name in files:
             file_info = await wad_file.get_file_info(file_name)
 
-            if self._wad_cache[wad_file.name][file_name] != file_info.size:
+            file_version = dict(crc=file_info.crc, size=file_info.size)
+            if self._wad_cache[wad_file.name][file_name].values() != file_version:
                 logger.info(
-                    f"{file_name} has updated. old: {self._wad_cache[wad_file.name][file_name]} new: {file_info.size}"
+                    f"{file_name} has updated. old: {self._wad_cache[wad_file.name][file_name]} new: {file_version}"
                 )
                 res.append(file_name)
-                self._wad_cache[wad_file.name][file_name] = file_info.size
+                self._wad_cache[wad_file.name][file_name] = file_version
 
             else:
                 logger.info(f"{file_name} has not updated from {file_info.size}")
@@ -89,11 +90,11 @@ class CacheHandler:
 
         if template_file:
             file_data = await root_wad.get_file("TemplateManifest.xml")
-            pharsed_template_ids = parse_template_id_file(file_data)
+            parsed_template_ids = parse_template_id_file(file_data)
             del file_data
 
             with open(self.cache_dir / "template_ids.json", "w+") as fp:
-                json_data = json.dumps(pharsed_template_ids)
+                json_data = json.dumps(parsed_template_ids)
                 await utils.run_in_executor(fp.write, json_data)
 
     async def get_template_ids(self) -> dict:
@@ -208,23 +209,24 @@ class CacheHandler:
             a dict with the current cache data
         """
         try:
-            with open(self.cache_dir / "wad_cache.data") as fp:
+            with open(self.cache_dir / "wad_cache.json") as fp:
                 data = await utils.run_in_executor(fp.read)
 
         # file not found
         except OSError:
             data = None
 
-        wad_cache = defaultdict(lambda: defaultdict(lambda: -1))
+        wad_cache_factory = partial(defaultdict, partial(defaultdict, dict))
+        wad_cache = defaultdict(wad_cache_factory)
 
         if data:
             wad_cache_data = json.loads(data)
 
             # this is so the default dict inside the default dict isn't replaced
             # by .update
-            for k, v in wad_cache_data.items():
-                for k1, v1 in v.items():
-                    wad_cache[k][k1] = v1
+            for wad_name, wad_files in wad_cache_data.items():
+                for file_name, (crc, size) in wad_files.items():
+                    wad_cache[wad_name][file_name].update(crc=crc, size=size)
 
         return wad_cache
 
@@ -232,7 +234,7 @@ class CacheHandler:
         """
         Writes wad cache to disk
         """
-        with open(self.cache_dir / "wad_cache.data", "w+") as fp:
+        with open(self.cache_dir / "wad_cache.json", "w+") as fp:
             json_data = json.dumps(self._wad_cache)
             await utils.run_in_executor(fp.write, json_data)
 
