@@ -70,12 +70,18 @@ def dump():
 
 
 @dump.command()
-@click.argument("file_path", type=click.Path(dir_okay=False), default="dumped.txt")
+@click.argument("file_path", type=click.Path(dir_okay=False), default=b"\x01")
 def text(file_path):
     """
     Dump classes to file
     """
-    file_path = Path(file_path)
+    # we use b"\x01" because we can't use None
+    if file_path == b"\x01":
+        wiz_reversion = utils.get_wiz_version()
+        file_path = Path(wiz_reversion.replace(".", "_")).with_suffix(".txt")
+
+    else:
+        file_path = Path(file_path)
 
     if file_path.exists():
         if not click.confirm(f"{file_path} already exists overwrite it?", default=True):
@@ -98,13 +104,19 @@ def text(file_path):
 
 
 @dump.command(name="json")
-@click.argument("file_path", type=click.Path(dir_okay=False), default="dumped.json")
+@click.argument("file_path", type=click.Path(dir_okay=False), default=b"\x01")
 @click.option("--indent", default=4, show_default=True, help="indent in json")
 def json_(file_path, indent):
     """
     Dump classes to file
     """
-    file_path = Path(file_path)
+    # we use b"\x01" because we can't use None
+    if file_path == b"\x01":
+        wiz_reversion = utils.get_wiz_version()
+        file_path = Path(wiz_reversion.replace(".", "_")).with_suffix(".json")
+
+    else:
+        file_path = Path(file_path)
 
     if file_path.exists():
         if not click.confirm(f"{file_path} already exists overwrite it?", default=True):
@@ -121,7 +133,7 @@ def json_(file_path, indent):
             client = clients[0]
             type_tree = await get_type_tree(client)
             dumper = JsonTypeDumper(type_tree)
-            await dumper.dump(file_path)
+            await dumper.dump(file_path, indent=indent)
 
     asyncio.run(_dump())
 
@@ -151,6 +163,7 @@ def compare(file_one, file_two):
         old_props = loaded_file_one[class_name]["properties"]
         new_props = loaded_file_two[class_name]["properties"]
 
+        # TODO: this should be a dict not a list
         for prop in new_props.keys():
             if prop not in old_props.keys():
                 click.echo(f"New property {prop} on {class_name}")

@@ -25,7 +25,7 @@ class Window(PropertyClass):
 
     async def debug_paint(self):
         rect = await self.scale_to_client()
-        rect.paint_on_screen(self.hook_handler.client.window_handle)
+        rect.paint_on_screen(self.memory_reader.client.window_handle)
 
     async def scale_to_client(self):
         rect = await self.window_rectangle()
@@ -34,7 +34,7 @@ class Window(PropertyClass):
         for parent in await self.get_parents():
             parent_rects.append(await parent.window_rectangle())
 
-        ui_scale = await self.hook_handler.client.render_context.ui_scale()
+        ui_scale = await self.memory_reader.client.render_context.ui_scale()
 
         return rect.scale_to_client(parent_rects, ui_scale)
 
@@ -121,7 +121,7 @@ class Window(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedGraphicalSpell(self.hook_handler, addr)
+        return AddressedGraphicalSpell(self.memory_reader, addr)
 
     # see maybe_graphical_spell
     # note: not defined
@@ -149,7 +149,7 @@ class Window(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedCombatParticipant(self.hook_handler, addr)
+        return AddressedCombatParticipant(self.memory_reader, addr)
 
     # See maybe_graphical_spell
     async def maybe_text(self, *, check_type: bool = False) -> str:
@@ -182,7 +182,7 @@ class Window(PropertyClass):
                 logger.error("0 address while reading children")
 
             else:
-                windows.append(AddressedWindow(self.hook_handler, addr))
+                windows.append(AddressedWindow(self.memory_reader, addr))
 
         return windows
 
@@ -192,7 +192,7 @@ class Window(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedWindow(self.hook_handler, addr)
+        return AddressedWindow(self.memory_reader, addr)
 
     async def style(self) -> WindowStyle:
         style = await self.read_value_from_offset(152, "long")
@@ -282,4 +282,4 @@ class AddressedWindow(Window):
 
 class CurrentRootWindow(Window):
     async def read_base_address(self) -> int:
-        return await self.hook_handler.read_current_root_window_base()
+        return await self.memory_reader.read_current_root_window_base()

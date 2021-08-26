@@ -39,7 +39,7 @@ class SpellTemplate(PropertyClass):
     async def effects(self) -> List[AddressedSpellEffect]:
         effects = []
         for addr in await self.read_shared_vector(240):
-            effects.append(AddressedSpellEffect(self.hook_handler, addr))
+            effects.append(AddressedSpellEffect(self.memory_reader, addr))
 
         return effects
 

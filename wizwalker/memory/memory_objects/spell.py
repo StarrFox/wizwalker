@@ -30,7 +30,7 @@ class Spell(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedSpellTemplate(self.hook_handler, addr)
+        return AddressedSpellTemplate(self.memory_reader, addr)
 
     # write spell_template
 
@@ -79,7 +79,7 @@ class Spell(PropertyClass):
     async def spell_effects(self) -> List[AddressedSpellEffect]:
         effects = []
         for addr in await self.read_shared_vector(88):
-            effects.append(AddressedSpellEffect(self.hook_handler, addr))
+            effects.append(AddressedSpellEffect(self.memory_reader, addr))
 
         return effects
 
@@ -198,7 +198,7 @@ class Hand(PropertyClass):
     async def spell_list(self) -> List[AddressedSpell]:
         spells = []
         for addr in await self.read_shared_linked_list(72):
-            spells.append(AddressedSpell(self.hook_handler, addr))
+            spells.append(AddressedSpell(self.memory_reader, addr))
 
         return spells
 

@@ -17,7 +17,7 @@ class HashNode(MemoryObject):
         if not addr:
             return None
 
-        return HashNode(self.hook_handler, addr)
+        return HashNode(self.memory_reader, addr)
 
     async def parent(self) -> Optional["HashNode"]:
         addr = await self.read_value_from_offset(0x8, "long long")
@@ -25,7 +25,7 @@ class HashNode(MemoryObject):
         if not addr:
             return None
 
-        return HashNode(self.hook_handler, addr)
+        return HashNode(self.memory_reader, addr)
 
     async def right(self) -> Optional["HashNode"]:
         addr = await self.read_value_from_offset(0x10, "long long")
@@ -33,7 +33,7 @@ class HashNode(MemoryObject):
         if not addr:
             return None
 
-        return HashNode(self.hook_handler, addr)
+        return HashNode(self.memory_reader, addr)
 
     async def is_leaf(self) -> bool:
         return await self.read_value_from_offset(0x19, "bool")
@@ -47,7 +47,7 @@ class HashNode(MemoryObject):
         if not addr:
             return None
 
-        return Type(self.hook_handler, addr)
+        return Type(self.memory_reader, addr)
 
 
 class Type(MemoryObject):
@@ -105,7 +105,7 @@ class Type(MemoryObject):
         if not addr:
             return None
 
-        return PropertyList(self.hook_handler, addr)
+        return PropertyList(self.memory_reader, addr)
 
 
 class PropertyList(MemoryObject):
@@ -121,7 +121,7 @@ class PropertyList(MemoryObject):
         if not addr:  # No base class
             return None
 
-        return PropertyList(self.hook_handler, addr)
+        return PropertyList(self.memory_reader, addr)
 
     async def type(self) -> Optional["Type"]:
         addr = await self.read_value_from_offset(0x20, "long long")
@@ -129,7 +129,7 @@ class PropertyList(MemoryObject):
         if not addr:
             return None
 
-        return Type(self.hook_handler, addr)
+        return Type(self.memory_reader, addr)
 
     async def pointer_version(self) -> Optional["Type"]:
         addr = await self.read_value_from_offset(0x30, "long long")
@@ -137,13 +137,13 @@ class PropertyList(MemoryObject):
         if not addr:
             return None
 
-        return Type(self.hook_handler, addr)
+        return Type(self.memory_reader, addr)
 
     async def properties(self) -> list["Property"]:
         res = []
 
         for addr in await self.read_shared_vector_from_offset(0x58):
-            res.append(Property(self.hook_handler, addr))
+            res.append(Property(self.memory_reader, addr))
 
         return res
 
@@ -162,7 +162,7 @@ class Property(MemoryObject):
         if not addr:
             return None
 
-        return PropertyList(self.hook_handler, addr)
+        return PropertyList(self.memory_reader, addr)
 
     async def container(self) -> Optional["Container"]:
         addr = await self.read_value_from_offset(0x40, "long long")
@@ -170,7 +170,7 @@ class Property(MemoryObject):
         if not addr:
             return None
 
-        return Container(self.hook_handler, addr)
+        return Container(self.memory_reader, addr)
 
     async def index(self) -> int:
         return await self.read_value_from_offset(0x50, "int")
@@ -198,7 +198,7 @@ class Property(MemoryObject):
         if not addr:
             return None
 
-        return Type(self.hook_handler, addr)
+        return Type(self.memory_reader, addr)
 
     async def flags(self) -> int:
         return await self.read_value_from_offset(0x80, "int")

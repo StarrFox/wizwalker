@@ -144,4 +144,4 @@ class CurrentActorBody(ActorBody):
     """
 
     async def read_base_address(self) -> int:
-        return await self.hook_handler.read_current_player_base()
+        return await self.memory_reader.read_current_player_base()

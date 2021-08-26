@@ -250,7 +250,7 @@ class CombatParticipant(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedHand(self.hook_handler, addr)
+        return AddressedHand(self.memory_reader, addr)
 
     async def saved_hand(self) -> Optional[AddressedHand]:
         addr = await self.read_value_from_offset(264, "long long")
@@ -258,7 +258,7 @@ class CombatParticipant(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedHand(self.hook_handler, addr)
+        return AddressedHand(self.memory_reader, addr)
 
     async def play_deck(self) -> Optional[AddressedPlayDeck]:
         addr = await self.read_value_from_offset(272, "long long")
@@ -266,7 +266,7 @@ class CombatParticipant(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedPlayDeck(self.hook_handler, addr)
+        return AddressedPlayDeck(self.memory_reader, addr)
 
     async def saved_play_deck(self) -> Optional[AddressedPlayDeck]:
         addr = await self.read_value_from_offset(280, "long long")
@@ -274,7 +274,7 @@ class CombatParticipant(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedPlayDeck(self.hook_handler, addr)
+        return AddressedPlayDeck(self.memory_reader, addr)
 
     async def saved_game_stats(self) -> Optional[AddressedGameStats]:
         addr = await self.read_value_from_offset(288, "long long")
@@ -282,7 +282,7 @@ class CombatParticipant(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedGameStats(self.hook_handler, addr)
+        return AddressedGameStats(self.memory_reader, addr)
 
     async def saved_primary_magic_school_id(self) -> int:
         return await self.read_value_from_offset(304, "int")
@@ -298,7 +298,7 @@ class CombatParticipant(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedGameStats(self.hook_handler, addr)
+        return AddressedGameStats(self.memory_reader, addr)
 
     # TODO: figure out what color is
     # async def color(self) -> class Color:
@@ -352,21 +352,21 @@ class CombatParticipant(PropertyClass):
     async def hanging_effects(self) -> List[AddressedSpellEffect]:
         hanging_effects = []
         for addr in await self.read_linked_list(408):
-            hanging_effects.append(AddressedSpellEffect(self.hook_handler, addr))
+            hanging_effects.append(AddressedSpellEffect(self.memory_reader, addr))
 
         return hanging_effects
 
     async def public_hanging_effects(self) -> List[AddressedSpellEffect]:
         hanging_effects = []
         for addr in await self.read_linked_list(424):
-            hanging_effects.append(AddressedSpellEffect(self.hook_handler, addr))
+            hanging_effects.append(AddressedSpellEffect(self.memory_reader, addr))
 
         return hanging_effects
 
     async def aura_effects(self) -> List[AddressedSpellEffect]:
         aura_effects = []
         for addr in await self.read_linked_list(440):
-            aura_effects.append(AddressedSpellEffect(self.hook_handler, addr))
+            aura_effects.append(AddressedSpellEffect(self.memory_reader, addr))
 
         return aura_effects
 
@@ -377,7 +377,7 @@ class CombatParticipant(PropertyClass):
     async def shadow_spell_effects(self) -> List[AddressedSpellEffect]:
         shadow_spell_effects = []
         for addr in await self.read_linked_list(472):
-            shadow_spell_effects.append(AddressedSpellEffect(self.hook_handler, addr))
+            shadow_spell_effects.append(AddressedSpellEffect(self.memory_reader, addr))
 
         return shadow_spell_effects
 
@@ -385,7 +385,7 @@ class CombatParticipant(PropertyClass):
         death_activated_effects = []
         for addr in await self.read_shared_linked_list(504):
             death_activated_effects.append(
-                AddressedSpellEffect(self.hook_handler, addr)
+                AddressedSpellEffect(self.memory_reader, addr)
             )
 
         return death_activated_effects
@@ -394,7 +394,7 @@ class CombatParticipant(PropertyClass):
     async def delay_cast_effects(self) -> List[AddressedSpellEffect]:
         delay_cast_effects = []
         for addr in await self.read_linked_list(520):
-            delay_cast_effects.append(AddressedSpellEffect(self.hook_handler, addr))
+            delay_cast_effects.append(AddressedSpellEffect(self.memory_reader, addr))
 
         return delay_cast_effects
 
@@ -472,7 +472,7 @@ class CombatParticipant(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedSpellEffect(self.hook_handler, addr)
+        return AddressedSpellEffect(self.memory_reader, addr)
 
     async def rounds_since_shadow_pip(self) -> int:
         return await self.read_value_from_offset(768, "int")
@@ -486,7 +486,7 @@ class CombatParticipant(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedSpellEffect(self.hook_handler, addr)
+        return AddressedSpellEffect(self.memory_reader, addr)
 
     async def confused(self) -> int:
         return await self.read_value_from_offset(188, "int")

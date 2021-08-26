@@ -10,14 +10,14 @@ class PlayDeck(PropertyClass):
     async def deck_to_save(self) -> List["AddressedPlaySpellData"]:
         spell_data = []
         for addr in await self.read_shared_vector(72):
-            spell_data.append(AddressedPlaySpellData(self.hook_handler, addr))
+            spell_data.append(AddressedPlaySpellData(self.memory_reader, addr))
 
         return spell_data
 
     async def graveyard_to_save(self) -> List["AddressedPlaySpellData"]:
         spell_data = []
         for addr in await self.read_shared_vector(96):
-            spell_data.append(AddressedPlaySpellData(self.hook_handler, addr))
+            spell_data.append(AddressedPlaySpellData(self.memory_reader, addr))
 
         return spell_data
 

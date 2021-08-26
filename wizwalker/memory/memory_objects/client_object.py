@@ -27,7 +27,7 @@ class ClientObject(PropertyClass):
         behaviors = []
         for addr in await self.read_shared_vector(224):
             if addr != 0:
-                behaviors.append(AddressedBehaviorInstance(self.hook_handler, addr))
+                behaviors.append(AddressedBehaviorInstance(self.memory_reader, addr))
 
         return behaviors
 
@@ -55,7 +55,7 @@ class ClientObject(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedClientObject(self.hook_handler, addr)
+        return AddressedClientObject(self.memory_reader, addr)
 
     # note: not defined
     async def children(self) -> List["AddressedClientObject"]:
@@ -67,7 +67,7 @@ class ClientObject(PropertyClass):
         """
         children = []
         for addr in await self.read_shared_vector(384):
-            children.append(AddressedClientObject(self.hook_handler, addr))
+            children.append(AddressedClientObject(self.memory_reader, addr))
 
         return children
 
@@ -84,7 +84,7 @@ class ClientObject(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedClientZone(self.hook_handler, addr)
+        return AddressedClientZone(self.memory_reader, addr)
 
     # note: not defined
     async def object_template(self) -> Optional[AddressedWizGameObjectTemplate]:
@@ -99,7 +99,7 @@ class ClientObject(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedWizGameObjectTemplate(self.hook_handler, addr)
+        return AddressedWizGameObjectTemplate(self.memory_reader, addr)
 
     async def global_id_full(self) -> int:
         """
@@ -303,7 +303,7 @@ class ClientObject(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedGameStats(self.hook_handler, addr)
+        return AddressedGameStats(self.memory_reader, addr)
 
 
 class CurrentClientObject(ClientObject):
@@ -312,7 +312,7 @@ class CurrentClientObject(ClientObject):
     """
 
     async def read_base_address(self) -> int:
-        return await self.hook_handler.read_current_client_base()
+        return await self.memory_reader.read_current_client_base()
 
 
 class AddressedClientObject(ClientObject):

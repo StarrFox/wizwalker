@@ -20,12 +20,12 @@ class CombatResolver(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedSpellEffect(self.hook_handler, addr)
+        return AddressedSpellEffect(self.memory_reader, addr)
 
     async def battlefield_effects(self) -> List[AddressedSpellEffect]:
         effects = []
         for addr in await self.read_shared_vector(136):
-            effects.append(AddressedSpellEffect(self.hook_handler, addr))
+            effects.append(AddressedSpellEffect(self.memory_reader, addr))
 
         return effects
 

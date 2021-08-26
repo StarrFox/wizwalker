@@ -245,6 +245,12 @@ def get_wiz_install() -> Path:
         raise Exception("Wizard101 install not found.")
 
 
+def get_wiz_version() -> str:
+    game_path = get_wiz_install()
+    revision = game_path / "Bin" / "revision.dat"
+    return revision.read_text().strip("\n")
+
+
 def start_instance():
     """
     Starts a wizard101 instance
@@ -615,7 +621,9 @@ def get_window_handles_by_predicate(predicate: Callable) -> list:
         return 1
 
     enumwindows_func_type = ctypes.WINFUNCTYPE(
-        ctypes.c_bool, ctypes.c_int, ctypes.POINTER(ctypes.c_int),
+        ctypes.c_bool,
+        ctypes.c_int,
+        ctypes.POINTER(ctypes.c_int),
     )
 
     callback = enumwindows_func_type(callback)

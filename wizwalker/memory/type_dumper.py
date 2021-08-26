@@ -161,4 +161,9 @@ class JsonTypeDumper(TypeDumper):
         return res
 
     async def format_class(self, name: str, base_names: list[str], properties: dict):
-        return {name: {"bases": base_names, "properties": properties}}
+        props = {}
+
+        for prop in properties:
+            props.update(prop)
+
+        return {name: {"bases": base_names, "properties": props}}

@@ -1,5 +1,3 @@
-import asyncio
-import functools
 import re
 import struct
 from enum import Enum
@@ -93,7 +91,10 @@ class MemoryReader:
         return next_region, found
 
     def _scan_all(
-        self, handle: int, pattern: bytes, return_multiple: bool = False,
+        self,
+        handle: int,
+        pattern: bytes,
+        return_multiple: bool = False,
     ):
         next_region = 0
 
@@ -146,12 +147,18 @@ class MemoryReader:
         if module:
             module = pymem.process.module_from_name(self.process.process_handle, module)
             found_addresses = await utils.run_in_executor(
-                self._scan_entire_module, self.process.process_handle, module, pattern,
+                self._scan_entire_module,
+                self.process.process_handle,
+                module,
+                pattern,
             )
 
         else:
             found_addresses = await utils.run_in_executor(
-                self._scan_all, self.process.process_handle, pattern, return_multiple,
+                self._scan_all,
+                self.process.process_handle,
+                pattern,
+                return_multiple,
             )
 
         logger.debug(
@@ -269,7 +276,10 @@ class MemoryReader:
         logger.debug(f"Writing bytes {value} to address {address} with size {size}")
         try:
             await utils.run_in_executor(
-                self.process.write_bytes, address, value, size,
+                self.process.write_bytes,
+                address,
+                value,
+                size,
             )
         except pymem.exception.MemoryWriteError:
             # see read_bytes
@@ -321,9 +331,7 @@ class MemoryReader:
         if string_end == 0:
             return ""
         elif string_end == -1:
-            raise WizWalkerMemoryError(
-                f"Couldn't read string at {address}; no end byte."
-            )
+            raise MemoryReadError(f"Couldn't read string at {address}; no end byte.")
 
         # Don't include the 0 byte
         string_bytes = search_bytes[:string_end]
@@ -377,6 +385,14 @@ class MemoryReader:
             await self.write_bytes(address, encoded + b"\x00")
 
         await self.write_typed(string_len_addr, string_len, "int")
+
+    async def read_wchar(self, address: int):
+        data = await self.read_bytes(address, 2)
+        return data.decode("utf-16")
+
+    async def write_wchar(self, address: int, wchar: str):
+        data = wchar.encode("utf-16")
+        await self.write_bytes(address, data)
 
     async def read_string(
         self, address: int, encoding: str = "utf-8", *, sso_size: int = 16
@@ -500,6 +516,8 @@ class MemoryReader:
 
         return pointers
 
+    # note: dynamic actually has no meaning here
+    # is just a pointer to
     async def read_dynamic_vector(
         self, address: int, data_type: str = "long long"
     ) -> list[int]:

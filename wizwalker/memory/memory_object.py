@@ -11,8 +11,8 @@ class MemoryObject(MemoryReader):
     Class for any represented classes from memory
     """
 
-    def __init__(self, hook_handler: MemoryReader, base_address: int = None):
-        super().__init__(hook_handler.process)
+    def __init__(self, memory_reader: MemoryReader, base_address: int = None):
+        super().__init__(memory_reader.process)
 
         # sanity check
         if base_address == 0:
@@ -20,7 +20,7 @@ class MemoryObject(MemoryReader):
                 f"Dynamic object {type(self).__name__} passed 0 base address."
             )
 
-        self.hook_handler = hook_handler
+        self.memory_reader = memory_reader
         self.base_address = base_address
 
     def __eq__(self, other):
@@ -45,7 +45,7 @@ class MemoryObject(MemoryReader):
             if addr == base_address:
                 continue
 
-            other_instances.append(type(self)(self.hook_handler, addr))
+            other_instances.append(type(self)(self.memory_reader, addr))
 
         return other_instances
 
@@ -55,7 +55,8 @@ class MemoryObject(MemoryReader):
         if self.base_address:
             return self.base_address
 
-        raise NotImplementedError()
+        else:
+            raise TypeError("Nonetype base_address")
 
     async def read_value_from_offset(self, offset: int, data_type: str) -> Any:
         base_address = await self.read_base_address()
@@ -72,10 +73,18 @@ class MemoryObject(MemoryReader):
         return await self.read_wide_string(base_address + offset, encoding)
 
     async def write_wide_string_to_offset(
-        self, offset: int, string: str, encoding: str = "utf-8"
+        self, offset: int, string: str, encoding: str = "utf-16"
     ):
         base_address = await self.read_base_address()
         await self.write_string(base_address + offset, string, encoding)
+
+    async def read_wchar_from_offset(self, offset: int) -> str:
+        base_address = await self.read_base_address()
+        return await self.read_wchar(base_address + offset)
+
+    async def write_wchar_to_offset(self, offset: int, wchar: str):
+        base_address = await self.read_base_address()
+        await self.write_wchar(base_address + offset, wchar)
 
     async def read_string_from_offset(
         self, offset: int, encoding: str = "utf-8", *, sso_size: int = 16

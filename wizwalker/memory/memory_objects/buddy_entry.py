@@ -20,7 +20,7 @@ class BuddyEntry(PropertyClass):
         """
         Name of this buddy
         """
-        cache_handler = self.hook_handler.client.cache_handler
+        cache_handler = self.memory_reader.client.cache_handler
         langcode_prefix = "CharacterNames_"
 
         gender, first, middle, last = await self.name_tuple()

@@ -11,12 +11,14 @@ class Duel(PropertyClass):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 
-    async def participant_list(self,) -> List[AddressedCombatParticipant]:
+    async def participant_list(
+        self,
+    ) -> List[AddressedCombatParticipant]:
         pointers = await self.read_shared_vector(80)
 
         participants = []
         for addr in pointers:
-            participants.append(AddressedCombatParticipant(self.hook_handler, addr))
+            participants.append(AddressedCombatParticipant(self.memory_reader, addr))
 
         return participants
 
@@ -68,7 +70,7 @@ class Duel(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedCombatResolver(self.hook_handler, addr)
+        return AddressedCombatResolver(self.memory_reader, addr)
 
     async def pvp(self) -> bool:
         return await self.read_value_from_offset(144, "bool")
@@ -260,4 +262,4 @@ class Duel(PropertyClass):
 
 class CurrentDuel(Duel):
     async def read_base_address(self) -> int:
-        return await self.hook_handler.read_current_duel_base()
+        return await self.memory_reader.read_current_duel_base()

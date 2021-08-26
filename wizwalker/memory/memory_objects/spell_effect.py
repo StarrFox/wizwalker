@@ -139,7 +139,7 @@ class SpellEffect(PropertyClass):
         effects = []
 
         for addr in await self.read_shared_linked_list(224):
-            effects.append(AddressedSpellEffect(self.hook_handler, addr))
+            effects.append(AddressedSpellEffect(self.memory_reader, addr))
 
         return effects
 

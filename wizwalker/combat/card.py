@@ -12,7 +12,9 @@ class CombatCard:
     """
 
     def __init__(
-        self, combat_handler, spell_window: "wizwalker.memory.window.AddressedWindow",
+        self,
+        combat_handler,
+        spell_window: "wizwalker.memory.window.AddressedWindow",
     ):
         self.combat_handler = combat_handler
 

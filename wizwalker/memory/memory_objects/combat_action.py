@@ -21,7 +21,7 @@ class CombatAction(MemoryObject):
         if addr == 0:
             return None
 
-        return AddressedSpell(self.hook_handler, addr)
+        return AddressedSpell(self.memory_reader, addr)
 
     async def spell_hits(self) -> int:
         return await self.read_value_from_offset(112, "char")

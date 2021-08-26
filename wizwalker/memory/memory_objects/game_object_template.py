@@ -15,7 +15,7 @@ class WizGameObjectTemplate(PropertyClass):
         for addr in await self.read_dynamic_vector(72):
             # they sometimes set these to 0
             if addr != 0:
-                behaviors.append(AddressedBehaviorTemplate(self.hook_handler, addr))
+                behaviors.append(AddressedBehaviorTemplate(self.memory_reader, addr))
 
         return behaviors
 
