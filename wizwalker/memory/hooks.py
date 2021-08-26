@@ -1,5 +1,5 @@
 import struct
-from typing import Any, Tuple
+from typing import Any
 
 from loguru import logger
 
@@ -70,7 +70,7 @@ class MemoryHook(MemoryHandler):
         """
         raise NotImplemented()
 
-    async def get_pattern(self) -> Tuple[bytes, str]:
+    async def get_pattern(self) -> tuple[bytes, str]:
         raise NotImplemented()
 
     async def hook(self):

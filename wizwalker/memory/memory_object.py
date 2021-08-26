@@ -1,6 +1,6 @@
 import struct
 from enum import Enum
-from typing import Any, List, Type
+from typing import Any
 
 import wizwalker
 from wizwalker.constants import type_format_dict
@@ -206,7 +206,7 @@ class MemoryObject(MemoryHandler):
     async def write_xyz(self, offset: int, xyz: XYZ):
         await self.write_vector(offset, (xyz.x, xyz.y, xyz.z))
 
-    async def read_enum(self, offset, enum: Type[Enum]):
+    async def read_enum(self, offset, enum: type[Enum]):
         value = await self.read_value_from_offset(offset, "int")
         try:
             res = enum(value)
@@ -220,7 +220,7 @@ class MemoryObject(MemoryHandler):
 
     async def read_shared_vector(
         self, offset: int, *, max_size: int = 1000
-    ) -> List[int]:
+    ) -> list[int]:
         start_address = await self.read_value_from_offset(offset, "long long")
         end_address = await self.read_value_from_offset(offset + 8, "long long")
         size = end_address - start_address
@@ -259,7 +259,7 @@ class MemoryObject(MemoryHandler):
 
     async def read_dynamic_vector(
         self, offset: int, data_type: str = "long long"
-    ) -> List[int]:
+    ) -> list[int]:
         """
         Read a vector that changes in size
         """
@@ -283,7 +283,7 @@ class MemoryObject(MemoryHandler):
 
         return pointers
 
-    async def read_shared_linked_list(self, offset: int) -> List[int]:
+    async def read_shared_linked_list(self, offset: int) -> list[int]:
         list_addr = await self.read_value_from_offset(offset, "long long")
 
         addrs = []
@@ -297,7 +297,7 @@ class MemoryObject(MemoryHandler):
 
         return addrs
 
-    async def read_linked_list(self, offset: int) -> List[int]:
+    async def read_linked_list(self, offset: int) -> list[int]:
         list_addr = await self.read_value_from_offset(offset, "long long")
 
         addrs = []

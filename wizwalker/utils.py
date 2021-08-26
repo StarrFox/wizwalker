@@ -7,9 +7,10 @@ import subprocess
 
 # noinspection PyCompatibility
 import winreg
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Iterable, List, Optional
+from typing import Any, Optional
 
 import appdirs
 
@@ -97,12 +98,12 @@ class Rectangle:
     def __iter__(self):
         return iter((self.x1, self.x2, self.y1, self.y2))
 
-    def scale_to_client(self, parents: List["Rectangle"], factor: float) -> "Rectangle":
+    def scale_to_client(self, parents: Iterable["Rectangle"], factor: float) -> "Rectangle":
         """
         Scale this rectangle base on parents and a scale factor
 
         Args:
-            parents: List of other rectangles
+            parents: Iterable of rectangles
             factor: Factor to scale by
 
         Returns:

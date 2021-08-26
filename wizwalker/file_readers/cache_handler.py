@@ -1,8 +1,9 @@
 import json
 from collections import defaultdict
+from collections.abc import Iterable
 from functools import cached_property, partial
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Optional
 
 from loguru import logger
 
@@ -46,8 +47,8 @@ class CacheHandler:
         return self.cache_dir / "wad_cache.json"
 
     async def _check_updated(
-        self, wad_file: Wad, files: Union[List[str], str]
-    ) -> List[str]:
+        self, wad_file: Wad, files: Iterable[str] | str
+    ) -> list[str]:
         if isinstance(files, str):
             files = [files]
 
@@ -73,8 +74,8 @@ class CacheHandler:
         return res
 
     async def check_updated(
-        self, wad_file: Wad, files: Union[List[str], str]
-    ) -> List[str]:
+        self, wad_file: Wad, files: Iterable[str] | str
+    ) -> list[str]:
         """
         Checks if some wad files have changed since we last accessed them
 
@@ -142,7 +143,7 @@ class CacheHandler:
         return {lang_name: lang_mapping}
 
     @staticmethod
-    async def _get_all_lang_file_names(root_wad: Wad) -> List[str]:
+    async def _get_all_lang_file_names(root_wad: Wad) -> list[str]:
         lang_file_names = []
 
         for file_name in await root_wad.names():

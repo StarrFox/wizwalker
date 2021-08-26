@@ -2,7 +2,8 @@ import argparse
 import asyncio
 import re
 import sys
-from typing import Coroutine, Union
+from collections.abc import Coroutine
+from typing import Optional
 
 import cmd2
 import terminaltables
@@ -27,7 +28,7 @@ class WizWalkerConsole(cmd2.Cmd):
     def write(message: str):
         print(message)
 
-    def run_coro(self, coro: Coroutine, timeout: Union[int, None] = 10):
+    def run_coro(self, coro: Coroutine, timeout: Optional[int] = 10):
         try:
             result = asyncio.run(asyncio.wait_for(coro, timeout))
         except asyncio.TimeoutError:
