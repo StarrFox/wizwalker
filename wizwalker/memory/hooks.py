@@ -1,9 +1,9 @@
 import struct
-from typing import Any, Tuple
+from typing import Any
 
 from loguru import logger
 
-from .memory_reader import MemoryReader
+from .memory_handler import MemoryHandler
 
 
 def pack_to_int_or_longlong(num: int) -> bytes:
@@ -13,7 +13,7 @@ def pack_to_int_or_longlong(num: int) -> bytes:
         return struct.pack("<q", num)
 
 
-class MemoryHook(MemoryReader):
+class MemoryHook(MemoryHandler):
     def __init__(self, hook_handler):
         super().__init__(hook_handler.process)
         self.hook_handler = hook_handler
@@ -70,7 +70,7 @@ class MemoryHook(MemoryReader):
         """
         raise NotImplemented()
 
-    async def get_pattern(self) -> Tuple[bytes, str]:
+    async def get_pattern(self) -> tuple[bytes, str]:
         raise NotImplemented()
 
     async def hook(self):

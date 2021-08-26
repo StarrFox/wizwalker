@@ -2,11 +2,11 @@ import re
 import struct
 from collections import defaultdict
 
-from .memory_reader import MemoryReader
+from .memory_handler import MemoryHandler
 from wizwalker import MemoryReadError, PatternFailed
 
 
-class InstanceFinder(MemoryReader):
+class InstanceFinder(MemoryHandler):
     GET_TYPE_NAME_PATTERN = (
         rb"\x48\x89\x5C\x24\x10\x57\x48\x83\xEC\x20\xE8....\xBF\x02\x00\x00"
         rb"\x00\x48\x8B\xD8\x8B\xC7\xF0\x0F\xB1\x3D....\x74\x54\x48\x89\x74"

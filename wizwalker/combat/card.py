@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Optional, Union
+from typing import Optional
 
 import wizwalker
 
@@ -21,7 +21,7 @@ class CombatCard:
     # TODO: add checks before casting
     async def cast(
         self,
-        target: Union["CombatCard", "wizwalker.combat.CombatMember", None],
+        target: Optional["CombatCard" | "wizwalker.combat.CombatMember"],
         *,
         sleep_time: Optional[float] = 1.0,
         debug_paint: bool = False,
@@ -124,7 +124,7 @@ class CombatCard:
 
     async def spell_effects(
         self,
-    ) -> List["wizwalker.memory.memory_objects.spell_effect.DynamicSpellEffect"]:
+    ) -> list["wizwalker.memory.memory_objects.spell_effect.DynamicSpellEffect"]:
         spell = await self.wait_for_graphical_spell()
         return await spell.spell_effects()
 

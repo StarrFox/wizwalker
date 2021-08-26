@@ -1,9 +1,9 @@
 import asyncio
 import ctypes
 import ctypes.wintypes
+from collections.abc import Callable
 from contextlib import suppress
 from enum import IntFlag
-from typing import Callable
 
 from wizwalker.constants import Keycode, user32
 

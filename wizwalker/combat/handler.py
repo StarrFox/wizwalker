@@ -1,5 +1,5 @@
 import asyncio
-from typing import Callable, List
+from collections.abc import Callable
 
 from .member import CombatMember
 from .card import CombatCard
@@ -85,7 +85,7 @@ class CombatHandler:
         self._spell_check_boxes = spell_checkbox_windows
         return self._spell_check_boxes
 
-    async def get_cards(self) -> List[CombatCard]:
+    async def get_cards(self) -> list[CombatCard]:
         """
         List of active CombatCards
         """
@@ -100,7 +100,7 @@ class CombatHandler:
 
         return cards
 
-    async def get_cards_with_predicate(self, pred: Callable) -> List[CombatCard]:
+    async def get_cards_with_predicate(self, pred: Callable) -> list[CombatCard]:
         """
         Return cards that match a predicate
 
@@ -201,7 +201,7 @@ class CombatHandler:
 
         return await utils.async_sorted(damage_enchants, key=_sort_by_damage)
 
-    async def get_members(self) -> List[CombatMember]:
+    async def get_members(self) -> list[CombatMember]:
         """
         List of active CombatMembers
         """
@@ -216,7 +216,7 @@ class CombatHandler:
 
         return members
 
-    async def get_members_with_predicate(self, pred: Callable) -> List[CombatMember]:
+    async def get_members_with_predicate(self, pred: Callable) -> list[CombatMember]:
         """
         Return members that match a predicate
 
@@ -243,7 +243,7 @@ class CombatHandler:
 
         raise ValueError("Couldn't find client's CombatMember")
 
-    async def get_all_monster_members(self) -> List[CombatMember]:
+    async def get_all_monster_members(self) -> list[CombatMember]:
         """
         Get all members who are monsters
         """
@@ -256,7 +256,7 @@ class CombatHandler:
 
         return monsters
 
-    async def get_all_player_members(self) -> List[CombatMember]:
+    async def get_all_player_members(self) -> list[CombatMember]:
         """
         Get all members who are players
         """

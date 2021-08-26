@@ -3,7 +3,7 @@ import struct
 import zlib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 from mmap import mmap, ACCESS_READ
 
 from wizwalker.utils import get_wiz_install, run_in_executor
@@ -20,7 +20,7 @@ class WadFileInfo:
 
 
 class Wad:
-    def __init__(self, path: Union[Path, str]):
+    def __init__(self, path: Path | str):
         self.file_path = Path(path)
         self.name = self.file_path.stem
 
@@ -122,9 +122,7 @@ class Wad:
             # 21 is the size of all the data we just read
             file_offset += 21
 
-            name: str = self._mmap[file_offset: file_offset + name_length].decode(
-                "utf-8"
-            )
+            name = self._mmap[file_offset: file_offset + name_length].decode()
             name = name.rstrip("\x00")
 
             file_offset += name_length
@@ -184,7 +182,7 @@ class Wad:
 
         return target_file
 
-    async def unarchive(self, path: Union[Path, str]):
+    async def unarchive(self, path: Path | str):
         """
         Unarchive a wad file into a directory
 
@@ -225,7 +223,7 @@ class Wad:
         raise NotImplementedError()
 
     @classmethod
-    async def from_directory(cls, path: Union[Path, str], wad_name: str):
+    async def from_directory(cls, path: Path | str, wad_name: str):
         """
         Create a Wad object from a directory
 

@@ -7,7 +7,7 @@ from wizwalker import XYZ
 
 def parse_template_id_file(file_data: bytes) -> dict:
     """
-    Pharse a template id file's data
+    Parse a template id file's data
     """
     if not file_data.startswith(b"BINd"):
         raise RuntimeError("No BINd id string")
