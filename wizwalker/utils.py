@@ -487,16 +487,15 @@ def get_logs_folder() -> Path:
     return log_dir
 
 
-def get_system_directory(max_size: int = 100) -> Path:
+def get_system_directory() -> Path:
     """
     Get the windows system directory
-
-    Args:
-        max_size: Max size of the string
     """
     # https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getsystemdirectoryw
-    buffer = ctypes.create_unicode_buffer(max_size)
-    kernel32.GetSystemDirectoryW(buffer, max_size)
+    length = kernel32.GetSystemDirectoryW(None, 0)
+
+    buffer = ctypes.create_unicode_buffer(length)
+    kernel32.GetSystemDirectoryW(buffer, length)
 
     return Path(buffer.value)
 
@@ -524,20 +523,22 @@ def set_foreground_window(window_handle: int) -> bool:
     return user32.SetForegroundWindow(window_handle) != 0
 
 
-def get_window_title(handle: int, max_size: int = 100) -> str:
+def get_window_handle_title(handle: int) -> str:
     """
     Get a window's title bar text
 
     Args:
         handle: Handle to the window
-        max_size: Max size to read
 
     Returns:
         The window title
     """
+    # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowtextlengthw
+    length = user32.GetWindowTextLengthW(handle)
+
     # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowtextw
-    window_title = ctypes.create_unicode_buffer(max_size)
-    user32.GetWindowTextW(handle, ctypes.byref(window_title), max_size)
+    window_title = ctypes.create_unicode_buffer(length)
+    user32.GetWindowTextW(handle, ctypes.byref(window_title), length + 1)
     return window_title.value
 
 
