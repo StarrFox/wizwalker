@@ -1,5 +1,5 @@
 import asyncio
-from typing import Optional
+from typing import Optional, Union
 
 import wizwalker
 
@@ -23,7 +23,7 @@ class CombatCard:
     # TODO: add checks before casting
     async def cast(
         self,
-        target: Optional["CombatCard" | "wizwalker.combat.CombatMember"],
+        target: Optional[Union["CombatCard", "wizwalker.combat.CombatMember"]],
         *,
         sleep_time: Optional[float] = 1.0,
         debug_paint: bool = False,
