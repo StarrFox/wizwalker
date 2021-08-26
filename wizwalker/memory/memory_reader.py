@@ -51,7 +51,7 @@ class MemoryReader:
 
         for exp in pe.DIRECTORY_ENTRY_EXPORT.symbols:
             if exp.name:
-                symbols[exp.name.decode("utf-8")] = exp.address
+                symbols[exp.name.decode()] = exp.address
 
             else:
                 symbols[f"Ordinal {exp.ordinal}"] = exp.address

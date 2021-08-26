@@ -122,9 +122,7 @@ class Wad:
             # 21 is the size of all the data we just read
             file_offset += 21
 
-            name: str = self._mmap[file_offset: file_offset + name_length].decode(
-                "utf-8"
-            )
+            name = self._mmap[file_offset: file_offset + name_length].decode()
             name = name.rstrip("\x00")
 
             file_offset += name_length
