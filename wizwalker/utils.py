@@ -589,7 +589,9 @@ def get_windows_from_predicate(predicate: Callable) -> list:
         return 1
 
     enumwindows_func_type = ctypes.WINFUNCTYPE(
-        ctypes.c_bool, ctypes.c_int, ctypes.POINTER(ctypes.c_int),
+        ctypes.c_bool,
+        ctypes.c_int,
+        ctypes.POINTER(ctypes.c_int),
     )
 
     callback = enumwindows_func_type(callback)

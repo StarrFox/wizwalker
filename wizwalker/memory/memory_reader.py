@@ -101,7 +101,10 @@ class MemoryReader:
         return next_region, found
 
     def _scan_all(
-        self, handle: int, pattern: bytes, return_multiple: bool = False,
+        self,
+        handle: int,
+        pattern: bytes,
+        return_multiple: bool = False,
     ):
         next_region = 0
 
@@ -154,12 +157,18 @@ class MemoryReader:
         if module:
             module = pymem.process.module_from_name(self.process.process_handle, module)
             found_addresses = await self.run_in_executor(
-                self._scan_entire_module, self.process.process_handle, module, pattern,
+                self._scan_entire_module,
+                self.process.process_handle,
+                module,
+                pattern,
             )
 
         else:
             found_addresses = await self.run_in_executor(
-                self._scan_all, self.process.process_handle, pattern, return_multiple,
+                self._scan_all,
+                self.process.process_handle,
+                pattern,
+                return_multiple,
             )
 
         logger.debug(
@@ -277,7 +286,10 @@ class MemoryReader:
         logger.debug(f"Writing bytes {value} to address {address} with size {size}")
         try:
             await self.run_in_executor(
-                self.process.write_bytes, address, value, size,
+                self.process.write_bytes,
+                address,
+                value,
+                size,
             )
         except pymem.exception.MemoryWriteError:
             # see read_bytes

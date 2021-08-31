@@ -47,9 +47,7 @@ class MemoryObject(MemoryReader):
         if string_end == 0:
             return ""
         elif string_end == -1:
-            raise MemoryReadError(
-                f"Couldn't read string at {address}; no end byte."
-            )
+            raise MemoryReadError(f"Couldn't read string at {address}; no end byte.")
 
         # Don't include the 0 byte
         string_bytes = search_bytes[:string_end]

@@ -1,4 +1,5 @@
 import asyncio
+import struct
 from functools import cached_property
 from typing import Callable, List, Optional
 
@@ -62,6 +63,9 @@ class Client:
         self._template_ids = None
         self._is_loading_addr = None
         self._world_view_window = None
+        self._is_infinite_patched = False
+        # (addr, bytes)
+        self._infinite_patch_og_info = None
 
     def __repr__(self):
         return f"<Client {self.window_handle=} {self.process_id=}>"
@@ -205,6 +209,11 @@ class Client:
         # if the client isn't running there isn't anything to unhook
         if not self.is_running():
             return
+
+        if self._is_infinite_patched:
+            await self.hook_handler.write_bytes(
+                self._infinite_patch_og_info[0], self._infinite_patch_og_info[1]
+            )
 
         await self.hook_handler.close()
 
@@ -389,6 +398,8 @@ class Client:
         Keyword Args:
             move_after: If the client should rotate some to update the player model position
         """
+        await self.patch_infinite_loading()
+
         await self.body.write_position(xyz)
 
         if move_after:
@@ -396,3 +407,32 @@ class Client:
 
         if yaw is not None:
             await self.body.write_yaw(yaw)
+
+    async def patch_infinite_loading(self):
+        """
+        Patches infinite loading
+        """
+        if self._is_infinite_patched:
+            return
+
+        je_addr = await self.hook_handler.pattern_scan(
+            rb"\x0F\x84....\xFF\x15\xFC\x81\xFE\x00\x89\x05\xD2\x55\xC9\x01\xBA....\x48\x8D\x4D\xD7",
+            module="WizardGraphicalClient.exe",
+        )
+
+        self._infinite_patch_og_info = (
+            je_addr,
+            await self.hook_handler.read_bytes(je_addr, 6),
+        )
+
+        jmp_offset = await self.hook_handler.read_typed(je_addr + 2, "unsigned int")
+
+        # account for instruction size diff
+        jmp_offset += 1
+
+        # jmp offset + no op since original instruction is 6 long
+        await self.hook_handler.write_bytes(
+            je_addr, b"\xE9" + struct.pack("<I", jmp_offset) + b"\x90"
+        )
+
+        self._is_infinite_patched = True

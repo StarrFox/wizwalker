@@ -67,7 +67,11 @@ class _GlobalHotkeyMessageLoop:
             # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-peekmessagew
             message = ctypes.wintypes.MSG()
             is_message = user32.PeekMessageW(
-                ctypes.byref(message), None, 0x311, 0x314, 1,
+                ctypes.byref(message),
+                None,
+                0x311,
+                0x314,
+                1,
             )
 
             if is_message:
@@ -223,7 +227,11 @@ class Listener:
             # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-peekmessagew
             message = ctypes.wintypes.MSG()
             is_message = user32.PeekMessageW(
-                ctypes.byref(message), None, 0x311, 0x314, 1,
+                ctypes.byref(message),
+                None,
+                0x311,
+                0x314,
+                1,
             )
 
             if is_message:
