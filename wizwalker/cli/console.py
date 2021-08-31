@@ -140,7 +140,7 @@ class WizWalkerConsole(Monitor):
             ]
             for attr in hook_handler_attrs:
                 table_data.append(
-                    [attr, self.run_coro(getattr(client.hook_handler, attr)())]
+                    [attr, hex(self.run_coro(getattr(client.hook_handler, attr)()))]
                 )
 
             table = terminaltables.AsciiTable(table_data, f"client-{idx}")
