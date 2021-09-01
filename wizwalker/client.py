@@ -1,4 +1,5 @@
 import asyncio
+import struct
 from collections.abc import Callable
 from functools import cached_property
 from typing import Optional
