@@ -145,8 +145,8 @@ class CombatMember:
         """
         The amount of health this member has
         """
-        stats = await self.get_stats()
-        return await stats.current_hitpoints()
+        part = await self.get_participant()
+        return await part.player_health()
 
     async def max_health(self) -> int:
         """
