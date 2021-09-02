@@ -9,6 +9,10 @@ from mmap import mmap, ACCESS_READ
 from wizwalker.utils import get_wiz_install, run_in_executor
 
 
+def calculate_wad_crc(data) -> int:
+    return zlib.crc32(data)
+
+
 @dataclass
 class WadFileInfo:
     name: str
@@ -28,6 +32,8 @@ class Wad:
         self._file_pointer = None
         self._mmap = None
         self._read_lock = asyncio.Lock()
+
+        self._data_blocks = None
 
         self._refreshed_once = False
 
@@ -222,6 +228,9 @@ class Wad:
     async def archive(self):
         raise NotImplementedError()
 
+    def _archive(self):
+        pass
+
     @classmethod
     async def from_directory(cls, path: Path | str, wad_name: str):
         """
@@ -245,7 +254,6 @@ class Wad:
         for file in path.glob("**/*"):  # probably safe from race condition
             # sub_path = f"{file.relative_to(path)}\x00".encode("utf-8")
             sub_path = file.relative_to(path)
-            crc = 0  # not used
             is_zip = sub_path.suffix not in (
                 ".mp3",
                 ".ogg",
@@ -259,9 +267,139 @@ class Wad:
             else:
                 zsize = -1
 
+            crc = calculate_wad_crc(data)
+
             journal[sub_path] = WadFileInfo(
                 sub_path.name, offset, size, zsize, is_zip, crc
             )
+
             blocks.append(data)
 
+        wad = cls(path)
+
         raise NotImplemented()
+
+
+def _debug_create_wad(
+    path: Path | str,
+    output_path: Path | str,
+    *,
+    overwrite: bool = False,
+    calculate_crcs: bool = True,
+):
+    path = Path(path)
+    output_path = Path(output_path)
+
+    # TODO: remove this debug import
+    import time
+
+    if not path.is_dir():
+        if not path.exists():
+            raise FileNotFoundError(path)
+
+        raise ValueError(f"{path} is not a directory.")
+
+    if not overwrite and output_path.exists():
+        raise FileExistsError(f"{output_path} already exists.")
+
+    journal = {}
+    blocks = []
+
+    # KIWAD + version + file_num + version 2 0x01
+    journal_size = 14
+    file_num = 0
+
+    # TODO remove this
+    debug_crc_total_time = 0
+    for file in path.glob("**/*"):  # probably safe from race condition
+        if not file.is_file():
+            continue
+
+        # sub_path = f"{file.relative_to(path)}\x00".encode("utf-8")
+        sub_path = file.relative_to(path)
+        # is_zip = sub_path.suffix not in (
+        #     # ".mp3",
+        #     ".ogg",
+        # )  # this check is probably not complete
+
+        is_zip = True
+        offset = 0  # impossible to get at this point
+        data = file.read_bytes()
+
+        if calculate_crcs:
+            start = time.perf_counter()
+            crc = calculate_wad_crc(data)
+            end = time.perf_counter()
+
+            total_time = end - start
+            debug_crc_total_time += total_time
+
+            print(
+                f"crc time = {total_time} seconds; total = {debug_crc_total_time}, {crc=} {crc.bit_length()=}"
+            )
+
+            assert crc.bit_length() <= 32
+
+        else:
+            crc = 0
+
+        size = len(data)
+        if is_zip:
+            compressed_data = zlib.compress(data)
+
+            # they still write the zipped size for optimized files
+            zsize = len(compressed_data)
+
+            # they optimize in these cases
+            if zsize >= len(data):
+                is_zip = False
+
+            else:
+                data = compressed_data
+        else:
+            zsize = -1
+
+        journal[sub_path] = WadFileInfo(sub_path.name, offset, size, zsize, is_zip, crc)
+
+        blocks.append(data)
+
+        print(f"Added {sub_path} to journal")
+
+        # size of info + size of name + null terminator
+        journal_size += 21 + len(str(sub_path)) + 1
+        file_num += 1
+
+    with open(output_path, "wb+") as fp:
+        fp.write(b"KIWAD")
+
+        fp.write(struct.pack("<ll", 2, file_num))
+
+        # version 2 thing
+        fp.write(b"\x01")
+
+        current_offset = journal_size
+
+        for name, info in journal.items():
+            print(f"Writing {name} with info {info}")
+            fp.write(
+                struct.pack(
+                    "<lll?Ll",
+                    current_offset,
+                    info.size,
+                    info.zipped_size,
+                    info.is_zip,
+                    info.crc,
+                    len(str(name)) + 1,
+                )
+            )
+            # only / paths are allowed
+            fp.write(str(name).replace("\\", "/").encode() + b"\x00")
+
+            if info.is_zip:
+                current_offset += info.zipped_size
+
+            else:
+                current_offset += info.size
+
+        for data in blocks:
+            fp.write(data)
