@@ -58,7 +58,7 @@ class CacheHandler:
         res = []
 
         for file_name in files:
-            file_info = await wad_file.get_file_info(file_name)
+            file_info = await wad_file.get_info(file_name)
 
             file_version = dict(crc=file_info.crc, size=file_info.size)
             if self._wad_cache[wad_file.name][file_name].values() != file_version:
@@ -93,16 +93,14 @@ class CacheHandler:
         """
         Caches various file data
         """
-        root_wad = Wad.from_game_data("Root")
-
         logger.info("Caching template if needed")
-        await self._cache_template(root_wad)
+        await self._cache_template(self._root_wad)
 
     async def _cache_template(self, root_wad):
         template_file = await self.check_updated(root_wad, "TemplateManifest.xml")
 
         if template_file:
-            file_data = await root_wad.get_file("TemplateManifest.xml")
+            file_data = await root_wad.read("TemplateManifest.xml")
             parsed_template_ids = parse_template_id_file(file_data)
             del file_data
 
@@ -146,14 +144,14 @@ class CacheHandler:
     async def _get_all_lang_file_names(root_wad: Wad) -> list[str]:
         lang_file_names = []
 
-        for file_name in await root_wad.names():
+        for file_name in await root_wad.name_list():
             if file_name.startswith("Locale/English/"):
                 lang_file_names.append(file_name)
 
         return lang_file_names
 
     async def _read_lang_file(self, root_wad: Wad, lang_file: str):
-        file_data = await root_wad.get_file(lang_file)
+        file_data = await root_wad.read(lang_file)
 
         if not file_data:
             raise ValueError(f"{lang_file} has not yet been loaded")
@@ -165,6 +163,7 @@ class CacheHandler:
     async def _cache_lang_file(self, root_wad: Wad, lang_file: str):
         if not await self.check_updated(root_wad, lang_file):
             return
+
         parsed_lang = await self._read_lang_file(root_wad, lang_file)
         if parsed_lang is None:
             return

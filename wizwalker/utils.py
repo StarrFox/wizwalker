@@ -184,10 +184,10 @@ _OVERRIDE_PATH = None
 
 def override_wiz_install_location(path: str):
     """
-    Override the path returned by get_wiz_install
+    Override the source_path returned by get_wiz_install
 
     Args:
-        path: The path to override with
+        path: The source_path to override with
     """
     # hacking old behavior so I dont have to actually fix the issue
     global _OVERRIDE_PATH

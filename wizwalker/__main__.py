@@ -213,7 +213,7 @@ def unarchive(input_wad, output_dir):
     """
     Unarchive a wad into a directory
 
-    input_wad automatically fills in the rest of the path so you only need the name; i.e "root"
+    input_wad automatically fills in the rest of the source_path so you only need the name; i.e "root"
     output_dir defaults to the current directory
     """
     maybe_path = Path(input_wad)
@@ -239,11 +239,11 @@ def unarchive(input_wad, output_dir):
     import time
 
     start = time.perf_counter()
-    asyncio.run(wad_.unarchive(path))
+    asyncio.run(wad_.extract_all(path))
     end = time.perf_counter()
 
     click.echo(
-        f"Unarchived {len(wad_._file_map.keys())} files in {int(end - start)} seconds"
+        f"Unarchived {len(await wad_.info_list())} files in {int(end - start)} seconds"
     )
 
 
@@ -254,7 +254,7 @@ def extract(input_wad, file_name):
     """
     Extract a single file from a wad
 
-    input_wad automatically fills in the rest of the path so you only need the name; i.e "root"
+    input_wad automatically fills in the rest of the source_path so you only need the name; i.e "root"
     """
     maybe_path = Path(input_wad)
 
@@ -268,7 +268,7 @@ def extract(input_wad, file_name):
 
     async def _extract_file():
         try:
-            file_data = await wad_.get_file(file_name)
+            file_data = await wad_.read(file_name)
         except ValueError:
             click.echo(f"No file named {file_name} found.")
         else:
