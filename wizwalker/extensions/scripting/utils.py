@@ -1,5 +1,5 @@
-import asyncio
 import re
+import time
 from contextlib import suppress
 
 from wizwalker.memory.memory_objects.enums import WindowFlags
@@ -14,27 +14,23 @@ _friend_list_entry = re.compile(
 )
 
 
-async def paint_window_for(window, time: float = 2):
+def paint_window_for(window, seconds: float = 2):
     """
     Paint a window for a number of seconds
 
     Args:
         window: The window to paint
-        time: How long to paint the window
+        seconds: How long to paint the window
     """
-
-    async def _paint_task():
-        with suppress(asyncio.CancelledError):
-            while True:
-                await window.debug_paint()
-
-    paint_task = asyncio.create_task(_paint_task())
-    await asyncio.sleep(time)
-    paint_task.cancel()
+    start_time = time.perf_counter()
+    while True:
+        window.debug_paint()
+        if time.perf_counter() - start_time >= seconds:
+            break
 
 
-async def _maybe_get_named_window(parent, name: str):
-    possible = await parent.get_windows_with_name(name)
+def _maybe_get_named_window(parent, name: str):
+    possible = parent.get_windows_with_name(name)
 
     if not possible:
         raise ValueError(f"No child window named {name}")
@@ -45,30 +41,30 @@ async def _maybe_get_named_window(parent, name: str):
     return possible[0]
 
 
-async def _cycle_to_online_friends(client, friends_list):
-    list_label = await _maybe_get_named_window(friends_list, "lblFriendsList")
+def _cycle_to_online_friends(client, friends_list):
+    list_label = _maybe_get_named_window(friends_list, "lblFriendsList")
 
-    async def _get_text():
-        current_text = await list_label.maybe_text()
+    def _get_text():
+        current_text = list_label.maybe_text()
 
         if current_text is None:
             raise Exception("Friend's list has no label")
 
         return current_text.replace("<center>", "").replace("</center>", "")
 
-    right_button = await _maybe_get_named_window(friends_list, "btnListTypeRight")
+    right_button = _maybe_get_named_window(friends_list, "btnListTypeRight")
 
-    while (current_page := await _get_text()) != "Online Friends":
-        await client.mouse_handler.click_window(right_button)
-        await maybe_wait_for_value_with_timeout(
+    while (current_page := _get_text()) != "Online Friends":
+        client.mouse_handler.click_window(right_button)
+        maybe_wait_for_value_with_timeout(
             _get_text, value=current_page, inverse_value=True, timeout=5
         )
 
 
-async def _cycle_friends_list(
+def _cycle_friends_list(
     client, right_button, friends_list, icon, icon_list, name, current_page
 ):
-    list_text = await friends_list.maybe_text()
+    list_text = friends_list.maybe_text()
 
     match = None
     idx = 0
@@ -105,14 +101,14 @@ async def _cycle_friends_list(
 
         if target_page != current_page:
             for _ in range(target_page - current_page):
-                await client.mouse_handler.click_window(right_button)
+                client.mouse_handler.click_window(right_button)
 
     return match, idx
 
 
-async def _click_on_friend(client, friends_list, friend_index):
-    scaled_rect = await friends_list.scale_to_client()
-    ui_scale = await client.render_context.ui_scale()
+def _click_on_friend(client, friends_list, friend_index):
+    scaled_rect = friends_list.scale_to_client()
+    ui_scale = client.render_context.ui_scale()
 
     # 12 % 10 = 2 * 30 = 60 * ui_scale
     scaled_friend_name_y = ((friend_index % 10) * 30) * ui_scale
@@ -122,34 +118,34 @@ async def _click_on_friend(client, friends_list, friend_index):
     # 15 is half the size of each entry's click area
     click_y = int(scaled_rect.y1 + scaled_friend_name_y + (15 * ui_scale))
 
-    await client.mouse_handler.click(click_x, click_y)
-    await asyncio.sleep(1)
+    client.mouse_handler.click(click_x, click_y)
+    time.sleep(1)
 
 
-async def _teleport_to_friend(client, character_window):
-    teleport_button = await _maybe_get_named_window(character_window, "btnGoToFriend")
-    await client.mouse_handler.click_window(teleport_button)
+def _teleport_to_friend(client, character_window):
+    teleport_button = _maybe_get_named_window(character_window, "btnGoToFriend")
+    client.mouse_handler.click_window(teleport_button)
     # wait for confirmation window
-    await asyncio.sleep(1)
+    time.sleep(1)
 
-    confirmation_window = await _maybe_get_named_window(
+    confirmation_window = _maybe_get_named_window(
         client.root_window, "MessageBoxModalWindow"
     )
-    yes_button = await _maybe_get_named_window(confirmation_window, "centerButton")
+    yes_button = _maybe_get_named_window(confirmation_window, "centerButton")
 
-    close_button = await _maybe_get_named_window(character_window, "btnCharacterClose")
+    close_button = _maybe_get_named_window(character_window, "btnCharacterClose")
 
-    await client.mouse_handler.click_window(yes_button)
+    client.mouse_handler.click_window(yes_button)
     # we need to click the close button within the 1 second of the teleport animation
 
     # TODO: check for busy message error here -> race condition with needing to also click the close button
     #  could try forcing a zone wait since the busy condition will be handled here
 
-    await client.mouse_handler.click_window(close_button)
+    client.mouse_handler.click_window(close_button)
 
 
 # TODO: add error if friend is busy message pops up
-async def teleport_to_friend_from_list(
+def teleport_to_friend_from_list(
     client, *, icon_list: int = None, icon_index: int = None, name: str = None
 ):
     """
@@ -172,29 +168,29 @@ async def teleport_to_friend_from_list(
     if all(i is None for i in (icon_list, icon_index, name)):
         raise ValueError("Must specify icon_list and icon_index or name or all")
 
-    friends_window = await _maybe_get_named_window(
+    friends_window = _maybe_get_named_window(
         client.root_window, "NewFriendsListWindow"
     )
 
     # open friend's list if closed
-    if not await friends_window.is_visible():
-        friend_button = await _maybe_get_named_window(client.root_window, "btnFriends")
+    if not friends_window.is_visible():
+        friend_button = _maybe_get_named_window(client.root_window, "btnFriends")
 
-        await client.mouse_handler.click_window(friend_button)
+        client.mouse_handler.click_window(friend_button)
 
-    await _cycle_to_online_friends(client, friends_window)
+    _cycle_to_online_friends(client, friends_window)
 
-    friends_list_window = await _maybe_get_named_window(friends_window, "listFriends")
-    friends_list_text = await friends_list_window.maybe_text()
+    friends_list_window = _maybe_get_named_window(friends_window, "listFriends")
+    friends_list_text = friends_list_window.maybe_text()
 
     # no friends online
     if not friends_list_text:
         raise ValueError("No friends online")
 
-    right_button = await _maybe_get_named_window(friends_window, "btnArrowDown")
-    page_number = await _maybe_get_named_window(friends_window, "PageNumber")
+    right_button = _maybe_get_named_window(friends_window, "btnArrowDown")
+    page_number = _maybe_get_named_window(friends_window, "PageNumber")
 
-    page_number_text = await page_number.maybe_text()
+    page_number_text = page_number.maybe_text()
 
     current_page, _ = map(
         int,
@@ -204,7 +200,7 @@ async def teleport_to_friend_from_list(
         .split("/"),
     )
 
-    friend, friend_index = await _cycle_friends_list(
+    friend, friend_index = _cycle_friends_list(
         client,
         right_button,
         friends_list_window,
@@ -219,31 +215,31 @@ async def teleport_to_friend_from_list(
             f"Could not find friend with icon {icon_index} icon list {icon_list} and/or name {name}"
         )
 
-    await _click_on_friend(client, friends_list_window, friend_index)
+    _click_on_friend(client, friends_list_window, friend_index)
 
-    character_window = await _maybe_get_named_window(client.root_window, "wndCharacter")
-    await _teleport_to_friend(client, character_window)
+    character_window = _maybe_get_named_window(client.root_window, "wndCharacter")
+    _teleport_to_friend(client, character_window)
 
     # close friends window
-    await friends_window.write_flags(WindowFlags(2147483648))
+    friends_window.write_flags(WindowFlags(2147483648))
 
 
-async def get_window_from_path(root_window, name_path):
+def get_window_from_path(root_window, name_path):
     """
     Returns a window by following a list of window names, the last window is returned
     Returns False if any window in the source_path can't be found
     """
 
-    async def _recurse_follow_path(window, path):
+    def _recurse_follow_path(window, path):
         if len(path) == 0:
             return window
 
-        for child in await window.children():
-            if await child.name() == path[0]:
-                found_window = await _recurse_follow_path(child, path[1:])
+        for child in window.children():
+            if child.name() == path[0]:
+                found_window = _recurse_follow_path(child, path[1:])
                 if found_window:
                     return found_window
 
         return False
 
-    return await _recurse_follow_path(root_window, name_path)
+    return _recurse_follow_path(root_window, name_path)

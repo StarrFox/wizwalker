@@ -22,10 +22,9 @@ class NifMap:
 
     def _read_sized_string(self):
         length = struct.unpack("<I", self._bytes.read(4))[0]
-        value = self._bytes.read(length).decode("UTF-8")
+        value = self._bytes.read(length).decode()
         return value
 
-    # This is probably fast enough to not be async
     def _read_header(self):
         # Header string should be within the first 100 bytes
         tmp_find_bytes = self._bytes.read(100)

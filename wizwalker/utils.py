@@ -40,8 +40,8 @@ def wait_for_non_error(func, sleep_time: float = 0.5):
             time.sleep(sleep_time)
 
 
-async def maybe_wait_for_value_with_timeout(
-    coro,
+def maybe_wait_for_value_with_timeout(
+    func,
     sleep_time: float = 0.5,
     *,
     value: Any = None,
@@ -51,35 +51,32 @@ async def maybe_wait_for_value_with_timeout(
 ):
     possible_exception = None
 
-    async def _inner():
-        nonlocal possible_exception
+    start_time = time.perf_counter()
+    while True:
+        try:
+            res = func()
+            if value is not None and inverse_value and res != value:
+                return res
 
-        while True:
-            try:
-                res = await coro()
-                if value is not None and inverse_value and res != value:
-                    return res
+            elif value is not None and not inverse_value and res == value:
+                return res
 
-                elif value is not None and not inverse_value and res == value:
-                    return res
+            else:
+                return res
 
-                else:
-                    return res
+        except Exception as e:
+            if ignore_exceptions:
+                possible_exception = e
 
-            except Exception as e:
-                if ignore_exceptions:
-                    possible_exception = e
-                    await asyncio.sleep(sleep_time)
+            else:
+                raise e
 
-                else:
-                    raise e
+        if time.perf_counter() - start_time >= timeout:
+            raise ExceptionalTimeout(
+                f"Timed out while waiting for func {func.__name__}", possible_exception
+            )
 
-    try:
-        return asyncio.wait_for(_inner(), timeout)
-    except TimeoutError:
-        raise ExceptionalTimeout(
-            f"Timed out waiting for coro {coro.__name__}", possible_exception
-        )
+        time.sleep(sleep_time)
 
 
 @dataclass
