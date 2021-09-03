@@ -1,4 +1,5 @@
-import asyncio
+import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor
 from copy import copy
 from functools import cached_property
 from pathlib import Path
@@ -20,11 +21,11 @@ class ClientHandler:
         self._managed_handles = []
         self.clients = []
 
-    async def __aenter__(self):
+    def __enter__(self):
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.close()
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     @cached_property
     def install_location(self) -> Path:
@@ -92,33 +93,33 @@ class ClientHandler:
         """
         return utils.order_clients(self.clients)
 
-    async def activate_all_client_hooks(self, wait_for_ready: bool = True):
+    def activate_all_client_hooks(self, wait_for_ready: bool = True):
         """
         Activate hooks for all clients
         """
-        hook_tasks = []
+        with ThreadPoolExecutor() as executor:
+            futures = []
 
-        for client in self.clients:
-            hook_tasks.append(
-                asyncio.create_task(
-                    client.activate_hooks(wait_for_ready=wait_for_ready)
+            for client in self.clients:
+                futures.append(
+                    executor.submit(
+                        client.activate_hooks, wait_for_ready=wait_for_ready
+                    )
                 )
-            )
 
-        if wait_for_ready:
-            for task in hook_tasks:
-                await task
+            if wait_for_ready:
+                concurrent.futures.wait(futures)
 
-    async def activate_all_client_mouseless(self):
+    def activate_all_client_mouseless(self):
         """
         Activates mouseless hook for all clients
         """
         for client in self.clients:
-            await client.mouse_handler.activate_mouseless()
+            client.mouse_handler.activate_mouseless()
 
-    async def close(self):
+    def close(self):
         """
         Closes all clients
         """
         for client in self.clients:
-            await client.close()
+            client.close()

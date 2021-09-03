@@ -46,19 +46,19 @@ class CacheHandler:
     def wadcache_file(self) -> Path:
         return self.cache_dir / "wad_cache.json"
 
-    async def _check_updated(
+    def _check_updated(
         self, wad_file: Wad, files: Iterable[str] | str
     ) -> list[str]:
         if isinstance(files, str):
             files = [files]
 
         if not self._wad_cache:
-            self._wad_cache = await self.get_wad_cache()
+            self._wad_cache = self.get_wad_cache()
 
         res = []
 
         for file_name in files:
-            file_info = await wad_file.get_info(file_name)
+            file_info = wad_file.get_info(file_name)
 
             file_version = dict(crc=file_info.crc, size=file_info.size)
             if self._wad_cache[wad_file.name][file_name].values() != file_version:
@@ -73,7 +73,7 @@ class CacheHandler:
 
         return res
 
-    async def check_updated(
+    def check_updated(
         self, wad_file: Wad, files: Iterable[str] | str
     ) -> list[str]:
         """
@@ -82,41 +82,41 @@ class CacheHandler:
         Returns:
             List of the file names that have updated
         """
-        res = await self._check_updated(wad_file, files)
+        res = self._check_updated(wad_file, files)
 
         if res:
-            await self.write_wad_cache()
+            self.write_wad_cache()
 
         return res
 
-    async def _cache(self):
+    def _cache(self):
         """
         Caches various file data
         """
         logger.info("Caching template if needed")
-        await self._cache_template(self._root_wad)
+        self._cache_template(self._root_wad)
 
-    async def _cache_template(self, root_wad):
-        template_file = await self.check_updated(root_wad, "TemplateManifest.xml")
+    def _cache_template(self, root_wad):
+        template_file = self.check_updated(root_wad, "TemplateManifest.xml")
 
         if template_file:
-            file_data = await root_wad.read("TemplateManifest.xml")
+            file_data = root_wad.read("TemplateManifest.xml")
             parsed_template_ids = parse_template_id_file(file_data)
             del file_data
 
             json_data = json.dumps(parsed_template_ids)
-            await utils.run_in_executor(self.template_ids_file.write_text, json_data)
+            self.template_ids_file.write_text(json_data)
 
-    async def get_template_ids(self) -> dict:
+    def get_template_ids(self) -> dict:
         """
         Loads template ids from cache
 
         Returns:
             the loaded template ids
         """
-        await self._cache()
+        self._cache()
         try:
-            json_data = await utils.run_in_executor(self.template_ids_file.read_text)
+            json_data = self.template_ids_file.read_text()
         except FileNotFoundError:
             return {}
         return json.loads(json_data)
@@ -141,17 +141,17 @@ class CacheHandler:
         return {lang_name: lang_mapping}
 
     @staticmethod
-    async def _get_all_lang_file_names(root_wad: Wad) -> list[str]:
+    def _get_all_lang_file_names(root_wad: Wad) -> list[str]:
         lang_file_names = []
 
-        for file_name in await root_wad.name_list():
+        for file_name in root_wad.name_list():
             if file_name.startswith("Locale/English/"):
                 lang_file_names.append(file_name)
 
         return lang_file_names
 
-    async def _read_lang_file(self, root_wad: Wad, lang_file: str):
-        file_data = await root_wad.read(lang_file)
+    def _read_lang_file(self, root_wad: Wad, lang_file: str):
+        file_data = root_wad.read(lang_file)
 
         if not file_data:
             raise ValueError(f"{lang_file} has not yet been loaded")
@@ -160,58 +160,58 @@ class CacheHandler:
 
         return parsed_lang
 
-    async def _cache_lang_file(self, root_wad: Wad, lang_file: str):
-        if not await self.check_updated(root_wad, lang_file):
+    def _cache_lang_file(self, root_wad: Wad, lang_file: str):
+        if not self.check_updated(root_wad, lang_file):
             return
 
-        parsed_lang = await self._read_lang_file(root_wad, lang_file)
+        parsed_lang = self._read_lang_file(root_wad, lang_file)
         if parsed_lang is None:
             return
 
-        await self._update_langcode_map(parsed_lang)
+        self._update_langcode_map(parsed_lang)
 
-    async def _cache_lang_files(self, root_wad: Wad):
-        lang_file_names = await self._get_all_lang_file_names(root_wad)
+    def _cache_lang_files(self, root_wad: Wad):
+        lang_file_names = self._get_all_lang_file_names(root_wad)
 
         parsed_lang_map = {}
         for file_name in lang_file_names:
-            if not await self._check_updated(root_wad, file_name):
+            if not self._check_updated(root_wad, file_name):
                 continue
-            parsed_lang = await self._read_lang_file(root_wad, file_name)
+            parsed_lang = self._read_lang_file(root_wad, file_name)
             if parsed_lang is not None:
                 parsed_lang_map.update(parsed_lang)
 
-        await self.write_wad_cache()
-        await self._update_langcode_map(parsed_lang_map)
+        self.write_wad_cache()
+        self._update_langcode_map(parsed_lang_map)
 
-    async def _get_langcode_map(self) -> dict:
+    def _get_langcode_map(self) -> dict:
         try:
-            data = await utils.run_in_executor(self.langmap_file.read_text)
+            data = self.langmap_file.read_text()
         except FileNotFoundError:
             return {}
         return json.loads(data)
 
-    async def _update_langcode_map(self, langcodes):
-        lang_map = await self._get_langcode_map()
+    def _update_langcode_map(self, langcodes):
+        lang_map = self._get_langcode_map()
         lang_map.update(langcodes)
-        await self._write_langcode_map(lang_map)
+        self._write_langcode_map(lang_map)
 
-    async def _write_langcode_map(self, langcode_map):
+    def _write_langcode_map(self, langcode_map):
         json_data = json.dumps(langcode_map)
-        await utils.run_in_executor(self.langmap_file.write_text, json_data)
+        self.langmap_file.write_text(json_data)
 
-    async def cache_all_langcode_maps(self):
-        await self._cache_lang_files(self._root_wad)
+    def cache_all_langcode_maps(self):
+        self._cache_lang_files(self._root_wad)
 
-    async def get_langcode_map(self) -> dict:
+    def get_langcode_map(self) -> dict:
         """
         Gets the langcode map
 
         {lang_file_name: {code: value}}
         """
-        return await self._get_langcode_map()
+        return self._get_langcode_map()
 
-    async def get_wad_cache(self) -> dict:
+    def get_wad_cache(self) -> dict:
         """
         Gets the wad cache data
 
@@ -222,7 +222,7 @@ class CacheHandler:
         wad_cache = defaultdict(wad_cache_factory)
 
         try:
-            data = await utils.run_in_executor(self.wadcache_file.read_text)
+            data = self.wadcache_file.read_text()
         except FileNotFoundError:
             return wad_cache
 
@@ -236,14 +236,14 @@ class CacheHandler:
 
         return wad_cache
 
-    async def write_wad_cache(self):
+    def write_wad_cache(self):
         """
         Writes wad cache to disk
         """
         json_data = json.dumps(self._wad_cache)
-        await utils.run_in_executor(self.wadcache_file.write_text, json_data)
+        self.wadcache_file.write_text(json_data)
 
-    async def get_template_name(self, template_id: int) -> Optional[str]:
+    def get_template_name(self, template_id: int) -> Optional[str]:
         """
         Get the template name of something by id
 
@@ -253,11 +253,11 @@ class CacheHandler:
         Returns:
             str of the template name or None if there is no item with that id
         """
-        template_ids = await self.get_template_ids()
+        template_ids = self.get_template_ids()
 
         return template_ids.get(template_id)
 
-    async def get_langcode_name(self, langcode: str):
+    def get_langcode_name(self, langcode: str):
         """
         Get the langcode name from the langcode i.e Spells_00001
 
@@ -273,19 +273,19 @@ class CacheHandler:
         except ValueError:
             raise ValueError(f"Invalid langcode format: {langcode}")
 
-        lang_files = await self._get_all_lang_file_names(self._root_wad)
+        lang_files = self._get_all_lang_file_names(self._root_wad)
 
         cached = False
         for filename in lang_files:
             if filename == f"Locale/English/{lang_filename}.lang":
-                await self._cache_lang_file(self._root_wad, filename)
+                self._cache_lang_file(self._root_wad, filename)
                 cached = True
                 break
 
         if not cached:
             raise ValueError(f"No lang file named {lang_filename}")
 
-        langcode_map = await self.get_langcode_map()
+        langcode_map = self.get_langcode_map()
         lang_file = langcode_map.get(lang_filename)
 
         if lang_file is None:
@@ -298,7 +298,7 @@ class CacheHandler:
 
         return lang_name
 
-    # async def get_nav_data(self, zone_name: str):
+    # def get_nav_data(self, zone_name: str):
     #     """
     #
     #     Args:
@@ -309,5 +309,5 @@ class CacheHandler:
     #     """
     #     pass
     #
-    # async def write_nav_data(self):
+    # def write_nav_data(self):
     #     pass

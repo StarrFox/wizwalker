@@ -3,27 +3,27 @@ from .enums import PlayerStatus
 
 
 class BuddyEntry(PropertyClass):
-    async def read_base_address(self) -> int:
+    def read_base_address(self) -> int:
         raise NotImplementedError
 
     # note: not defined
-    async def gender(self) -> bool:
+    def gender(self) -> bool:
         """
         Gender of this buddy
         True if female False if male
         """
-        name_tuple = await self.name_tuple()
+        name_tuple = self.name_tuple()
         return name_tuple[0] == 128
 
     # note: actual .name is name_tuple
-    async def name(self) -> str:
+    def name(self) -> str:
         """
         Name of this buddy
         """
         cache_handler = self.hook_handler.client.cache_handler
         langcode_prefix = "CharacterNames_"
 
-        gender, first, middle, last = await self.name_tuple()
+        gender, first, middle, last = self.name_tuple()
 
         if gender == 128:
             first_mid = "First_Girl_"
@@ -31,7 +31,7 @@ class BuddyEntry(PropertyClass):
         else:
             first_mid = "First_Boy_"
 
-        first_name = await cache_handler.get_langcode_name(
+        first_name = cache_handler.get_langcode_name(
             langcode_prefix + first_mid + str(first)
         )
 
@@ -39,11 +39,11 @@ class BuddyEntry(PropertyClass):
             # they have a typo in the lang file for character names
             # so we need to account for it here
             if middle < 49:
-                middle_name = await cache_handler.get_langcode_name(
+                middle_name = cache_handler.get_langcode_name(
                     langcode_prefix + "Middle_" + str(middle - 1)
                 )
             else:
-                middle_name = await cache_handler.get_langcode_name(
+                middle_name = cache_handler.get_langcode_name(
                     langcode_prefix + "Middle_" + str(middle)
                 )
         else:
@@ -51,7 +51,7 @@ class BuddyEntry(PropertyClass):
             middle_name = ""
 
         if last != 0:
-            last_name = await cache_handler.get_langcode_name(
+            last_name = cache_handler.get_langcode_name(
                 langcode_prefix + "Last_" + str(last - 1)
             )
         else:
@@ -61,7 +61,7 @@ class BuddyEntry(PropertyClass):
         return f"{first_name} {middle_name}{last_name}"
 
     # note: this is actually .name defined
-    async def name_tuple(self) -> tuple:
+    def name_tuple(self) -> tuple:
         """
         Name tuple of this buddy
         (gender, first, middle, last)
@@ -71,22 +71,22 @@ class BuddyEntry(PropertyClass):
         # 130 -> Male
         #
         # for middle: - 1 if below 49 and no change if above or equal
-        return await self.read_vector(72, 4, "unsigned char")
+        return self.read_vector(72, 4, "unsigned char")
 
-    async def character_id(self) -> int:
+    def character_id(self) -> int:
         """
         Character id of this buddy
         """
-        return await self.read_value_from_offset(104, "unsigned long long")
+        return self.read_value_from_offset(104, "unsigned long long")
 
-    async def game_object_id(self) -> int:
+    def game_object_id(self) -> int:
         """
         Game Object id of this buddy
         """
-        return await self.read_value_from_offset(120, "unsigned long long")
+        return self.read_value_from_offset(120, "unsigned long long")
 
-    async def status(self) -> PlayerStatus:
+    def status(self) -> PlayerStatus:
         """
         Status of this buddy
         """
-        return await self.read_enum(112, PlayerStatus)
+        return self.read_enum(112, PlayerStatus)

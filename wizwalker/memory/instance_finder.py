@@ -24,10 +24,10 @@ class InstanceFinder(MemoryHandler):
         self._type_name_function_map = None
         self._jmp_functions = None
 
-    async def read_null_terminated_string(
+    def read_null_terminated_string(
         self, address: int, max_size: int = 20, encoding: str = "utf-8"
     ):
-        search_bytes = await self.read_bytes(address, max_size)
+        search_bytes = self.read_bytes(address, max_size)
         string_end = search_bytes.find(b"\x00")
 
         if string_end == 0:
@@ -39,63 +39,63 @@ class InstanceFinder(MemoryHandler):
         string_bytes = search_bytes[:string_end]
         return string_bytes.decode(encoding)
 
-    async def scan_for_pointer(self, address: int):
+    def scan_for_pointer(self, address: int):
         pattern = re.escape(struct.pack("<q", address))
         try:
-            return await self.pattern_scan(pattern, return_multiple=True)
+            return self.pattern_scan(pattern, return_multiple=True)
         except PatternFailed:
             return []
 
-    async def get_all_jmp_instructions(self):
+    def get_all_jmp_instructions(self):
         if self._all_jmp_instructions:
             return self._all_jmp_instructions
 
-        self._all_jmp_instructions = await self.pattern_scan(
+        self._all_jmp_instructions = self.pattern_scan(
             b"\xE9", module=self.EXE_NAME, return_multiple=True
         )
         return self._all_jmp_instructions
 
-    async def get_all_type_name_functions(self):
+    def get_all_type_name_functions(self):
         if self._all_type_name_functions:
             return self._all_type_name_functions
 
-        self._all_type_name_functions = await self.pattern_scan(
+        self._all_type_name_functions = self.pattern_scan(
             self.GET_TYPE_NAME_PATTERN, module=self.EXE_NAME, return_multiple=True
         )
         return self._all_type_name_functions
 
-    async def get_type_name_function_map(self):
+    def get_type_name_function_map(self):
         if self._type_name_function_map:
             return self._type_name_function_map
 
         func_name_map = defaultdict(lambda: list())
 
-        for func in await self.get_all_type_name_functions():
+        for func in self.get_all_type_name_functions():
             lea_instruction = func + 63
             lea_target = func + 66
-            rip_offset = await self.read_typed(lea_target, "int")
+            rip_offset = self.read_typed(lea_target, "int")
 
             type_name_addr = lea_instruction + rip_offset + 7
 
             # ClientShadowCreatureLevelTransitionCinematicAction is the longest class name
-            type_name = await self.read_null_terminated_string(type_name_addr, 60)
+            type_name = self.read_null_terminated_string(type_name_addr, 60)
             func_name_map[type_name].append(func)
 
         self._type_name_function_map = func_name_map
         return self._type_name_function_map
 
-    async def get_type_name_functions(self):
-        function_map = await self.get_type_name_function_map()
+    def get_type_name_functions(self):
+        function_map = self.get_type_name_function_map()
         return function_map[self.class_name]
 
     # TODO: add worker tasks with workers kwarg and default of 3
-    async def get_jmp_functions(self):
+    def get_jmp_functions(self):
         if self._jmp_functions:
             return self._jmp_functions
 
-        all_jmps = await self.get_all_jmp_instructions()
+        all_jmps = self.get_all_jmp_instructions()
 
-        type_name_funcs = await self.get_type_name_functions()
+        type_name_funcs = self.get_type_name_functions()
 
         jmp_funcs = []
         for jmp in all_jmps:
@@ -104,7 +104,7 @@ class InstanceFinder(MemoryHandler):
             if len(jmp_funcs) == len(type_name_funcs):
                 break
 
-            offset = await self.read_typed(jmp + 1, "int")
+            offset = self.read_typed(jmp + 1, "int")
 
             for poss in type_name_funcs:
                 if (offset + 5) == poss - jmp:
@@ -113,19 +113,19 @@ class InstanceFinder(MemoryHandler):
         self._jmp_functions = jmp_funcs
         return self._jmp_functions
 
-    async def get_instances(self):
+    def get_instances(self):
         instances = []
 
-        for jmp_function in await self.get_jmp_functions():
-            vtable_function_pointers = await self.scan_for_pointer(jmp_function)
+        for jmp_function in self.get_jmp_functions():
+            vtable_function_pointers = self.scan_for_pointer(jmp_function)
             for vtable_function in vtable_function_pointers:
-                vtable_pointers = await self.scan_for_pointer(vtable_function)
+                vtable_pointers = self.scan_for_pointer(vtable_function)
                 instances += vtable_pointers
 
-        for type_name_function in await self.get_type_name_functions():
-            vtable_function_pointers = await self.scan_for_pointer(type_name_function)
+        for type_name_function in self.get_type_name_functions():
+            vtable_function_pointers = self.scan_for_pointer(type_name_function)
             for vtable_function in vtable_function_pointers:
-                vtable_pointers = await self.scan_for_pointer(vtable_function)
+                vtable_pointers = self.scan_for_pointer(vtable_function)
                 instances += vtable_pointers
 
         return instances

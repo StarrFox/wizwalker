@@ -1,13 +1,15 @@
-import asyncio
+import concurrent.futures
 import ctypes
 import ctypes.wintypes
 import functools
 import math
 import subprocess
+import time
 
 # noinspection PyCompatibility
 import winreg
 from collections.abc import Callable, Iterable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
@@ -18,30 +20,63 @@ from wizwalker import ExceptionalTimeout
 from wizwalker.constants import Keycode, kernel32, user32, gdi32
 
 
-async def async_sorted(iterable, /, *, key=None, reverse=False):
-    """
-    sorted but key function is awaited
-    """
-    if key is None:
-        return sorted(iterable, reverse=reverse)
+def wait_for_value(func, want, sleep_time: float = 0.5, *, ignore_errors: bool = True):
+    while True:
+        try:
+            now = func()
+            if now == want:
+                return now
+        except Exception as e:
+            if not ignore_errors:
+                raise e
+        time.sleep(sleep_time)
 
-    key_item_pairs = [(await key(item), item) for item in iterable]
-    return [item for _, item in sorted(key_item_pairs, reverse=reverse)]
+
+def wait_for_non_error(func, sleep_time: float = 0.5):
+    while True:
+        try:
+            return func()
+        except Exception:
+            time.sleep(sleep_time)
 
 
-async def run_in_executor(func, *args, **kwargs):
-    """
-    Run a function within an executor
+def maybe_wait_for_value_with_timeout(
+    func,
+    sleep_time: float = 0.5,
+    *,
+    value: Any = None,
+    timeout: Optional[float] = None,
+    ignore_exceptions: bool = True,
+    inverse_value: bool = False,
+):
+    possible_exception = None
 
-    Args:
-        func: The function to run
-        args: Args to pass to the function
-        kwargs: Kwargs to pass to the function
-    """
-    loop = asyncio.get_event_loop()
-    function = functools.partial(func, *args, **kwargs)
+    start_time = time.perf_counter()
+    while True:
+        try:
+            res = func()
+            if value is not None and inverse_value and res != value:
+                return res
 
-    return await loop.run_in_executor(None, function)
+            elif value is not None and not inverse_value and res == value:
+                return res
+
+            else:
+                return res
+
+        except Exception as e:
+            if ignore_exceptions:
+                possible_exception = e
+
+            else:
+                raise e
+
+        if time.perf_counter() - start_time >= timeout:
+            raise ExceptionalTimeout(
+                f"Timed out while waiting for func {func.__name__}", possible_exception
+            )
+
+        time.sleep(sleep_time)
 
 
 @dataclass
@@ -259,7 +294,7 @@ def instance_login(window_handle: int, username: str, password: str):
 # --- [cancelButton] ControlButton
 # --- [title1] ControlText
 # --- [loginName] ControlEdit
-async def start_instances_with_login(instance_number: int, logins: Iterable):
+def start_instances_with_login(instance_number: int, logins: Iterable):
     """
     Start a number of instances and login to them with logins
 
@@ -274,7 +309,7 @@ async def start_instances_with_login(instance_number: int, logins: Iterable):
 
     # TODO: have way to properly check if instances are on login screen
     # waiting for instances to start
-    await asyncio.sleep(7)
+    time.sleep(7)
 
     new_handles = set(get_all_wizard_handles()).difference(start_handles)
 
@@ -315,92 +350,6 @@ def calculate_perfect_yaw(current_xyz: XYZ, target_xyz: XYZ) -> float:
         perfect_yaw = target_angle
 
     return perfect_yaw
-
-
-async def wait_for_value(
-    coro, want, sleep_time: float = 0.5, *, ignore_errors: bool = True
-):
-    """
-    Wait for a coro to return a value
-
-    Args:
-        coro: Coro to wait for
-        want: Value wanted
-        sleep_time: Time between calls
-        ignore_errors: If errors should be ignored
-    """
-    while True:
-        try:
-            now = await coro()
-            if now == want:
-                return now
-
-        except Exception as e:
-            if ignore_errors:
-                await asyncio.sleep(sleep_time)
-
-            else:
-                raise e
-
-
-async def wait_for_non_error(coro, sleep_time: float = 0.5):
-    """
-    Wait for a coro to not error
-
-    Args:
-        coro: Coro to wait for
-        sleep_time: Time between calls
-    """
-    while True:
-        # noinspection PyBroadException
-        try:
-            now = await coro()
-            return now
-
-        except Exception:
-            await asyncio.sleep(sleep_time)
-
-
-async def maybe_wait_for_value_with_timeout(
-    coro,
-    sleep_time: float = 0.5,
-    *,
-    value: Any = None,
-    timeout: Optional[float] = None,
-    ignore_exceptions: bool = True,
-    inverse_value: bool = False,
-):
-    possible_exception = None
-
-    async def _inner():
-        nonlocal possible_exception
-
-        while True:
-            try:
-                res = await coro()
-                if value is not None and inverse_value and res != value:
-                    return res
-
-                elif value is not None and not inverse_value and res == value:
-                    return res
-
-                else:
-                    return res
-
-            except Exception as e:
-                if ignore_exceptions:
-                    possible_exception = e
-                    await asyncio.sleep(sleep_time)
-
-                else:
-                    raise e
-
-    try:
-        return await asyncio.wait_for(_inner(), timeout)
-    except asyncio.TimeoutError:
-        raise ExceptionalTimeout(
-            f"Timed out waiting for coro {coro.__name__}", possible_exception
-        )
 
 
 def get_cache_folder() -> Path:
@@ -602,7 +551,7 @@ def get_window_handles_by_predicate(predicate: Callable) -> list:
     return handles
 
 
-async def timed_send_key(window_handle: int, key: Keycode, seconds: float):
+def timed_send_key(window_handle: int, key: Keycode, seconds: float):
     """
     Send a key for a number of seconds
 
@@ -611,13 +560,12 @@ async def timed_send_key(window_handle: int, key: Keycode, seconds: float):
         key: The key to send
         seconds: Number of seconds to send the key
     """
-    keydown_task = asyncio.create_task(_send_keydown_forever(window_handle, key))
-    await asyncio.sleep(seconds)
-    keydown_task.cancel()
-    user32.SendMessageW(window_handle, 0x101, key.value, 0)
+    start_time = time.perf_counter()
 
-
-async def _send_keydown_forever(window_handle: int, key: Keycode):
     while True:
         user32.SendMessageW(window_handle, 0x100, key.value, 0)
-        await asyncio.sleep(0.05)
+        if time.perf_counter() - start_time >= seconds:
+            break
+        time.sleep(0.05)
+
+    user32.SendMessageW(window_handle, 0x101, key.value, 0)

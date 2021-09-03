@@ -1,5 +1,4 @@
 import argparse
-import asyncio
 import re
 import sys
 from collections.abc import Coroutine
@@ -28,18 +27,6 @@ class WizWalkerConsole(cmd2.Cmd):
     def write(message: str):
         print(message)
 
-    def run_coro(self, coro: Coroutine, timeout: Optional[int] = 10):
-        try:
-            result = asyncio.run(asyncio.wait_for(coro, timeout))
-        except asyncio.TimeoutError:
-            self.write(f"Timeout error with coro {coro.__name__}")
-        except Exception as exc:
-            import traceback
-
-            traceback.print_exception(type(exc), exc, exc.__traceback__)
-        else:
-            return result
-
     def do_start(self, _):
         """
         Attach and hook to all new clients
@@ -48,7 +35,7 @@ class WizWalkerConsole(cmd2.Cmd):
         self.write(f"Attached to {len(clients)} new clients")
 
         for idx, client in enumerate(clients):
-            self.run_coro(client.activate_hooks(), None)
+            client.activate_hooks()
             self.write(f"client-{idx}: hooked all")
 
     def do_exit(self, _) -> None:
@@ -56,7 +43,7 @@ class WizWalkerConsole(cmd2.Cmd):
         Exit walker and re-write hooks
         """
         self.write("Closing client handler, hooks should be rewritten")
-        self.run_coro(self.client_handler.close())
+        self.client_handler.close()
 
     def do_info(self, _):
         """
@@ -76,7 +63,7 @@ class WizWalkerConsole(cmd2.Cmd):
             ]
             for attr in hook_handler_attrs:
                 table_data.append(
-                    [attr, hex(self.run_coro(getattr(client.hook_handler, attr)()))]
+                    [attr, hex(getattr(client.hook_handler, attr)())]
                 )
 
             table = terminaltables.AsciiTable(table_data, f"client-{idx}")
@@ -87,7 +74,7 @@ class WizWalkerConsole(cmd2.Cmd):
         Print out each client's body position
         """
         for idx, client in enumerate(self.client_handler.clients):
-            self.write(f"client-{idx}: {self.run_coro(client.body.position())}")
+            self.write(f"client-{idx}: {client.body.position()}")
 
     teleport_parser = argparse.ArgumentParser()
     teleport_parser.add_argument("x", type=float, help="X to teleport to")
@@ -105,11 +92,11 @@ class WizWalkerConsole(cmd2.Cmd):
         Teleport to a location
         """
         for client in self.client_handler.clients:
-            current_position = self.run_coro(client.body.position())
+            current_position = client.body.position()
             new_position = XYZ(
                 args.x, args.y, args.z if args.z is not None else current_position.z
             )
-            self.run_coro(client.teleport(new_position, args.yaw))
+            client.teleport(new_position, args.yaw)
 
         self.write("Teleported")
 
@@ -123,7 +110,7 @@ class WizWalkerConsole(cmd2.Cmd):
         Go to a location in the world
         """
         for client in self.client_handler.clients:
-            self.run_coro(client.goto(args.x, args.y))
+            client.goto(args.x, args.y)
 
         self.write("Completed goto")
 
@@ -135,7 +122,7 @@ class WizWalkerConsole(cmd2.Cmd):
         """
         Get templateid items that match a pattern
         """
-        template_ids = self.run_coro(self.cache_handler.get_template_ids())
+        template_ids = self.cache_handler.get_template_ids()
 
         regex = re.compile(args.pattern, re.IGNORECASE)
         for tid, name in template_ids.items():
@@ -150,7 +137,7 @@ class WizWalkerConsole(cmd2.Cmd):
         """
         Get the name mapped to a templateid
         """
-        template_ids: dict = self.run_coro(self.cache_handler.get_template_ids())
+        template_ids: dict = self.cache_handler.get_template_ids()
 
         try:
             self.write(f"{args.template_id} => {template_ids[args.template_id]}")
@@ -167,7 +154,7 @@ class WizWalkerConsole(cmd2.Cmd):
         Click a certain x, y
         """
         for client in self.client_handler.clients:
-            self.run_coro(client.mouse_handler.click(args.x, args.y))
+            client.mouse_handler.click(args.x, args.y)
 
         self.write("Completed click")
 
@@ -191,7 +178,7 @@ class WizWalkerConsole(cmd2.Cmd):
             finder = InstanceFinder(pm, class_name)
             self.instance_finders[class_name] = finder
 
-        instances = self.run_coro(finder.get_instances(), None)
+        instances = finder.get_instances()
 
         self.write(str(instances))
 

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 
 from wizwalker.utils import XYZ
 from wizwalker.memory.memory_object import PropertyClass
@@ -8,13 +8,13 @@ from .combat_resolver import DynamicCombatResolver
 
 
 class Duel(PropertyClass):
-    async def read_base_address(self) -> int:
+    def read_base_address(self) -> int:
         raise NotImplementedError()
 
-    async def participant_list(
+    def participant_list(
         self,
-    ) -> List[DynamicCombatParticipant]:
-        pointers = await self.read_shared_vector(80)
+    ) -> list[DynamicCombatParticipant]:
+        pointers = self.read_shared_vector(80)
 
         participants = []
         for addr in pointers:
@@ -22,244 +22,244 @@ class Duel(PropertyClass):
 
         return participants
 
-    async def duel_id_full(self) -> int:
-        return await self.read_value_from_offset(72, "unsigned long long")
+    def duel_id_full(self) -> int:
+        return self.read_value_from_offset(72, "unsigned long long")
 
-    async def write_duel_id_full(self, duel_id_full: int):
-        await self.write_value_to_offset(72, duel_id_full, "unsigned long long")
+    def write_duel_id_full(self, duel_id_full: int):
+        self.write_value_to_offset(72, duel_id_full, "unsigned long long")
 
-    async def planning_timer(self) -> float:
-        return await self.read_value_from_offset(112, "float")
+    def planning_timer(self) -> float:
+        return self.read_value_from_offset(112, "float")
 
-    async def write_planning_timer(self, planning_timer: float):
-        await self.write_value_to_offset(112, planning_timer, "float")
+    def write_planning_timer(self, planning_timer: float):
+        self.write_value_to_offset(112, planning_timer, "float")
 
-    async def position(self) -> XYZ:
-        return await self.read_xyz(116)
+    def position(self) -> XYZ:
+        return self.read_xyz(116)
 
-    async def write_position(self, position: XYZ):
-        await self.write_xyz(116, position)
+    def write_position(self, position: XYZ):
+        self.write_xyz(116, position)
 
-    async def yaw(self) -> float:
-        return await self.read_value_from_offset(128, "float")
+    def yaw(self) -> float:
+        return self.read_value_from_offset(128, "float")
 
-    async def write_yaw(self, yaw: float):
-        await self.write_value_to_offset(128, yaw, "float")
+    def write_yaw(self, yaw: float):
+        self.write_value_to_offset(128, yaw, "float")
 
-    async def disable_timer(self) -> bool:
-        return await self.read_value_from_offset(146, "bool")
+    def disable_timer(self) -> bool:
+        return self.read_value_from_offset(146, "bool")
 
-    async def write_disable_timer(self, disable_timer: bool):
-        await self.write_value_to_offset(146, disable_timer, "bool")
+    def write_disable_timer(self, disable_timer: bool):
+        self.write_value_to_offset(146, disable_timer, "bool")
 
-    async def tutorial_mode(self) -> bool:
-        return await self.read_value_from_offset(147, "bool")
+    def tutorial_mode(self) -> bool:
+        return self.read_value_from_offset(147, "bool")
 
-    async def write_tutorial_mode(self, tutorial_mode: bool):
-        await self.write_value_to_offset(147, tutorial_mode, "bool")
+    def write_tutorial_mode(self, tutorial_mode: bool):
+        self.write_value_to_offset(147, tutorial_mode, "bool")
 
-    async def first_team_to_act(self) -> int:
-        return await self.read_value_from_offset(148, "int")
+    def first_team_to_act(self) -> int:
+        return self.read_value_from_offset(148, "int")
 
-    async def write_first_team_to_act(self, first_team_to_act: int):
-        await self.write_value_to_offset(148, first_team_to_act, "int")
+    def write_first_team_to_act(self, first_team_to_act: int):
+        self.write_value_to_offset(148, first_team_to_act, "int")
 
-    async def combat_resolver(self) -> Optional[DynamicCombatResolver]:
-        addr = await self.read_value_from_offset(104, "long long")
+    def combat_resolver(self) -> Optional[DynamicCombatResolver]:
+        addr = self.read_value_from_offset(104, "long long")
 
         if addr == 0:
             return None
 
         return DynamicCombatResolver(self.hook_handler, addr)
 
-    async def pvp(self) -> bool:
-        return await self.read_value_from_offset(144, "bool")
+    def pvp(self) -> bool:
+        return self.read_value_from_offset(144, "bool")
 
-    async def write_pvp(self, pvp: bool):
-        await self.write_value_to_offset(144, pvp, "bool")
+    def write_pvp(self, pvp: bool):
+        self.write_value_to_offset(144, pvp, "bool")
 
-    async def battleground(self) -> bool:
-        return await self.read_value_from_offset(145, "bool")
+    def battleground(self) -> bool:
+        return self.read_value_from_offset(145, "bool")
 
-    async def write_battleground(self, b_battleground: bool):
-        await self.write_value_to_offset(145, b_battleground, "bool")
+    def write_battleground(self, b_battleground: bool):
+        self.write_value_to_offset(145, b_battleground, "bool")
 
-    async def round_num(self) -> int:
-        return await self.read_value_from_offset(156, "int")
+    def round_num(self) -> int:
+        return self.read_value_from_offset(156, "int")
 
-    async def write_round_num(self, round_num: int):
-        await self.write_value_to_offset(156, round_num, "int")
+    def write_round_num(self, round_num: int):
+        self.write_value_to_offset(156, round_num, "int")
 
-    async def execution_phase_timer(self) -> float:
-        return await self.read_value_from_offset(164, "float")
+    def execution_phase_timer(self) -> float:
+        return self.read_value_from_offset(164, "float")
 
-    async def write_execution_phase_timer(self, execution_phase_timer: float):
-        await self.write_value_to_offset(164, execution_phase_timer, "float")
+    def write_execution_phase_timer(self, execution_phase_timer: float):
+        self.write_value_to_offset(164, execution_phase_timer, "float")
 
     # note: this seems to be unused
-    # async def execution_phase_combat_actions(self) -> class CombatAction:
-    #     return await self.read_value_from_offset(168, "class CombatAction")
+    # def execution_phase_combat_actions(self) -> class CombatAction:
+    #     return self.read_value_from_offset(168, "class CombatAction")
 
     # note: this also seems to be unused
-    # async def sigil_actions(self) -> class CombatAction:
-    #     return await self.read_value_from_offset(184, "class CombatAction")
+    # def sigil_actions(self) -> class CombatAction:
+    #     return self.read_value_from_offset(184, "class CombatAction")
 
-    # async def shadow_pip_rule(self) -> class SharedPointer<class ShadowPipRule>:
-    #     return await self.read_value_from_offset(240, "class SharedPointer<class ShadowPipRule>")
+    # def shadow_pip_rule(self) -> class SharedPointer<class ShadowPipRule>:
+    #     return self.read_value_from_offset(240, "class SharedPointer<class ShadowPipRule>")
 
-    # async def game_object_anim_state_tracker(self) -> class GameObjectAnimStateTracker:
-    #     return await self.read_value_from_offset(256, "class GameObjectAnimStateTracker")
+    # def game_object_anim_state_tracker(self) -> class GameObjectAnimStateTracker:
+    #     return self.read_value_from_offset(256, "class GameObjectAnimStateTracker")
 
-    async def duel_phase(self) -> DuelPhase:
-        return await self.read_enum(160, DuelPhase)
+    def duel_phase(self) -> DuelPhase:
+        return self.read_enum(160, DuelPhase)
 
-    async def write_duel_phase(self, duel_phase: DuelPhase):
-        await self.write_enum(160, duel_phase)
+    def write_duel_phase(self, duel_phase: DuelPhase):
+        self.write_enum(160, duel_phase)
 
-    # async def duel_modifier(self) -> class SharedPointer<class DuelModifier>:
-    #     return await self.read_value_from_offset(224, "class SharedPointer<class DuelModifier>")
+    # def duel_modifier(self) -> class SharedPointer<class DuelModifier>:
+    #     return self.read_value_from_offset(224, "class SharedPointer<class DuelModifier>")
 
-    async def initiative_switch_mode(self) -> SigilInitiativeSwitchMode:
-        return await self.read_enum(344, SigilInitiativeSwitchMode)
+    def initiative_switch_mode(self) -> SigilInitiativeSwitchMode:
+        return self.read_enum(344, SigilInitiativeSwitchMode)
 
-    async def write_initiative_switch_mode(
+    def write_initiative_switch_mode(
         self, initiative_switch_mode: SigilInitiativeSwitchMode
     ):
-        await self.write_enum(344, initiative_switch_mode)
+        self.write_enum(344, initiative_switch_mode)
 
-    async def initiative_switch_rounds(self) -> int:
-        return await self.read_value_from_offset(348, "int")
+    def initiative_switch_rounds(self) -> int:
+        return self.read_value_from_offset(348, "int")
 
-    async def write_initiative_switch_rounds(self, initiative_switch_rounds: int):
-        await self.write_value_to_offset(348, initiative_switch_rounds, "int")
+    def write_initiative_switch_rounds(self, initiative_switch_rounds: int):
+        self.write_value_to_offset(348, initiative_switch_rounds, "int")
 
-    # async def combat_rules(self) -> class SharedPointer<class CombatRule>:
-    #     return await self.read_value_from_offset(424, "class SharedPointer<class CombatRule>")
+    # def combat_rules(self) -> class SharedPointer<class CombatRule>:
+    #     return self.read_value_from_offset(424, "class SharedPointer<class CombatRule>")
 
-    # async def alternate_turn_combat_rule(self) -> class SharedPointer<class AlternateTurnsCombatRule>:
-    #     return await self.read_value_from_offset(440, "class SharedPointer<class AlternateTurnsCombatRule>")
+    # def alternate_turn_combat_rule(self) -> class SharedPointer<class AlternateTurnsCombatRule>:
+    #     return self.read_value_from_offset(440, "class SharedPointer<class AlternateTurnsCombatRule>")
 
-    async def alt_turn_counter(self) -> int:
-        return await self.read_value_from_offset(416, "int")
+    def alt_turn_counter(self) -> int:
+        return self.read_value_from_offset(416, "int")
 
-    async def write_alt_turn_counter(self, alt_turn_counter: int):
-        await self.write_value_to_offset(416, alt_turn_counter, "int")
+    def write_alt_turn_counter(self, alt_turn_counter: int):
+        self.write_value_to_offset(416, alt_turn_counter, "int")
 
-    async def original_first_team_to_act(self) -> int:
-        return await self.read_value_from_offset(152, "int")
+    def original_first_team_to_act(self) -> int:
+        return self.read_value_from_offset(152, "int")
 
-    async def write_original_first_team_to_act(self, original_first_team_to_act: int):
-        await self.write_value_to_offset(152, original_first_team_to_act, "int")
+    def write_original_first_team_to_act(self, original_first_team_to_act: int):
+        self.write_value_to_offset(152, original_first_team_to_act, "int")
 
-    async def execution_order(self) -> DuelExecutionOrder:
-        return await self.read_enum(456, DuelExecutionOrder)
+    def execution_order(self) -> DuelExecutionOrder:
+        return self.read_enum(456, DuelExecutionOrder)
 
-    async def write_execution_order(self, execution_order: DuelExecutionOrder):
-        await self.write_enum(456, execution_order)
+    def write_execution_order(self, execution_order: DuelExecutionOrder):
+        self.write_enum(456, execution_order)
 
-    async def no_henchmen(self) -> bool:
-        return await self.read_value_from_offset(460, "bool")
+    def no_henchmen(self) -> bool:
+        return self.read_value_from_offset(460, "bool")
 
-    async def write_no_henchmen(self, no_henchmen: bool):
-        await self.write_value_to_offset(460, no_henchmen, "bool")
+    def write_no_henchmen(self, no_henchmen: bool):
+        self.write_value_to_offset(460, no_henchmen, "bool")
 
-    async def spell_truncation(self) -> bool:
-        return await self.read_value_from_offset(461, "bool")
+    def spell_truncation(self) -> bool:
+        return self.read_value_from_offset(461, "bool")
 
-    async def write_spell_truncation(self, spell_truncation: bool):
-        await self.write_value_to_offset(461, spell_truncation, "bool")
+    def write_spell_truncation(self, spell_truncation: bool):
+        self.write_value_to_offset(461, spell_truncation, "bool")
 
-    async def shadow_threshold_factor(self) -> float:
-        return await self.read_value_from_offset(468, "float")
+    def shadow_threshold_factor(self) -> float:
+        return self.read_value_from_offset(468, "float")
 
-    async def write_shadow_threshold_factor(self, shadow_threshold_factor: float):
-        await self.write_value_to_offset(468, shadow_threshold_factor, "float")
+    def write_shadow_threshold_factor(self, shadow_threshold_factor: float):
+        self.write_value_to_offset(468, shadow_threshold_factor, "float")
 
-    async def shadow_pip_rating_factor(self) -> float:
-        return await self.read_value_from_offset(472, "float")
+    def shadow_pip_rating_factor(self) -> float:
+        return self.read_value_from_offset(472, "float")
 
-    async def write_shadow_pip_rating_factor(self, shadow_pip_rating_factor: float):
-        await self.write_value_to_offset(472, shadow_pip_rating_factor, "float")
+    def write_shadow_pip_rating_factor(self, shadow_pip_rating_factor: float):
+        self.write_value_to_offset(472, shadow_pip_rating_factor, "float")
 
-    async def default_shadow_pip_rating(self) -> float:
-        return await self.read_value_from_offset(476, "float")
+    def default_shadow_pip_rating(self) -> float:
+        return self.read_value_from_offset(476, "float")
 
-    async def write_default_shadow_pip_rating(self, default_shadow_pip_rating: float):
-        await self.write_value_to_offset(476, default_shadow_pip_rating, "float")
+    def write_default_shadow_pip_rating(self, default_shadow_pip_rating: float):
+        self.write_value_to_offset(476, default_shadow_pip_rating, "float")
 
-    async def shadow_pip_threshold_team0(self) -> float:
-        return await self.read_value_from_offset(480, "float")
+    def shadow_pip_threshold_team0(self) -> float:
+        return self.read_value_from_offset(480, "float")
 
-    async def write_shadow_pip_threshold_team0(self, shadow_pip_threshold_team0: float):
-        await self.write_value_to_offset(480, shadow_pip_threshold_team0, "float")
+    def write_shadow_pip_threshold_team0(self, shadow_pip_threshold_team0: float):
+        self.write_value_to_offset(480, shadow_pip_threshold_team0, "float")
 
-    async def shadow_pip_threshold_team1(self) -> float:
-        return await self.read_value_from_offset(484, "float")
+    def shadow_pip_threshold_team1(self) -> float:
+        return self.read_value_from_offset(484, "float")
 
-    async def write_shadow_pip_threshold_team1(self, shadow_pip_threshold_team1: float):
-        await self.write_value_to_offset(484, shadow_pip_threshold_team1, "float")
+    def write_shadow_pip_threshold_team1(self, shadow_pip_threshold_team1: float):
+        self.write_value_to_offset(484, shadow_pip_threshold_team1, "float")
 
-    async def scalar_damage(self) -> float:
-        return await self.read_value_from_offset(512, "float")
+    def scalar_damage(self) -> float:
+        return self.read_value_from_offset(512, "float")
 
-    async def write_scalar_damage(self, scalar_damage: float):
-        await self.write_value_to_offset(512, scalar_damage, "float")
+    def write_scalar_damage(self, scalar_damage: float):
+        self.write_value_to_offset(512, scalar_damage, "float")
 
-    async def scalar_resist(self) -> float:
-        return await self.read_value_from_offset(516, "float")
+    def scalar_resist(self) -> float:
+        return self.read_value_from_offset(516, "float")
 
-    async def write_scalar_resist(self, scalar_resist: float):
-        await self.write_value_to_offset(516, scalar_resist, "float")
+    def write_scalar_resist(self, scalar_resist: float):
+        self.write_value_to_offset(516, scalar_resist, "float")
 
-    async def scalar_pierce(self) -> float:
-        return await self.read_value_from_offset(520, "float")
+    def scalar_pierce(self) -> float:
+        return self.read_value_from_offset(520, "float")
 
-    async def write_scalar_pierce(self, scalar_pierce: float):
-        await self.write_value_to_offset(520, scalar_pierce, "float")
+    def write_scalar_pierce(self, scalar_pierce: float):
+        self.write_value_to_offset(520, scalar_pierce, "float")
 
-    async def damage_limit(self) -> float:
-        return await self.read_value_from_offset(524, "float")
+    def damage_limit(self) -> float:
+        return self.read_value_from_offset(524, "float")
 
-    async def write_damage_limit(self, damage_limit: float):
-        await self.write_value_to_offset(524, damage_limit, "float")
+    def write_damage_limit(self, damage_limit: float):
+        self.write_value_to_offset(524, damage_limit, "float")
 
-    async def d_k0(self) -> float:
-        return await self.read_value_from_offset(528, "float")
+    def d_k0(self) -> float:
+        return self.read_value_from_offset(528, "float")
 
-    async def write_d_k0(self, d_k0: float):
-        await self.write_value_to_offset(528, d_k0, "float")
+    def write_d_k0(self, d_k0: float):
+        self.write_value_to_offset(528, d_k0, "float")
 
-    async def d_n0(self) -> float:
-        return await self.read_value_from_offset(532, "float")
+    def d_n0(self) -> float:
+        return self.read_value_from_offset(532, "float")
 
-    async def write_d_n0(self, d_n0: float):
-        await self.write_value_to_offset(532, d_n0, "float")
+    def write_d_n0(self, d_n0: float):
+        self.write_value_to_offset(532, d_n0, "float")
 
-    async def resist_limit(self) -> float:
-        return await self.read_value_from_offset(536, "float")
+    def resist_limit(self) -> float:
+        return self.read_value_from_offset(536, "float")
 
-    async def write_resist_limit(self, resist_limit: float):
-        await self.write_value_to_offset(536, resist_limit, "float")
+    def write_resist_limit(self, resist_limit: float):
+        self.write_value_to_offset(536, resist_limit, "float")
 
-    async def r_k0(self) -> float:
-        return await self.read_value_from_offset(540, "float")
+    def r_k0(self) -> float:
+        return self.read_value_from_offset(540, "float")
 
-    async def write_r_k0(self, r_k0: float):
-        await self.write_value_to_offset(540, r_k0, "float")
+    def write_r_k0(self, r_k0: float):
+        self.write_value_to_offset(540, r_k0, "float")
 
-    async def r_n0(self) -> float:
-        return await self.read_value_from_offset(544, "float")
+    def r_n0(self) -> float:
+        return self.read_value_from_offset(544, "float")
 
-    async def write_r_n0(self, r_n0: float):
-        await self.write_value_to_offset(544, r_n0, "float")
+    def write_r_n0(self, r_n0: float):
+        self.write_value_to_offset(544, r_n0, "float")
 
-    async def full_party_group(self) -> bool:
-        return await self.read_value_from_offset(548, "bool")
+    def full_party_group(self) -> bool:
+        return self.read_value_from_offset(548, "bool")
 
-    async def write_full_party_group(self, full_party_group: bool):
-        await self.write_value_to_offset(548, full_party_group, "bool")
+    def write_full_party_group(self, full_party_group: bool):
+        self.write_value_to_offset(548, full_party_group, "bool")
 
 
 class CurrentDuel(Duel):
-    async def read_base_address(self) -> int:
-        return await self.hook_handler.read_current_duel_base()
+    def read_base_address(self) -> int:
+        return self.hook_handler.read_current_duel_base()

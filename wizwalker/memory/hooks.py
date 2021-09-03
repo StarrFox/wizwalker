@@ -28,70 +28,70 @@ class MemoryHook(MemoryHandler):
         # so we can dealloc it on unhook
         self._allocated_addresses = []
 
-    async def alloc(self, size: int) -> int:
+    def alloc(self, size: int) -> int:
         """
         Allocate <size> bytes
         """
-        addr = await self.allocate(size)
+        addr = self.allocate(size)
         self._allocated_addresses.append(addr)
         return addr
 
-    async def prehook(self):
+    def prehook(self):
         """
         Called after bytecode is prepared and before written
         """
         pass
 
-    async def posthook(self):
+    def posthook(self):
         """
         Called after bytecode is written
         """
         pass
 
-    async def get_jump_address(self, pattern: bytes, module: str = None) -> int:
+    def get_jump_address(self, pattern: bytes, module: str = None) -> int:
         """
         gets the address to write jump at
         """
-        jump_address = await self.pattern_scan(pattern, module=module)
+        jump_address = self.pattern_scan(pattern, module=module)
         return jump_address
 
-    async def get_hook_address(self, size: int) -> int:
-        return await self.alloc(size)
+    def get_hook_address(self, size: int) -> int:
+        return self.alloc(size)
 
-    async def get_jump_bytecode(self) -> bytes:
+    def get_jump_bytecode(self) -> bytes:
         """
         Gets the bytecode to write to the jump address
         """
         raise NotImplemented()
 
-    async def get_hook_bytecode(self) -> bytes:
+    def get_hook_bytecode(self) -> bytes:
         """
         Gets the bytecord to write to the hook address
         """
         raise NotImplemented()
 
-    async def get_pattern(self) -> tuple[bytes, str]:
+    def get_pattern(self) -> tuple[bytes, str]:
         raise NotImplemented()
 
-    async def hook(self):
+    def hook(self):
         """
         Writes jump_bytecode to jump address and hook bytecode to hook address
         """
-        pattern, module = await self.get_pattern()
+        pattern, module = self.get_pattern()
 
-        self.jump_address = await self.get_jump_address(pattern, module=module)
-        self.hook_address = await self.get_hook_address(50)
+        self.jump_address = self.get_jump_address(pattern, module=module)
+        self.hook_address = self.get_hook_address(50)
 
         logger.debug(f"Got hook address {self.hook_address} in {type(self)}")
         logger.debug(f"Got jump address {self.jump_address} in {type(self)}")
 
-        self.hook_bytecode = await self.get_hook_bytecode()
-        self.jump_bytecode = await self.get_jump_bytecode()
+        self.hook_bytecode = self.get_hook_bytecode()
+        self.jump_bytecode = self.get_jump_bytecode()
 
         logger.debug(f"Got hook bytecode {self.hook_bytecode} in {type(self)}")
         logger.debug(f"Got jump bytecode {self.jump_bytecode} in {type(self)}")
 
-        self.jump_original_bytecode = await self.read_bytes(
+        self.jump_original_bytecode = self.read_bytes(
             self.jump_address, len(self.jump_bytecode)
         )
 
@@ -99,14 +99,14 @@ class MemoryHook(MemoryHandler):
             f"Got jump original bytecode {self.jump_original_bytecode} in {type(self)}"
         )
 
-        await self.prehook()
+        self.prehook()
 
-        await self.write_bytes(self.hook_address, self.hook_bytecode)
-        await self.write_bytes(self.jump_address, self.jump_bytecode)
+        self.write_bytes(self.hook_address, self.hook_bytecode)
+        self.write_bytes(self.jump_address, self.jump_bytecode)
 
-        await self.posthook()
+        self.posthook()
 
-    async def unhook(self):
+    def unhook(self):
         """
         Deallocates hook memory and rewrites jump addr to it's original code,
         also called when a client is closed
@@ -114,9 +114,9 @@ class MemoryHook(MemoryHandler):
         logger.debug(
             f"Writing original bytecode {self.jump_original_bytecode} to {self.jump_address}"
         )
-        await self.write_bytes(self.jump_address, self.jump_original_bytecode)
+        self.write_bytes(self.jump_address, self.jump_original_bytecode)
         for addr in self._allocated_addresses:
-            await self.free(addr)
+            self.free(addr)
 
 
 class AutoBotBaseHook(MemoryHook):
@@ -124,16 +124,16 @@ class AutoBotBaseHook(MemoryHook):
     Subclass of MemoryHook that uses an autobot function for bytes so addresses aren't huge
     """
 
-    async def alloc(self, size: int) -> int:
+    def alloc(self, size: int) -> int:
         # noinspection PyProtectedMember
-        return await self.hook_handler._allocate_autobot_bytes(size)
+        return self.hook_handler._allocate_autobot_bytes(size)
 
     # TODO: tell handler those bytes are free now?
-    async def unhook(self):
+    def unhook(self):
         logger.debug(
             f"Writing original bytecode {self.jump_original_bytecode} to {self.jump_address}"
         )
-        await self.write_bytes(self.jump_address, self.jump_original_bytecode)
+        self.write_bytes(self.jump_address, self.jump_original_bytecode)
 
 
 class SimpleHook(AutoBotBaseHook):
@@ -147,10 +147,10 @@ class SimpleHook(AutoBotBaseHook):
     exports = None
     noops = 0
 
-    async def get_pattern(self):
+    def get_pattern(self):
         return self.pattern, self.module
 
-    async def get_jump_bytecode(self) -> bytes:
+    def get_jump_bytecode(self) -> bytes:
         distance = self.hook_address - self.jump_address
 
         relitive_jump = distance - 5
@@ -158,10 +158,10 @@ class SimpleHook(AutoBotBaseHook):
 
         return b"\xE9" + packed_relitive_jump + (b"\x90" * self.noops)
 
-    async def bytecode_generator(self, packed_exports):
+    def bytecode_generator(self, packed_exports):
         raise NotImplemented()
 
-    async def get_hook_bytecode(self) -> bytes:
+    def get_hook_bytecode(self) -> bytes:
         packed_exports = []
         for export in self.exports:
             # addr = self.alloc(export[1])
@@ -170,7 +170,7 @@ class SimpleHook(AutoBotBaseHook):
             packed_addr = pack_to_int_or_longlong(addr)
             packed_exports.append((export[0], packed_addr))
 
-        bytecode = await self.bytecode_generator(packed_exports)
+        bytecode = self.bytecode_generator(packed_exports)
 
         return_addr = self.jump_address + self.instruction_length
 
@@ -181,11 +181,11 @@ class SimpleHook(AutoBotBaseHook):
 
         return bytecode
 
-    async def unhook(self):
-        await super().unhook()
+    def unhook(self):
+        super().unhook()
         for export in self.exports:
             if getattr(self, export[0], None):
-                await self.free(getattr(self, export[0]))
+                self.free(getattr(self, export[0]))
 
 
 # TODO: depreciate in favor of ClientObject -> behaviors -> animationbehavior -> 0x70 (body)
@@ -193,7 +193,7 @@ class PlayerHook(SimpleHook):
     pattern = rb"\xF2\x0F\x10\x40\x58\xF2"
     exports = [("player_struct", 8)]
 
-    async def bytecode_generator(self, packed_exports):
+    def bytecode_generator(self, packed_exports):
         # We use ecx bc we want 4 bytes only
         bytecode = (
             b"\x51"  # push rcx
@@ -216,7 +216,7 @@ class PlayerStatHook(SimpleHook):
     exports = [("stat_addr", 8)]
     noops = 2
 
-    async def bytecode_generator(self, packed_exports):
+    def bytecode_generator(self, packed_exports):
         # fmt: off
         bytecode = (
                 b"\x50"  # push rax
@@ -236,7 +236,7 @@ class QuestHook(SimpleHook):
     exports = [("cord_struct", 4)]
     noops = 4
 
-    async def bytecode_generator(self, packed_exports):
+    def bytecode_generator(self, packed_exports):
         # fmt: off
         bytecode = (
                 b"\x50"  # push rcx
@@ -255,7 +255,7 @@ class DuelHook(SimpleHook):
     )
     exports = [("current_duel_addr", 8)]
 
-    async def bytecode_generator(self, packed_exports):
+    def bytecode_generator(self, packed_exports):
         # fmt: off
         bytecode = (
                 b"\x48\x39\xD1"  # cmp rcx,rdx
@@ -280,7 +280,7 @@ class ClientHook(SimpleHook):
     instruction_length = 7
     noops = 2
 
-    async def bytecode_generator(self, packed_exports):
+    def bytecode_generator(self, packed_exports):
         # fmt: off
         bytecode = (
                 # We use rax bc we're using movabs
@@ -301,7 +301,7 @@ class RootWindowHook(SimpleHook):
     noops = 2
     exports = [("current_root_window_addr", 8)]
 
-    async def bytecode_generator(self, packed_exports):
+    def bytecode_generator(self, packed_exports):
         # fmt: off
         bytecode = (
             b"\x50"  # push rax
@@ -321,7 +321,7 @@ class RenderContextHook(SimpleHook):
     noops = 4
     exports = [("current_render_context_addr", 8)]
 
-    async def bytecode_generator(self, packed_exports):
+    def bytecode_generator(self, packed_exports):
         # fmt: off
         bytecode = (
             b"\x50"  # push rax
@@ -357,9 +357,9 @@ class User32GetClassInfoBaseHook(AutoBotBaseHook):
     # this is really hacky
     _hooked_instances = 0
 
-    async def alloc(self, size: int) -> int:
+    def alloc(self, size: int) -> int:
         if self._autobot_addr is None:
-            addr = await self.get_address_from_symbol("user32.dll", "GetClassInfoExA")
+            addr = self.get_address_from_symbol("user32.dll", "GetClassInfoExA")
             # this is so all instances have the address
             User32GetClassInfoBaseHook._autobot_addr = addr
 
@@ -369,27 +369,27 @@ class User32GetClassInfoBaseHook(AutoBotBaseHook):
             )
 
         if self._autobot_original_bytes is None:
-            User32GetClassInfoBaseHook._autobot_original_bytes = await self.read_bytes(
+            User32GetClassInfoBaseHook._autobot_original_bytes = self.read_bytes(
                 self._autobot_addr, self.AUTOBOT_SIZE
             )
             # this is so instructions don't collide
-            await self.write_bytes(self._autobot_addr, b"\x00" * self.AUTOBOT_SIZE)
+            self.write_bytes(self._autobot_addr, b"\x00" * self.AUTOBOT_SIZE)
 
         addr = self._autobot_addr + self._autobot_bytes_offset
         User32GetClassInfoBaseHook._autobot_bytes_offset += size
 
         return addr
 
-    async def hook(self) -> Any:
+    def hook(self) -> Any:
         User32GetClassInfoBaseHook._hooked_instances += 1
-        return await super().hook()
+        return super().hook()
 
-    async def unhook(self):
+    def unhook(self):
         User32GetClassInfoBaseHook._hooked_instances -= 1
-        await self.write_bytes(self.jump_address, self.jump_original_bytecode)
+        self.write_bytes(self.jump_address, self.jump_original_bytecode)
 
         if self._hooked_instances == 0:
-            await self.write_bytes(self._autobot_addr, self._autobot_original_bytes)
+            self.write_bytes(self._autobot_addr, self._autobot_original_bytes)
             User32GetClassInfoBaseHook._autobot_bytes_offset = 0
 
 
@@ -400,25 +400,25 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
 
         self.toggle_bool_addrs = ()
 
-    async def hook(self):
+    def hook(self):
         """
         Writes jump_bytecode to jump address and hook bytecode to hook address
         """
         User32GetClassInfoBaseHook._hooked_instances += 1
 
-        self.jump_address = await self.get_jump_address()
-        self.hook_address = await self.get_hook_address(50)
+        self.jump_address = self.get_jump_address()
+        self.hook_address = self.get_hook_address(50)
 
         logger.debug(f"Got hook address {self.hook_address} in {type(self)}")
         logger.debug(f"Got jump address {self.jump_address} in {type(self)}")
 
-        self.hook_bytecode = await self.get_hook_bytecode()
-        self.jump_bytecode = await self.get_jump_bytecode()
+        self.hook_bytecode = self.get_hook_bytecode()
+        self.jump_bytecode = self.get_jump_bytecode()
 
         logger.debug(f"Got hook bytecode {self.hook_bytecode} in {type(self)}")
         logger.debug(f"Got jump bytecode {self.jump_bytecode} in {type(self)}")
 
-        self.jump_original_bytecode = await self.read_bytes(
+        self.jump_original_bytecode = self.read_bytes(
             self.jump_address, len(self.jump_bytecode)
         )
 
@@ -426,18 +426,18 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
             f"Got jump original bytecode {self.jump_original_bytecode} in {type(self)}"
         )
 
-        await self.prehook()
+        self.prehook()
 
-        await self.write_bytes(self.hook_address, self.hook_bytecode)
-        await self.write_bytes(self.jump_address, self.jump_bytecode)
+        self.write_bytes(self.hook_address, self.hook_bytecode)
+        self.write_bytes(self.jump_address, self.jump_bytecode)
 
-        await self.posthook()
+        self.posthook()
 
-    async def posthook(self):
-        bool_one_address = await self.pattern_scan(
+    def posthook(self):
+        bool_one_address = self.pattern_scan(
             rb"\x00\xFF\x50\x18\x66\xC7", module="WizardGraphicalClient.exe"
         )
-        bool_two_address = await self.pattern_scan(
+        bool_two_address = self.pattern_scan(
             rb"\xC6\x86...\x00.\x33\xFF",
             module="WizardGraphicalClient.exe",
         )
@@ -450,30 +450,30 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
 
         self.toggle_bool_addrs = (bool_one_address, bool_two_address)
 
-        await self.write_bytes(bool_one_address, b"\x01")
-        await self.write_bytes(bool_two_address, b"\x01")
+        self.write_bytes(bool_one_address, b"\x01")
+        self.write_bytes(bool_two_address, b"\x01")
 
-    async def set_mouse_pos_addr(self):
-        self.mouse_pos_addr = await self.allocate(8)
+    def set_mouse_pos_addr(self):
+        self.mouse_pos_addr = self.allocate(8)
 
-    async def free_mouse_pos_addr(self):
-        await self.free(self.mouse_pos_addr)
+    def free_mouse_pos_addr(self):
+        self.free(self.mouse_pos_addr)
 
-    async def get_jump_address(self) -> int:
+    def get_jump_address(self) -> int:
         """
         gets the address to write jump at
         """
-        return await self.get_address_from_symbol("user32.dll", "GetCursorPos")
+        return self.get_address_from_symbol("user32.dll", "GetCursorPos")
 
-    async def get_jump_bytecode(self) -> bytes:
+    def get_jump_bytecode(self) -> bytes:
         # distance = end - start
         distance = self.hook_address - self.jump_address
         relitive_jump = distance - 5  # size of this line
         packed_relitive_jump = struct.pack("<i", relitive_jump)
         return b"\xE9" + packed_relitive_jump
 
-    async def get_hook_bytecode(self) -> bytes:
-        await self.set_mouse_pos_addr()
+    def get_hook_bytecode(self) -> bytes:
+        self.set_mouse_pos_addr()
         packed_mouse_pos_addr = pack_to_int_or_longlong(self.mouse_pos_addr)
 
         # fmt: off
@@ -488,8 +488,8 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
 
         return bytecode
 
-    async def unhook(self):
-        await super().unhook()
-        await self.free_mouse_pos_addr()
+    def unhook(self):
+        super().unhook()
+        self.free_mouse_pos_addr()
         for bool_addr in self.toggle_bool_addrs:
-            await self.write_bytes(bool_addr, b"\x00")
+            self.write_bytes(bool_addr, b"\x00")

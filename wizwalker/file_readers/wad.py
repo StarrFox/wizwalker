@@ -1,4 +1,3 @@
-import asyncio
 import struct
 import zlib
 from dataclasses import dataclass
@@ -7,7 +6,7 @@ from typing import Optional
 from mmap import mmap, ACCESS_READ
 from io import BytesIO
 
-from wizwalker.utils import get_wiz_install, run_in_executor
+from wizwalker.utils import get_wiz_install
 
 _NO_COMPRESS = frozenset(
     (
@@ -15,7 +14,6 @@ _NO_COMPRESS = frozenset(
         ".ogg",
     )
 )
-
 
 @dataclass
 class WadFileInfo:
@@ -29,8 +27,8 @@ class WadFileInfo:
 
 class Wad:
     # TODO: allow for `file` that doesnt exist yet
-    def __init__(self, file: Path | str):
-        self.file_path = Path(file)
+    def __init__(self, path: Path | str):
+        self.file_path = Path(path)
         self.name = self.file_path.stem
 
         self._file_map = {}
@@ -55,19 +53,19 @@ class Wad:
     def __repr__(self):
         return f"<Wad {self.name=}>"
 
-    async def __aenter__(self):
-        await self._open()
+    def __enter__(self):
+        self._open()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
-    async def size(self) -> int:
+    def size(self) -> int:
         """
         Total size of this wad
         """
         if not self._file_pointer:
-            await self._open()
+            self._open()
 
         if self._size:
             return self._size
@@ -75,35 +73,35 @@ class Wad:
         self._size = sum(file.size for file in self._file_map.values())
         return self._size
 
-    async def name_list(self) -> list[str]:
+    def name_list(self) -> list[str]:
         """
         List of all file names in this wad
         """
         if not self._file_pointer:
-            await self._open()
+            self._open()
 
         return list(self._file_map.keys())
 
-    async def info_list(self) -> list[WadFileInfo]:
+    def info_list(self) -> list[WadFileInfo]:
         """
         List of all WadFileInfo in this wad
         """
         if not self._file_pointer:
-            await self._open()
+            self._open()
 
         return list(self._file_map.values())
 
-    async def _open(self):
+    def _open(self):
         if self._file_pointer:
             raise RuntimeError("This Wad is already opened")
 
         # noinspection PyTypeChecker
         self._file_pointer = open(self.file_path, "rb")
         self._mmap = mmap(self._file_pointer.fileno(), 0, access=ACCESS_READ)
-        await run_in_executor(self._refresh_journal)
+        self._refresh_journal()
 
-    async def open(self, file_name: str) -> BytesIO:
-        data = await self.read(file_name)
+    def open(self, file_name: str) -> BytesIO:
+        data = self.read(file_name)
         return BytesIO(data)
 
     def close(self):
@@ -111,7 +109,7 @@ class Wad:
         self._file_pointer = None
 
     # fmt: off
-    async def _read(self, start: int, size: int) -> bytes:
+    def _read(self, start: int, size: int) -> bytes:
         return self._mmap[start: start + size]
 
     # fmt: on
@@ -155,7 +153,7 @@ class Wad:
 
     # fmt: on
 
-    async def read(self, name: str) -> Optional[bytes]:
+    def read(self, name: str) -> Optional[bytes]:
         """
         Get the data contents of the named file
 
@@ -166,31 +164,31 @@ class Wad:
             Bytes of the file or None for "unpatched" dummy files
         """
         if not self._file_pointer:
-            await self._open()
+            self.open()
 
-        target_file = await self.get_info(name)
+        target_file = self.get_info(name)
 
         if target_file.is_zip:
-            data = await self._read(target_file.offset, target_file.zipped_size)
+            data = self._read(target_file.offset, target_file.zipped_size)
 
         else:
-            data = await self._read(target_file.offset, target_file.size)
+            data = self._read(target_file.offset, target_file.size)
 
         # unpatched file
         if data[:4] == b"\x00\x00\x00\x00":
             return None
 
         if target_file.is_zip:
-            data = await run_in_executor(zlib.decompress, data)
+            data = zlib.decompress(data)
 
         return data
 
     # # TODO: finish
-    # async def write(self, name: str, data: str | bytes):
+    # def write(self, name: str, data: str | bytes):
     #     if isinstance(data, str):
     #         data = data.encode()
 
-    async def get_info(self, name: str) -> WadFileInfo:
+    def get_info(self, name: str) -> WadFileInfo:
         """
         Gets a WadFileInfo for a named file
 
@@ -198,7 +196,7 @@ class Wad:
             name: name of the file to get info on
         """
         if not self._file_pointer:
-            await self._open()
+            self._open()
 
         try:
             target_file = self._file_map[name]
@@ -207,7 +205,7 @@ class Wad:
 
         return target_file
 
-    async def extract_all(self, path: Path | str):
+    def extract_all(self, path: Path | str):
         """
         Unarchive a wad file into a directory
 
@@ -217,9 +215,9 @@ class Wad:
         path = Path(path)
 
         if not self._file_pointer:
-            await self._open()
+            self._open()
 
-        await run_in_executor(self._extract_all, path)
+        self._extract_all(path)
 
     # sync thread
     def _extract_all(self, path):
@@ -247,7 +245,10 @@ class Wad:
 
                     file_path.write_bytes(data)
 
-    async def insert_all(
+    def insert_all(self):
+        raise NotImplementedError()
+
+    def insert_all(
         self,
         source_path: Path | str,
         *,
@@ -265,7 +266,7 @@ class Wad:
         if not overwrite and output_path.exists():
             raise FileExistsError(f"{output_path} already exists.")
 
-        await run_in_executor(self._insert_all, source_path, output_path)
+        self._insert_all(source_path, output_path)
 
     @staticmethod
     def _insert_all(
