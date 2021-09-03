@@ -206,7 +206,6 @@ def wad():
 #     click.echo("Not implimented")
 
 
-# TODO: check directory first
 @wad.command(short_help="Unarchive a wad into a directory")
 @click.argument("input_wad", type=str)
 @click.argument("output_dir", type=click.Path(file_okay=False), default=".")
@@ -248,7 +247,6 @@ def unarchive(input_wad, output_dir):
     )
 
 
-# TODO: check directory first
 @wad.command(short_help="Extract a single file from a wad")
 @click.argument("input_wad", type=str)
 @click.argument("file_name")
@@ -258,11 +256,19 @@ def extract(input_wad, file_name):
 
     input_wad automatically fills in the rest of the path so you only need the name; i.e "root"
     """
-    wad_file = Wad.from_game_data(input_wad)
+    maybe_path = Path(input_wad)
+
+    maybe_path.suffix = ".wad"
+
+    if maybe_path.exists() and maybe_path.is_file():
+        wad_ = Wad(maybe_path)
+
+    else:
+        wad_ = Wad.from_game_data(input_wad)
 
     async def _extract_file():
         try:
-            file_data = await wad_file.get_file(file_name)
+            file_data = await wad_.get_file(file_name)
         except ValueError:
             click.echo(f"No file named {file_name} found.")
         else:

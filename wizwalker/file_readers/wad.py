@@ -9,10 +9,6 @@ from mmap import mmap, ACCESS_READ
 from wizwalker.utils import get_wiz_install, run_in_executor
 
 
-def calculate_wad_crc(data) -> int:
-    return zlib.crc32(data)
-
-
 @dataclass
 class WadFileInfo:
     name: str
@@ -209,11 +205,13 @@ class Wad:
                     file_path = path / file.name
                     file_path.parent.mkdir(parents=True, exist_ok=True)
 
+                    # fmt: off
                     if file.is_zip:
-                        data = mm[file.offset : file.offset + file.zipped_size]
+                        data = mm[file.offset: file.offset + file.zipped_size]
 
                     else:
-                        data = mm[file.offset : file.offset + file.size]
+                        data = mm[file.offset: file.offset + file.size]
+                    # fmt: on
 
                     # unpatched file
                     if data[:4] == b"\x00\x00\x00\x00":
@@ -267,7 +265,7 @@ class Wad:
             else:
                 zsize = -1
 
-            crc = calculate_wad_crc(data)
+            crc = zlib.crc32(data)
 
             journal[sub_path] = WadFileInfo(
                 sub_path.name, offset, size, zsize, is_zip, crc
@@ -317,18 +315,17 @@ def _debug_create_wad(
 
         # sub_path = f"{file.relative_to(path)}\x00".encode("utf-8")
         sub_path = file.relative_to(path)
-        # is_zip = sub_path.suffix not in (
-        #     # ".mp3",
-        #     ".ogg",
-        # )  # this check is probably not complete
+        is_zip = sub_path.suffix not in (
+            ".mp3",
+            ".ogg",
+        )  # this check is probably not complete
 
-        is_zip = True
         offset = 0  # impossible to get at this point
         data = file.read_bytes()
 
         if calculate_crcs:
             start = time.perf_counter()
-            crc = calculate_wad_crc(data)
+            crc = zlib.crc32(data)
             end = time.perf_counter()
 
             total_time = end - start
