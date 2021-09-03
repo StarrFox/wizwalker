@@ -66,7 +66,8 @@ class TypeDumper:
     @staticmethod
     async def get_class_info(node_data: "wizwalker.memory.type_tree.Type"):
         bases = await node_data.get_bases()
-        class_hash = await node_data.hash()
+        # & 0xFFFF_FFFF makes it unsigned
+        class_hash = await node_data.hash() & 0xFFFF_FFFF
         return [await base.name() for base in bases], class_hash
 
     @staticmethod
@@ -83,7 +84,8 @@ class TypeDumper:
             "container": await container.name(),
             "dynamic": await container.is_dynamic(),
             "pointer": await property_type.is_pointer(),
-            "hash": await property_.full_hash(),
+            # & 0xFFFF_FFFF makes the value unsigned
+            "hash": await property_.full_hash() & 0xFFFF_FFFF,
         }
 
         return property_name, property_info
