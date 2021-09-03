@@ -1,4 +1,3 @@
-import asyncio
 import functools
 import re
 import struct
@@ -121,7 +120,7 @@ class MemoryHandler:
 
         return found
 
-    async def pattern_scan(
+    def pattern_scan(
         self, pattern: bytes, *, module: str = None, return_multiple: bool = False
     ) -> list | int:
         """
@@ -141,16 +140,14 @@ class MemoryHandler:
         """
         if module:
             module = pymem.process.module_from_name(self.process.process_handle, module)
-            found_addresses = await utils.run_in_executor(
-                self._scan_entire_module,
+            found_addresses = self._scan_entire_module(
                 self.process.process_handle,
                 module,
                 pattern,
             )
 
         else:
-            found_addresses = await utils.run_in_executor(
-                self._scan_all,
+            found_addresses = self._scan_all(
                 self.process.process_handle,
                 pattern,
                 return_multiple,
@@ -168,7 +165,7 @@ class MemoryHandler:
         else:
             return found_addresses[0]
 
-    async def get_address_from_symbol(
+    def get_address_from_symbol(
         self,
         module_name: str,
         symbol_name: str,
@@ -199,9 +196,7 @@ class MemoryHandler:
         if not file_path.exists():
             raise ValueError(f"No module named {module_name}")
 
-        symbols = await utils.run_in_executor(
-            self._get_symbols, file_path, force_reload=force_reload
-        )
+        symbols = self._get_symbols(file_path, force_reload=force_reload)
 
         if not (symbol := symbols.get(symbol_name)):
             raise ValueError(f"No symbol named {symbol_name} in module {module_name}")
@@ -212,7 +207,7 @@ class MemoryHandler:
 
         return module.lpBaseOfDll + symbol
 
-    async def allocate(self, size: int) -> int:
+    def allocate(self, size: int) -> int:
         """
         Allocate some bytes
 
@@ -222,18 +217,18 @@ class MemoryHandler:
         Returns:
             The allocated address
         """
-        return await utils.run_in_executor(self.process.allocate, size)
+        return self.process.allocate(size)
 
-    async def free(self, address: int):
+    def free(self, address: int):
         """
         Free some bytes
 
         Args:
              address: The address to free
         """
-        await utils.run_in_executor(self.process.free, address)
+        self.process.free(address)
 
-    async def read_bytes(self, address: int, size: int) -> bytes:
+    def read_bytes(self, address: int, size: int) -> bytes:
         """
         Read some bytes from memory
 
@@ -250,7 +245,7 @@ class MemoryHandler:
             raise AddressOutOfRange(address)
 
         try:
-            return await utils.run_in_executor(self.process.read_bytes, address, size)
+            return self.process.read_bytes(address, size)
         except pymem.exception.MemoryReadError:
             # we don't want to run is running for every read
             # so we just check after we error
@@ -259,7 +254,7 @@ class MemoryHandler:
             else:
                 raise MemoryReadError(address)
 
-    async def write_bytes(self, address: int, value: bytes):
+    def write_bytes(self, address: int, value: bytes):
         """
         Write bytes to memory
 
@@ -270,12 +265,7 @@ class MemoryHandler:
         size = len(value)
         logger.debug(f"Writing bytes {value} to address {address} with size {size}")
         try:
-            await utils.run_in_executor(
-                self.process.write_bytes,
-                address,
-                value,
-                size,
-            )
+            self.process.write_bytes(address, value, size)
         except pymem.exception.MemoryWriteError:
             # see read_bytes
             if not self.is_running:
@@ -283,7 +273,7 @@ class MemoryHandler:
             else:
                 raise MemoryWriteError(address)
 
-    async def read_typed(self, address: int, data_type: str) -> Any:
+    def read_typed(self, address: int, data_type: str) -> Any:
         """
         Read typed bytes from memory
 
@@ -298,10 +288,10 @@ class MemoryHandler:
         if type_format is None:
             raise ValueError(f"{data_type} is not a valid data type")
 
-        data = await self.read_bytes(address, struct.calcsize(type_format))
+        data = self.read_bytes(address, struct.calcsize(type_format))
         return struct.unpack(type_format, data)[0]
 
-    async def write_typed(self, address: int, value: Any, data_type: str):
+    def write_typed(self, address: int, value: Any, data_type: str):
         """
         Write typed bytes to memory
 
@@ -315,4 +305,4 @@ class MemoryHandler:
             raise ValueError(f"{data_type} is not a valid data type")
 
         packed_data = struct.pack(type_format, value)
-        await self.write_bytes(address, packed_data)
+        self.write_bytes(address, packed_data)

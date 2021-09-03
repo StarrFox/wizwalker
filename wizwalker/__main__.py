@@ -1,4 +1,3 @@
-import asyncio
 import sys
 from pathlib import Path
 import json
@@ -57,7 +56,7 @@ def start_wiz(instances, logins):
         click.echo("Not enough or too many logins for the number of instances")
         exit(1)
 
-    asyncio.run(utils.start_instances_with_login(instances, logins))
+    utils.start_instances_with_login(instances, logins)
 
 
 @main.group()
@@ -80,32 +79,29 @@ def text(file_path):
         if not click.confirm(f"{file_path} already exists overwrite it?", default=True):
             exit(0)
 
-    async def _dump():
-        async with ClientHandler() as ch:
-            clients = ch.get_new_clients()
+    with ClientHandler() as ch:
+        clients = ch.get_new_clients()
 
-            if not clients:
-                click.echo("No open wizard101 instances to read from")
-                return
+        if not clients:
+            click.echo("No open wizard101 instances to read from")
+            return
 
-            client = clients[0]
+        client = clients[0]
 
-            hash_map = await get_hash_map(client)
+        hash_map = get_hash_map(client)
 
-            out = file_path.open("w+")
+        out = file_path.open("w+")
 
-            with click.progressbar(
-                list(hash_map.items()),
-                show_pos=True,
-                show_percent=False,
-                item_show_func=lambda i: i[0][:40] if i else i,
-                show_eta=False,
-            ) as items:
-                for name, node in items:
-                    out.write(await dump_class_to_string(name, node))
-                    out.write("\n")
-
-    asyncio.run(_dump())
+        with click.progressbar(
+            list(hash_map.items()),
+            show_pos=True,
+            show_percent=False,
+            item_show_func=lambda i: i[0][:40] if i else i,
+            show_eta=False,
+        ) as items:
+            for name, node in items:
+                out.write(dump_class_to_string(name, node))
+                out.write("\n")
 
 
 @dump.command(name="json")
@@ -121,33 +117,30 @@ def json_(file_path, indent):
         if not click.confirm(f"{file_path} already exists overwrite it?", default=True):
             exit(0)
 
-    async def _dump():
-        async with ClientHandler() as ch:
-            clients = ch.get_new_clients()
+    with ClientHandler() as ch:
+        clients = ch.get_new_clients()
 
-            if not clients:
-                click.echo("No open wizard101 instances to read from")
-                return
+        if not clients:
+            click.echo("No open wizard101 instances to read from")
+            return
 
-            client = clients[0]
+        client = clients[0]
 
-            hash_map = await get_hash_map(client)
+        hash_map = get_hash_map(client)
 
-            res = {}
+        res = {}
 
-            with click.progressbar(
-                list(hash_map.items()),
-                show_pos=True,
-                show_percent=False,
-                item_show_func=lambda i: i[0][:40] if i else i,
-                show_eta=False,
-            ) as items:
-                for name, node in items:
-                    res.update(await dump_class_to_json(name, node))
+        with click.progressbar(
+            list(hash_map.items()),
+            show_pos=True,
+            show_percent=False,
+            item_show_func=lambda i: i[0][:40] if i else i,
+            show_eta=False,
+        ) as items:
+            for name, node in items:
+                res.update(dump_class_to_json(name, node))
 
-            json.dump(res, file_path.open("w+"), indent=indent)
-
-    asyncio.run(_dump())
+        json.dump(res, file_path.open("w+"), indent=indent)
 
 
 @dump.command()
@@ -239,11 +232,11 @@ def unarchive(input_wad, output_dir):
     import time
 
     start = time.perf_counter()
-    asyncio.run(wad_.extract_all(path))
+    wad_.extract_all(path)
     end = time.perf_counter()
 
     click.echo(
-        f"Unarchived {len(await wad_.info_list())} files in {int(end - start)} seconds"
+        f"Unarchived {len(wad_.info_list.keys())} files in {int(end - start)} seconds"
     )
 
 
@@ -266,25 +259,22 @@ def extract(input_wad, file_name):
     else:
         wad_ = Wad.from_game_data(input_wad)
 
-    async def _extract_file():
-        try:
-            file_data = await wad_.read(file_name)
-        except ValueError:
-            click.echo(f"No file named {file_name} found.")
-        else:
-            if not file_data:
-                click.echo(
-                    f"{file_name} has not yet been patched by the game; must get the game to load it"
-                )
-                exit(0)
+    try:
+        file_data = wad_.read(file_name)
+    except ValueError:
+        click.echo(f"No file named {file_name} found.")
+    else:
+        if not file_data:
+            click.echo(
+                f"{file_name} has not yet been patched by the game; must get the game to load it"
+            )
+            exit(0)
 
-            relitive_file_name = file_name.split("/")[-1]
+        relitive_file_name = file_name.split("/")[-1]
 
-            with open(relitive_file_name, "wb+") as fp:
-                click.echo("Writing...")
-                fp.write(file_data)
-
-    asyncio.run(_extract_file())
+        with open(relitive_file_name, "wb+") as fp:
+            click.echo("Writing...")
+            fp.write(file_data)
 
 
 # # TODO: finish

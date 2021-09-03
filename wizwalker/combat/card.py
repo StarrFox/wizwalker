@@ -1,4 +1,4 @@
-import asyncio
+import time
 from typing import Optional, Union
 
 import wizwalker
@@ -21,7 +21,7 @@ class CombatCard:
         self._spell_window = spell_window
 
     # TODO: add checks before casting
-    async def cast(
+    def cast(
         self,
         target: Optional[Union["CombatCard", "wizwalker.combat.CombatMember"]],
         *,
@@ -37,203 +37,203 @@ class CombatCard:
             debug_paint: If the card should be highlighted before clicking
         """
         if isinstance(target, CombatCard):
-            cards_len_before = len(await self.combat_handler.get_cards())
+            cards_len_before = len(self.combat_handler.get_cards())
 
-            await self.combat_handler.client.mouse_handler.click_window(
+            self.combat_handler.client.mouse_handler.click_window(
                 self._spell_window
             )
 
-            await asyncio.sleep(sleep_time)
+            time.sleep(sleep_time)
 
-            await self.combat_handler.client.mouse_handler.set_mouse_position_to_window(
+            self.combat_handler.client.mouse_handler.set_mouse_position_to_window(
                 target._spell_window
             )
 
-            await asyncio.sleep(sleep_time)
+            time.sleep(sleep_time)
 
             if debug_paint:
-                await target._spell_window.debug_paint()
+                target._spell_window.debug_paint()
 
-            await self.combat_handler.client.mouse_handler.click_window(
+            self.combat_handler.client.mouse_handler.click_window(
                 target._spell_window
             )
 
             # wait until card number goes down
-            while len(await self.combat_handler.get_cards()) > cards_len_before:
-                await asyncio.sleep(0.1)
+            while len(self.combat_handler.get_cards()) > cards_len_before:
+                time.sleep(0.1)
 
             # wiz can't keep up with how fast we can cast
             if sleep_time is not None:
-                await asyncio.sleep(sleep_time)
+                time.sleep(sleep_time)
 
         elif target is None:
-            await self.combat_handler.client.mouse_handler.click_window(
+            self.combat_handler.client.mouse_handler.click_window(
                 self._spell_window
             )
             # we don't need to sleep because nothing will be casted after
 
         else:
-            await self.combat_handler.client.mouse_handler.click_window(
+            self.combat_handler.client.mouse_handler.click_window(
                 self._spell_window
             )
 
             # see above
             if sleep_time is not None:
-                await asyncio.sleep(sleep_time)
+                time.sleep(sleep_time)
 
-            await self.combat_handler.client.mouse_handler.click_window(
-                await target.get_health_text_window()
+            self.combat_handler.client.mouse_handler.click_window(
+                target.get_health_text_window()
             )
 
-    async def discard(self, *, sleep_time: Optional[float] = 1.0):
+    def discard(self, *, sleep_time: Optional[float] = 1.0):
         """
         Discard this Card
 
         Args:
             sleep_time: Time to sleep after discard or None to not
         """
-        cards_len_before = len(await self.combat_handler.get_cards())
-        await self.combat_handler.client.mouse_handler.click_window(
+        cards_len_before = len(self.combat_handler.get_cards())
+        self.combat_handler.client.mouse_handler.click_window(
             self._spell_window, right_click=True
         )
 
         # wait until card number goes down
-        while len(await self.combat_handler.get_cards()) > cards_len_before:
-            await asyncio.sleep(0.1)
+        while len(self.combat_handler.get_cards()) > cards_len_before:
+            time.sleep(0.1)
 
         if sleep_time is not None:
-            await asyncio.sleep(sleep_time)
+            time.sleep(sleep_time)
 
-    async def graphical_spell(
+    def graphical_spell(
         self,
     ) -> "wizwalker.memory.memory_objects.spell.DynamicGraphicalSpell":
         """
         The GraphicalSpell with information about this card
         """
-        res = await self._spell_window.maybe_graphical_spell()
+        res = self._spell_window.maybe_graphical_spell()
         if res is None:
             raise ValueError("Graphical spell not found; probably reading too fast")
 
         return res
 
-    async def wait_for_graphical_spell(
+    def wait_for_graphical_spell(
         self,
     ) -> "wizwalker.memory.memory_objects.spell.DynamicGraphicalSpell":
         """
         Wait for GraphicalSpell
         """
-        return await wizwalker.utils.wait_for_non_error(self.graphical_spell)
+        return wizwalker.utils.wait_for_non_error(self.graphical_spell)
 
-    async def spell_effects(
+    def spell_effects(
         self,
     ) -> list["wizwalker.memory.memory_objects.spell_effect.DynamicSpellEffect"]:
-        spell = await self.wait_for_graphical_spell()
-        return await spell.spell_effects()
+        spell = self.wait_for_graphical_spell()
+        return spell.spell_effects()
 
-    async def name(self) -> str:
+    def name(self) -> str:
         """
         The name of this card
         """
-        graphical_spell = await self.wait_for_graphical_spell()
-        spell_template = await graphical_spell.spell_template()
-        return await spell_template.name()
+        graphical_spell = self.wait_for_graphical_spell()
+        spell_template = graphical_spell.spell_template()
+        return spell_template.name()
 
-    async def display_name_code(self) -> str:
+    def display_name_code(self) -> str:
         """
         The display name code of this card
         """
-        graphical_spell = await self.wait_for_graphical_spell()
-        spell_template = await graphical_spell.spell_template()
-        return await spell_template.display_name()
+        graphical_spell = self.wait_for_graphical_spell()
+        spell_template = graphical_spell.spell_template()
+        return spell_template.display_name()
 
-    async def display_name(self) -> str:
+    def display_name(self) -> str:
         """
         the display name of this card
         """
-        code = await self.display_name_code()
-        return await self.combat_handler.client.cache_handler.get_langcode_name(code)
+        code = self.display_name_code()
+        return self.combat_handler.client.cache_handler.get_langcode_name(code)
 
-    async def type_name(self) -> str:
+    def type_name(self) -> str:
         """
         The type name of this card
         """
-        graphical_spell = await self.wait_for_graphical_spell()
-        spell_template = await graphical_spell.spell_template()
-        return await spell_template.type_name()
+        graphical_spell = self.wait_for_graphical_spell()
+        spell_template = graphical_spell.spell_template()
+        return spell_template.type_name()
 
-    async def template_id(self) -> int:
+    def template_id(self) -> int:
         """
         This card's template id
         """
-        graphical_spell = await self.wait_for_graphical_spell()
-        return await graphical_spell.template_id()
+        graphical_spell = self.wait_for_graphical_spell()
+        return graphical_spell.template_id()
 
-    async def spell_id(self) -> int:
+    def spell_id(self) -> int:
         """
         This card's spell id
         """
-        graphical_spell = await self.wait_for_graphical_spell()
-        return await graphical_spell.spell_id()
+        graphical_spell = self.wait_for_graphical_spell()
+        return graphical_spell.spell_id()
 
-    async def accuracy(self) -> int:
+    def accuracy(self) -> int:
         """
         Current accuracy of this card
         """
-        graphical_spell = await self.wait_for_graphical_spell()
-        return await graphical_spell.accuracy()
+        graphical_spell = self.wait_for_graphical_spell()
+        return graphical_spell.accuracy()
 
-    async def is_castable(self) -> bool:
+    def is_castable(self) -> bool:
         """
         If this card can be casted
         """
         spell_window = self._spell_window
-        return not await spell_window.maybe_spell_grayed()
+        return not spell_window.maybe_spell_grayed()
 
-    async def is_enchanted(self) -> bool:
+    def is_enchanted(self) -> bool:
         """
         If this card is enchanted or not
         """
-        grapical_spell = await self.wait_for_graphical_spell()
-        return await grapical_spell.enchantment() != 0
+        grapical_spell = self.wait_for_graphical_spell()
+        return grapical_spell.enchantment() != 0
 
-    async def is_treasure_card(self) -> bool:
+    def is_treasure_card(self) -> bool:
         """
         If this card is a treasure card
         """
-        graphical_spell = await self.wait_for_graphical_spell()
-        return await graphical_spell.treasure_card()
+        graphical_spell = self.wait_for_graphical_spell()
+        return graphical_spell.treasure_card()
 
-    async def is_item_card(self) -> bool:
+    def is_item_card(self) -> bool:
         """
         If this card is an item card
         """
-        graphical_spell = await self.wait_for_graphical_spell()
-        return await graphical_spell.item_card()
+        graphical_spell = self.wait_for_graphical_spell()
+        return graphical_spell.item_card()
 
-    async def is_side_board(self) -> bool:
+    def is_side_board(self) -> bool:
         """
         If this card is from the side deck
         """
-        graphical_spell = await self.wait_for_graphical_spell()
-        return await graphical_spell.side_board()
+        graphical_spell = self.wait_for_graphical_spell()
+        return graphical_spell.side_board()
 
-    async def is_cloaked(self) -> bool:
+    def is_cloaked(self) -> bool:
         """
         If this card is cloaked
         """
-        graphical_spell = await self.wait_for_graphical_spell()
-        return await graphical_spell.cloaked()
+        graphical_spell = self.wait_for_graphical_spell()
+        return graphical_spell.cloaked()
 
-    async def is_enchanted_from_item_card(self) -> bool:
+    def is_enchanted_from_item_card(self) -> bool:
         """
         If this card was enchanted from an item card
         """
-        graphical_spell = await self.wait_for_graphical_spell()
-        return await graphical_spell.enchantment_spell_is_item_card()
+        graphical_spell = self.wait_for_graphical_spell()
+        return graphical_spell.enchantment_spell_is_item_card()
 
-    async def is_pve_only(self) -> bool:
+    def is_pve_only(self) -> bool:
         """
         If this card can only be used in pve
         """
-        graphical_spell = await self.wait_for_graphical_spell()
-        return await graphical_spell.pve()
+        graphical_spell = self.wait_for_graphical_spell()
+        return graphical_spell.pve()

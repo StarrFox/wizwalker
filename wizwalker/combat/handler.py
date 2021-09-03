@@ -1,4 +1,4 @@
-import asyncio
+import time
 from collections.abc import Callable
 
 from .member import CombatMember
@@ -17,90 +17,90 @@ class CombatHandler:
 
         self._spell_check_boxes = None
 
-    async def handle_round(self):
+    def handle_round(self):
         """
         Called at the start of each round
         """
         raise NotImplementedError()
 
-    async def handle_combat(self):
+    def handle_combat(self):
         """
         Handles an entire combat interaction
         """
-        while await self.in_combat():
-            await self.wait_for_planning_phase()
-            round_number = await self.round_number()
+        while self.in_combat():
+            self.wait_for_planning_phase()
+            round_number = self.round_number()
             # TODO: handle this taking longer than planning timer time
-            await self.handle_round()
-            await self.wait_until_next_round(round_number)
+            self.handle_round()
+            self.wait_until_next_round(round_number)
 
         self._spell_check_boxes = None
 
-    async def wait_for_planning_phase(self, sleep_time: float = 0.5):
+    def wait_for_planning_phase(self, sleep_time: float = 0.5):
         """
         Wait for the duel to enter the planning phase
 
         Args:
             sleep_time: Time to sleep between checks
         """
-        await utils.wait_for_value(
+        utils.wait_for_value(
             self.client.duel.duel_phase, DuelPhase.planning, sleep_time
         )
 
-    async def wait_for_combat(self, sleep_time: float = 0.5):
+    def wait_for_combat(self, sleep_time: float = 0.5):
         """
         Wait until in combat
         """
-        await utils.wait_for_value(self.in_combat, True, sleep_time)
-        await self.handle_combat()
+        utils.wait_for_value(self.in_combat, True, sleep_time)
+        self.handle_combat()
 
-    async def wait_until_next_round(self, current_round: int, sleep_time: float = 0.5):
+    def wait_until_next_round(self, current_round: int, sleep_time: float = 0.5):
         """
         Wait for the round number to change
         """
         # can't use wait_for_value bc of the special in_combat condition
         # so we don't get stuck waiting if combat ends
-        while await self.in_combat():
-            new_round_number = await self.round_number()
+        while self.in_combat():
+            new_round_number = self.round_number()
             if new_round_number > current_round:
                 return
 
-            await asyncio.sleep(sleep_time)
+            time.sleep(sleep_time)
 
-    async def in_combat(self) -> bool:
+    def in_combat(self) -> bool:
         """
         If the client is in combat or not
         """
-        return await self.client.in_battle()
+        return self.client.in_battle()
 
-    async def _get_card_windows(self):
+    def _get_card_windows(self):
         # these can be cached bc they are static
         if self._spell_check_boxes:
             return self._spell_check_boxes
 
-        spell_checkbox_windows = await self.client.root_window.get_windows_with_type(
+        spell_checkbox_windows = self.client.root_window.get_windows_with_type(
             "SpellCheckBox"
         )
 
         self._spell_check_boxes = spell_checkbox_windows
         return self._spell_check_boxes
 
-    async def get_cards(self) -> list[CombatCard]:
+    def get_cards(self) -> list[CombatCard]:
         """
         List of active CombatCards
         """
-        spell_checkbox_windows = await self._get_card_windows()
+        spell_checkbox_windows = self._get_card_windows()
 
         cards = []
         # cards are ordered right to left so we need to flip them
         for spell_checkbox in spell_checkbox_windows[::-1]:
-            if WindowFlags.visible in await spell_checkbox.flags():
+            if WindowFlags.visible in spell_checkbox.flags():
                 card = CombatCard(self, spell_checkbox)
                 cards.append(card)
 
         return cards
 
-    async def get_cards_with_predicate(self, pred: Callable) -> list[CombatCard]:
+    def get_cards_with_predicate(self, pred: Callable) -> list[CombatCard]:
         """
         Return cards that match a predicate
 
@@ -109,21 +109,24 @@ class CombatHandler:
         """
         cards = []
 
-        for card in await self.get_cards():
-            if await pred(card):
+        for card in self.get_cards():
+            if pred(card):
                 cards.append(card)
 
         return cards
 
-    async def get_card_named(self, name: str) -> CombatCard:
+    def get_card_named(self, name: str) -> CombatCard:
         """
         Returns the first Card with name
         """
 
-        async def _pred(card):
-            return name.lower() == (await card.display_name()).lower()
+        def _pred(card):
+            return name.lower() == card.display_name().lower()
 
-        possible = await self.get_cards_with_predicate(_pred)
+        try:
+            possible = self.get_cards_with_predicate(_pred)
+        except ValueError as e:
+            raise RuntimeError(e)
 
         if possible:
             return possible[0]
@@ -131,7 +134,7 @@ class CombatHandler:
         raise ValueError(f"Couldn't find a card named {name}")
 
     # TODO: add allow_treasure_cards that defaults to False
-    async def get_damaging_aoes(self, *, check_enchanted: bool = None):
+    def get_damaging_aoes(self, *, check_enchanted: bool = None):
         """
         Get a list of all damaging aoes in hand
 
@@ -139,40 +142,40 @@ class CombatHandler:
             check_enchanted: None -> don't check enchanted; False -> non-enchanted; True -> enchanted
         """
 
-        async def _pred(card):
+        def _pred(card):
             if check_enchanted is True:
-                if not await card.is_enchanted():
+                if not card.is_enchanted():
                     return False
 
             elif check_enchanted is False:
-                if await card.is_enchanted():
+                if card.is_enchanted():
                     return False
 
-            if await card.type_name() != "AOE":
+            if card.type_name() != "AOE":
                 return False
 
-            effects = await card.get_spell_effects()
+            effects = card.get_spell_effects()
 
             for effect in effects:
-                effect_type = await effect.maybe_read_type_name()
+                effect_type = effect.maybe_read_type_name()
                 if effect_type.lower() in ("variable", "random"):
-                    for sub_effect in await effect.maybe_effect_list():
-                        if await sub_effect.effect_target() in (
+                    for sub_effect in effect.maybe_effect_list():
+                        if sub_effect.effect_target() in (
                             EffectTarget.enemy_team,
                             EffectTarget.enemy_team_all_at_once,
                         ):
                             return True
 
                 else:
-                    if await effect.effect_target() in (
+                    if effect.effect_target() in (
                         EffectTarget.enemy_team,
                         EffectTarget.enemy_team_all_at_once,
                     ):
                         return True
 
-        return await self.get_cards_with_predicate(_pred)
+        return self.get_cards_with_predicate(_pred)
 
-    async def get_damage_enchants(self, *, sort_by_damage: bool = False):
+    def get_damage_enchants(self, *, sort_by_damage: bool = False):
         """
         Get enchants that increse the damage of spells
 
@@ -180,32 +183,32 @@ class CombatHandler:
             sort_by_damage: If enchants should be sorted by how much damage they add
         """
 
-        async def _pred(card):
-            if await card.type_name() != "Enchantment":
+        def _pred(card):
+            if card.type_name() != "Enchantment":
                 return False
 
-            for effect in await card.get_spell_effects():
-                if await effect.effect_type() == SpellEffects.modify_card_damage:
+            for effect in card.get_spell_effects():
+                if effect.effect_type() == SpellEffects.modify_card_damage:
                     return True
 
             return False
 
-        damage_enchants = await self.get_cards_with_predicate(_pred)
+        damage_enchants = self.get_cards_with_predicate(_pred)
 
         if not sort_by_damage:
             return damage_enchants
 
-        async def _sort_by_damage(card):
-            effect = (await card.get_spell_effects())[0]
-            return await effect.effect_param()
+        def _sort_by_damage(card):
+            effect = card.get_spell_effects()[0]
+            return effect.effect_param()
 
-        return await utils.async_sorted(damage_enchants, key=_sort_by_damage)
+        return sorted(damage_enchants, key=_sort_by_damage)
 
-    async def get_members(self) -> list[CombatMember]:
+    def get_members(self) -> list[CombatMember]:
         """
         List of active CombatMembers
         """
-        combatant_windows = await self.client.root_window.get_windows_with_name(
+        combatant_windows = self.client.root_window.get_windows_with_name(
             "CombatantControl"
         )
 
@@ -216,7 +219,7 @@ class CombatHandler:
 
         return members
 
-    async def get_members_with_predicate(self, pred: Callable) -> list[CombatMember]:
+    def get_members_with_predicate(self, pred: Callable) -> list[CombatMember]:
         """
         Return members that match a predicate
 
@@ -225,63 +228,63 @@ class CombatHandler:
         """
         members = []
 
-        for member in await self.get_members():
-            if await pred(member):
+        for member in self.get_members():
+            if pred(member):
                 members.append(member)
 
         return members
 
-    async def get_client_member(self) -> CombatMember:
+    def get_client_member(self) -> CombatMember:
         """
         Get the client's CombatMember
         """
-        members = await self.get_members()
+        members = self.get_members()
 
         for member in members:
-            if await member.is_client():
+            if member.is_client():
                 return member
 
         raise ValueError("Couldn't find client's CombatMember")
 
-    async def get_all_monster_members(self) -> list[CombatMember]:
+    def get_all_monster_members(self) -> list[CombatMember]:
         """
         Get all members who are monsters
         """
-        members = await self.get_members()
+        members = self.get_members()
 
         monsters = []
         for member in members:
-            if await member.is_monster():
+            if member.is_monster():
                 monsters.append(member)
 
         return monsters
 
-    async def get_all_player_members(self) -> list[CombatMember]:
+    def get_all_player_members(self) -> list[CombatMember]:
         """
         Get all members who are players
         """
-        members = await self.get_members()
+        members = self.get_members()
 
         players = []
         for member in members:
-            if await member.is_player():
+            if member.is_player():
                 players.append(member)
 
         return players
 
-    async def get_member_named(self, name: str) -> CombatMember:
+    def get_member_named(self, name: str) -> CombatMember:
         """
         Returns the first Member with name
         """
-        members = await self.get_members()
+        members = self.get_members()
 
         for member in members:
-            if name.lower() in (await member.name()).lower():
+            if name.lower() in member.name().lower():
                 return member
 
         raise ValueError(f"Couldn't find a member named {name}")
 
-    async def attempt_cast(
+    def attempt_cast(
         self,
         name: str,
         *,
@@ -299,83 +302,83 @@ class CombatHandler:
             on_client: Bool if the card should be cast on the client
         """
         try:
-            card = await self.get_card_named(name)
+            card = self.get_card_named(name)
 
             if on_member:
-                target = await self.get_member_named(on_member)
-                await card.cast(target)
+                target = self.get_member_named(on_member)
+                card.cast(target)
 
             elif on_card:
-                target = await self.get_card_named(on_card)
-                await card.cast(target)
+                target = self.get_card_named(on_card)
+                card.cast(target)
 
             elif on_client:
-                target = await self.get_client_member()
-                await card.cast(target)
+                target = self.get_client_member()
+                card.cast(target)
 
             else:
-                await card.cast(None)
+                card.cast(None)
 
             return True
 
         except ValueError:
             return False
 
-    async def round_number(self) -> int:
+    def round_number(self) -> int:
         """
         Current round number
         """
-        return await self.client.duel.round_num()
+        return self.client.duel.round_num()
 
-    async def pass_button(self):
+    def pass_button(self):
         """
         Click the pass button
         """
-        pos_done_window = await self.client.root_window.get_windows_with_name(
+        pos_done_window = self.client.root_window.get_windows_with_name(
             "DoneWindow"
         )
         if pos_done_window:
             done_window = pos_done_window[0]
 
-            if await done_window.is_visible():
-                pos_defeated_pass_button = await done_window.get_windows_with_name(
+            if done_window.is_visible():
+                pos_defeated_pass_button = done_window.get_windows_with_name(
                     "DefeatedPassButton"
                 )
                 defeated_pass_button = pos_defeated_pass_button[0]
 
-                return await self.client.mouse_handler.click_window(
+                return self.client.mouse_handler.click_window(
                     defeated_pass_button
                 )
 
-        await self.client.mouse_handler.click_window_with_name("Focus")
+        self.client.mouse_handler.click_window_with_name("Focus")
 
-    async def draw_button(self):
+    def draw_button(self):
         """
         Click the draw button
         """
-        await self.client.mouse_handler.click_window_with_name("Draw")
+        self.client.mouse_handler.click_window_with_name("Draw")
 
-    async def flee_button(self):
+    def flee_button(self):
         """
         Click the free button
         """
-        pos_done_window = await self.client.root_window.get_windows_with_name(
+        pos_done_window = self.client.root_window.get_windows_with_name(
             "DoneWindow"
         )
         if pos_done_window:
             done_window = pos_done_window[0]
 
-            if await done_window.is_visible():
-                pos_defeated_flee_button = await done_window.get_windows_with_name(
+            if done_window.is_visible():
+                pos_defeated_flee_button = done_window.get_windows_with_name(
                     "DefeatedFleeButton"
                 )
                 defeated_flee_button = pos_defeated_flee_button[0]
 
-                return await self.client.mouse_handler.click_window(
+                return self.client.mouse_handler.click_window(
                     defeated_flee_button
                 )
 
-        await self.client.mouse_handler.click_window_with_name("Flee")
+        self.client.mouse_handler.click_window_with_name("Flee")
 
 
 class AoeHandler(CombatHandler):
@@ -383,18 +386,18 @@ class AoeHandler(CombatHandler):
     Subclass of CombatHandler that just casts enchanted aoes
     """
 
-    async def handle_round(self):
-        enchanted_aoes = await self.get_damaging_aoes(check_enchanted=True)
+    def handle_round(self):
+        enchanted_aoes = self.get_damaging_aoes(check_enchanted=True)
         if enchanted_aoes:
-            await enchanted_aoes[0].cast(None)
+            enchanted_aoes[0].cast(None)
 
-        unenchanted_aoes = await self.get_damaging_aoes(check_enchanted=False)
-        enchants = await self.get_damage_enchants(sort_by_damage=True)
+        unenchanted_aoes = self.get_damaging_aoes(check_enchanted=False)
+        enchants = self.get_damage_enchants(sort_by_damage=True)
 
         # enchant card then cast card
         if enchants and unenchanted_aoes:
-            await enchants[0].cast(unenchanted_aoes[0])
-            enchanted_aoes = await self.get_damaging_aoes(check_enchanted=True)
+            enchants[0].cast(unenchanted_aoes[0])
+            enchanted_aoes = self.get_damaging_aoes(check_enchanted=True)
 
             if not enchanted_aoes:
                 raise Exception("Enchant failure")
@@ -402,19 +405,19 @@ class AoeHandler(CombatHandler):
             to_cast = enchanted_aoes[0]
 
             if to_cast.is_castable():
-                await to_cast.cast(None)
+                to_cast.cast(None)
 
         # no enchants so just cast card
         elif not enchants and unenchanted_aoes:
             to_cast = unenchanted_aoes[0]
 
             if to_cast.is_castable():
-                await to_cast.cast(None)
+                to_cast.cast(None)
 
         # hand full of enchants or enchants + other cards
         elif enchants and not unenchanted_aoes:
-            if len(await self.get_cards()) == 7:
-                await enchants[0].discard()
+            if len(self.get_cards()) == 7:
+                enchants[0].discard()
 
             # TODO: draw tc?
             else:
@@ -423,7 +426,7 @@ class AoeHandler(CombatHandler):
         # no enchants or aoes in hand
         else:
             # TODO: maybe flee instead?
-            if len(await self.get_cards()) == 0:
+            if len(self.get_cards()) == 0:
                 raise Exception("Out of cards")
 
             # TODO: add method for people to subclass for this?

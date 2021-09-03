@@ -1,5 +1,7 @@
-import asyncio
+import concurrent.futures
 import struct
+import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import pymem
@@ -41,14 +43,13 @@ class HookHandler(MemoryHandler):
         self.client = client
 
         self._autobot_address = None
-        self._autobot_lock = None
         self._original_autobot_bytes = b""
         self._autobot_pos = 0
 
         self._active_hooks = []
         self._base_addrs = {}
 
-    async def _get_open_autobot_address(self, size: int) -> int:
+    def _get_open_autobot_address(self, size: int) -> int:
         if self._autobot_pos + size > self.AUTOBOT_SIZE:
             raise RuntimeError("Somehow went over autobot size")
 
@@ -60,8 +61,8 @@ class HookHandler(MemoryHandler):
         )
         return addr
 
-    async def _get_autobot_address(self):
-        addr = await self.pattern_scan(
+    def _get_autobot_address(self):
+        addr = self.pattern_scan(
             self.AUTOBOT_PATTERN, module="WizardGraphicalClient.exe"
         )
         if addr is None:
@@ -70,59 +71,54 @@ class HookHandler(MemoryHandler):
         self._autobot_address = addr
 
     # noinspection PyTypeChecker
-    async def _prepare_autobot(self):
+    def _prepare_autobot(self):
         if self._autobot_address is None:
-            await self._get_autobot_address()
+            self._get_autobot_address()
 
             # we only need to write back the pattern
-            self._original_autobot_bytes = await self.read_bytes(
+            self._original_autobot_bytes = self.read_bytes(
                 self._autobot_address, len(self.AUTOBOT_PATTERN)
             )
             logger.debug(
                 f"Got original bytes {self._original_autobot_bytes} from autobot"
             )
-            await self.write_bytes(self._autobot_address, b"\x00" * self.AUTOBOT_SIZE)
+            self.write_bytes(self._autobot_address, b"\x00" * self.AUTOBOT_SIZE)
 
-    async def _rewrite_autobot(self):
+    def _rewrite_autobot(self):
         if self._autobot_address is not None:
-            compare_bytes = await self.read_bytes(
+            compare_bytes = self.read_bytes(
                 self._autobot_address, len(self.AUTOBOT_PATTERN)
             )
             # Give some time for execution point to leave hooks
-            await asyncio.sleep(1)
+            time.sleep(1)
 
             # Only write if the pattern isn't there
             if compare_bytes != self._original_autobot_bytes:
                 logger.debug(
                     f"Rewriting bytes {self._original_autobot_bytes} to autbot"
                 )
-                await self.write_bytes(
+                self.write_bytes(
                     self._autobot_address, self._original_autobot_bytes
                 )
 
-    async def _allocate_autobot_bytes(self, size: int) -> int:
-        address = await self._get_open_autobot_address(size)
+    def _allocate_autobot_bytes(self, size: int) -> int:
+        address = self._get_open_autobot_address(size)
 
         return address
 
-    async def close(self):
+    def close(self):
         for hook in self._active_hooks:
-            await hook.unhook()
+            hook.unhook()
 
-        await self._rewrite_autobot()
+        self._rewrite_autobot()
 
         self._active_hooks = []
         self._autobot_pos = 0
         self._autobot_address = None
         self._base_addrs = {}
 
-    async def _check_for_autobot(self):
-        if self._autobot_lock is None:
-            self._autobot_lock = asyncio.Lock()
-
-        # this is so it isn't prepared more than once at the same time
-        async with self._autobot_lock:
-            await self._prepare_autobot()
+    def _check_for_autobot(self):
+        self._prepare_autobot()
 
     def _check_if_hook_active(self, hook_type) -> bool:
         for hook in self._active_hooks:
@@ -138,43 +134,40 @@ class HookHandler(MemoryHandler):
 
         return None
 
-    async def _read_hook_base_addr(self, addr_name: str, hook_name: str):
+    def _read_hook_base_addr(self, addr_name: str, hook_name: str):
         addr = self._base_addrs.get(addr_name)
         if addr is None:
             raise HookNotActive(hook_name)
 
         try:
-            return await self.read_typed(addr, "long long")
+            return self.read_typed(addr, "long long")
         except pymem.exception.MemoryReadError:
             raise HookNotReady(hook_name)
 
     # wait for an addr to be set and not 0
-    async def _wait_for_value(self, address: int, timeout: int = None):
-        async def _wait_for_value_task():
-            while True:
-                try:
-                    value = await self.read_typed(address, "long long")
-                    logger.debug(
-                        f"Waiting for address {hex(address)}; got value {value}"
-                    )
-                except pymem.exception.MemoryReadError:
-                    pass
+    def _wait_for_value(self, address: int, timeout: int = None):
+        if timeout:
+            start = time.perf_counter()
+        while True:
+            if timeout and time.perf_counter() - start > timeout:
+                raise TimeoutError("Hook value took too long")
+            try:
+                value = self.read_typed(address, "long long")
+                logger.debug(
+                    f"Waiting for address {hex(address)}; got value {value}"
+                )
+            except pymem.exception.MemoryReadError:
+                pass
+            else:
+                if value != 0:
+                    logger.debug(f"Address {hex(address)} is set")
+                    break
                 else:
-                    if value != 0:
-                        logger.debug(f"Address {hex(address)} is set")
-                        break
-                    else:
-                        logger.debug(f"Address {hex(address)} is not set yet; sleeping")
-                        await asyncio.sleep(0.5)
-
-        try:
-            await asyncio.wait_for(_wait_for_value_task(), timeout)
-        except TimeoutError:
-            # TODO: replace error
-            raise TimeoutError("Hook value took too long")
+                    logger.debug(f"Address {hex(address)} is not set yet; sleeping")
+                    time.sleep(0.5)
 
     # TODO: make this faster
-    async def activate_all_hooks(
+    def activate_all_hooks(
         self, *, wait_for_ready: bool = True, timeout: float = None
     ):
         """
@@ -184,33 +177,33 @@ class HookHandler(MemoryHandler):
             wait_for_ready: Wait for hook values to be written
             timeout: How long to wait for hook values to be written (None for no timeout)
         """
-        await self.activate_player_hook(wait_for_ready=False)
+        self.activate_player_hook(wait_for_ready=False)
         # duel is only written to on battle join
-        await self.activate_duel_hook()
+        self.activate_duel_hook()
         # quest hook is not written if the quest arrow is off
-        await self.activate_quest_hook()
-        await self.activate_player_stat_hook(wait_for_ready=False)
-        await self.activate_client_hook(wait_for_ready=False)
-        await self.activate_root_window_hook(wait_for_ready=False)
-        await self.activate_render_context_hook(wait_for_ready=False)
+        self.activate_quest_hook()
+        self.activate_player_stat_hook(wait_for_ready=False)
+        self.activate_client_hook(wait_for_ready=False)
+        self.activate_root_window_hook(wait_for_ready=False)
+        self.activate_render_context_hook(wait_for_ready=False)
 
         if wait_for_ready:
-            wait_tasks = []
-            for atter_name in [
-                "player_struct",
-                "player_stat_struct",
-                "current_client",
-                "current_root_window",
-                "current_render_context",
-            ]:
-                value = self._base_addrs[atter_name]
-                wait_tasks.append(
-                    asyncio.create_task(self._wait_for_value(value, timeout))
-                )
+            with ThreadPoolExecutor() as executor:
+                futures = []
+                for atter_name in [
+                    "player_struct",
+                    "player_stat_struct",
+                    "current_client",
+                    "current_root_window",
+                    "current_render_context",
+                ]:
+                    value = self._base_addrs[atter_name]
+                    futures.append(
+                        executor.submit(self._wait_for_value, value, timeout)
+                    )
+                concurrent.futures.wait(futures, timeout)
 
-            await asyncio.gather(*wait_tasks)
-
-    async def activate_player_hook(
+    def activate_player_hook(
         self, *, wait_for_ready: bool = True, timeout: float = None
     ):
         """
@@ -223,18 +216,18 @@ class HookHandler(MemoryHandler):
         if self._check_if_hook_active(PlayerHook):
             raise HookAlreadyActivated("Player")
 
-        await self._check_for_autobot()
+        self._check_for_autobot()
 
         player_hook = PlayerHook(self)
-        await player_hook.hook()
+        player_hook.hook()
 
         self._active_hooks.append(player_hook)
         self._base_addrs["player_struct"] = player_hook.player_struct
 
         if wait_for_ready:
-            await self._wait_for_value(player_hook.player_struct, timeout)
+            self._wait_for_value(player_hook.player_struct, timeout)
 
-    async def deactivate_player_hook(self):
+    def deactivate_player_hook(self):
         """
         Deactivate player hook
         """
@@ -243,20 +236,20 @@ class HookHandler(MemoryHandler):
 
         hook = self._get_hook_by_type(PlayerHook)
         self._active_hooks.remove(hook)
-        await hook.unhook()
+        hook.unhook()
 
         del self._base_addrs["player_struct"]
 
-    async def read_current_player_base(self) -> int:
+    def read_current_player_base(self) -> int:
         """
         Read player base address
 
         Returns:
             The player base address
         """
-        return await self._read_hook_base_addr("player_struct", "Player")
+        return self._read_hook_base_addr("player_struct", "Player")
 
-    async def activate_duel_hook(
+    def activate_duel_hook(
         self, *, wait_for_ready: bool = False, timeout: float = None
     ):
         """
@@ -269,18 +262,18 @@ class HookHandler(MemoryHandler):
         if self._check_if_hook_active(DuelHook):
             raise HookAlreadyActivated("Duel")
 
-        await self._check_for_autobot()
+        self._check_for_autobot()
 
         duel_hook = DuelHook(self)
-        await duel_hook.hook()
+        duel_hook.hook()
 
         self._active_hooks.append(duel_hook)
         self._base_addrs["current_duel"] = duel_hook.current_duel_addr
 
         if wait_for_ready:
-            await self._wait_for_value(duel_hook.current_duel_addr, timeout)
+            self._wait_for_value(duel_hook.current_duel_addr, timeout)
 
-    async def deactivate_duel_hook(self):
+    def deactivate_duel_hook(self):
         """
         Deactivate duel hook
         """
@@ -289,20 +282,20 @@ class HookHandler(MemoryHandler):
 
         hook = self._get_hook_by_type(DuelHook)
         self._active_hooks.remove(hook)
-        await hook.unhook()
+        hook.unhook()
 
         del self._base_addrs["current_duel"]
 
-    async def read_current_duel_base(self) -> int:
+    def read_current_duel_base(self) -> int:
         """
         Read current duel base address
 
         Returns:
             The current duel base address
         """
-        return await self._read_hook_base_addr("current_duel", "Duel")
+        return self._read_hook_base_addr("current_duel", "Duel")
 
-    async def activate_quest_hook(
+    def activate_quest_hook(
         self, *, wait_for_ready: bool = False, timeout: float = None
     ):
         """
@@ -315,18 +308,18 @@ class HookHandler(MemoryHandler):
         if self._check_if_hook_active(QuestHook):
             raise HookAlreadyActivated("Quest")
 
-        await self._check_for_autobot()
+        self._check_for_autobot()
 
         quest_hook = QuestHook(self)
-        await quest_hook.hook()
+        quest_hook.hook()
 
         self._active_hooks.append(quest_hook)
         self._base_addrs["quest_struct"] = quest_hook.cord_struct
 
         if wait_for_ready:
-            await self._wait_for_value(quest_hook.cord_struct, timeout)
+            self._wait_for_value(quest_hook.cord_struct, timeout)
 
-    async def deactivate_quest_hook(self):
+    def deactivate_quest_hook(self):
         """
         Deactivate quest hook
         """
@@ -335,20 +328,20 @@ class HookHandler(MemoryHandler):
 
         hook = self._get_hook_by_type(QuestHook)
         self._active_hooks.remove(hook)
-        await hook.unhook()
+        hook.unhook()
 
         del self._base_addrs["quest_struct"]
 
-    async def read_current_quest_base(self) -> int:
+    def read_current_quest_base(self) -> int:
         """
         Read quest base address
 
         Returns:
             The quest base address
         """
-        return await self._read_hook_base_addr("quest_struct", "Quest")
+        return self._read_hook_base_addr("quest_struct", "Quest")
 
-    async def activate_player_stat_hook(
+    def activate_player_stat_hook(
         self, *, wait_for_ready: bool = True, timeout: float = None
     ):
         """
@@ -361,18 +354,18 @@ class HookHandler(MemoryHandler):
         if self._check_if_hook_active(PlayerStatHook):
             raise HookAlreadyActivated("Player stat")
 
-        await self._check_for_autobot()
+        self._check_for_autobot()
 
         player_stat_hook = PlayerStatHook(self)
-        await player_stat_hook.hook()
+        player_stat_hook.hook()
 
         self._active_hooks.append(player_stat_hook)
         self._base_addrs["player_stat_struct"] = player_stat_hook.stat_addr
 
         if wait_for_ready:
-            await self._wait_for_value(player_stat_hook.stat_addr, timeout)
+            self._wait_for_value(player_stat_hook.stat_addr, timeout)
 
-    async def deactivate_player_stat_hook(self):
+    def deactivate_player_stat_hook(self):
         """
         Deactivate player stat hook
         """
@@ -381,20 +374,20 @@ class HookHandler(MemoryHandler):
 
         hook = self._get_hook_by_type(PlayerStatHook)
         self._active_hooks.remove(hook)
-        await hook.unhook()
+        hook.unhook()
 
         del self._base_addrs["player_stat_struct"]
 
-    async def read_current_player_stat_base(self) -> int:
+    def read_current_player_stat_base(self) -> int:
         """
         Read player stat base address
 
         Returns:
             The player stat base address
         """
-        return await self._read_hook_base_addr("player_stat_struct", "Player stat")
+        return self._read_hook_base_addr("player_stat_struct", "Player stat")
 
-    async def activate_client_hook(
+    def activate_client_hook(
         self, *, wait_for_ready: bool = True, timeout: float = None
     ):
         """
@@ -407,18 +400,18 @@ class HookHandler(MemoryHandler):
         if self._check_if_hook_active(ClientHook):
             raise HookAlreadyActivated("Client")
 
-        await self._check_for_autobot()
+        self._check_for_autobot()
 
         client_hook = ClientHook(self)
-        await client_hook.hook()
+        client_hook.hook()
 
         self._active_hooks.append(client_hook)
         self._base_addrs["current_client"] = client_hook.current_client_addr
 
         if wait_for_ready:
-            await self._wait_for_value(client_hook.current_client_addr, timeout)
+            self._wait_for_value(client_hook.current_client_addr, timeout)
 
-    async def deactivate_client_hook(self):
+    def deactivate_client_hook(self):
         """
         Deactivate client hook
         """
@@ -427,20 +420,20 @@ class HookHandler(MemoryHandler):
 
         hook = self._get_hook_by_type(ClientHook)
         self._active_hooks.remove(hook)
-        await hook.unhook()
+        hook.unhook()
 
         del self._base_addrs["current_client"]
 
-    async def read_current_client_base(self) -> int:
+    def read_current_client_base(self) -> int:
         """
         Read cureent client base address
 
         Returns:
             The current client base address
         """
-        return await self._read_hook_base_addr("current_client", "Client")
+        return self._read_hook_base_addr("current_client", "Client")
 
-    async def activate_root_window_hook(
+    def activate_root_window_hook(
         self, *, wait_for_ready: bool = True, timeout: float = None
     ):
         """
@@ -453,10 +446,10 @@ class HookHandler(MemoryHandler):
         if self._check_if_hook_active(RootWindowHook):
             raise HookAlreadyActivated("Root window")
 
-        await self._check_for_autobot()
+        self._check_for_autobot()
 
         root_window_hook = RootWindowHook(self)
-        await root_window_hook.hook()
+        root_window_hook.hook()
 
         self._active_hooks.append(root_window_hook)
         self._base_addrs[
@@ -464,11 +457,11 @@ class HookHandler(MemoryHandler):
         ] = root_window_hook.current_root_window_addr
 
         if wait_for_ready:
-            await self._wait_for_value(
+            self._wait_for_value(
                 root_window_hook.current_root_window_addr, timeout
             )
 
-    async def deactivate_root_window_hook(self):
+    def deactivate_root_window_hook(self):
         """
         Deactivate root window hook
         """
@@ -477,20 +470,20 @@ class HookHandler(MemoryHandler):
 
         hook = self._get_hook_by_type(RootWindowHook)
         self._active_hooks.remove(hook)
-        await hook.unhook()
+        hook.unhook()
 
         del self._base_addrs["current_root_window"]
 
-    async def read_current_root_window_base(self) -> int:
+    def read_current_root_window_base(self) -> int:
         """
         Read current root window base address
 
         Returns:
             The current root window base address
         """
-        return await self._read_hook_base_addr("current_root_window", "Root window")
+        return self._read_hook_base_addr("current_root_window", "Root window")
 
-    async def activate_render_context_hook(
+    def activate_render_context_hook(
         self, *, wait_for_ready: bool = True, timeout: float = None
     ):
         """
@@ -503,10 +496,10 @@ class HookHandler(MemoryHandler):
         if self._check_if_hook_active(RenderContextHook):
             raise HookAlreadyActivated("Render context")
 
-        await self._check_for_autobot()
+        self._check_for_autobot()
 
         render_context_hook = RenderContextHook(self)
-        await render_context_hook.hook()
+        render_context_hook.hook()
 
         self._active_hooks.append(render_context_hook)
         self._base_addrs[
@@ -514,11 +507,11 @@ class HookHandler(MemoryHandler):
         ] = render_context_hook.current_render_context_addr
 
         if wait_for_ready:
-            await self._wait_for_value(
+            self._wait_for_value(
                 render_context_hook.current_render_context_addr, timeout
             )
 
-    async def deactivate_render_context_hook(self):
+    def deactivate_render_context_hook(self):
         """
         Deactivate render context hook
         """
@@ -527,40 +520,40 @@ class HookHandler(MemoryHandler):
 
         hook = self._get_hook_by_type(RenderContextHook)
         self._active_hooks.remove(hook)
-        await hook.unhook()
+        hook.unhook()
 
         del self._base_addrs["current_render_context"]
 
-    async def read_current_render_context_base(self) -> int:
+    def read_current_render_context_base(self) -> int:
         """
         Read current render context base address
 
         Returns:
             The current render context base address
         """
-        return await self._read_hook_base_addr(
+        return self._read_hook_base_addr(
             "current_render_context", "Render context"
         )
 
     # nothing to wait for in this hook
-    async def activate_mouseless_cursor_hook(self):
+    def activate_mouseless_cursor_hook(self):
         """
         Activate mouseless cursor hook
         """
         if self._check_if_hook_active(MouselessCursorMoveHook):
             raise HookAlreadyActivated("Mouseless cursor")
 
-        await self._check_for_autobot()
+        self._check_for_autobot()
 
         mouseless_cursor_hook = MouselessCursorMoveHook(self)
-        await mouseless_cursor_hook.hook()
+        mouseless_cursor_hook.hook()
 
         self._active_hooks.append(mouseless_cursor_hook)
         self._base_addrs["mouse_position"] = mouseless_cursor_hook.mouse_pos_addr
 
-        await self.write_mouse_position(0, 0)
+        self.write_mouse_position(0, 0)
 
-    async def deactivate_mouseless_cursor_hook(self):
+    def deactivate_mouseless_cursor_hook(self):
         """
         Deactivate mouseless cursor hook
         """
@@ -569,11 +562,11 @@ class HookHandler(MemoryHandler):
 
         hook = self._get_hook_by_type(MouselessCursorMoveHook)
         self._active_hooks.remove(hook)
-        await hook.unhook()
+        hook.unhook()
 
         del self._base_addrs["mouse_position"]
 
-    async def write_mouse_position(self, x: int, y: int):
+    def write_mouse_position(self, x: int, y: int):
         """
         Write mouse position to memory
 
@@ -587,4 +580,4 @@ class HookHandler(MemoryHandler):
 
         packed_position = struct.pack("<ii", x, y)
 
-        await self.write_bytes(addr, packed_position)
+        self.write_bytes(addr, packed_position)

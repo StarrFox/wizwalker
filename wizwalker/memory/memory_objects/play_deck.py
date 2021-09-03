@@ -1,22 +1,20 @@
-from typing import List
-
 from wizwalker.memory.memory_object import PropertyClass, DynamicMemoryObject
 
 
 class PlayDeck(PropertyClass):
-    async def read_base_address(self) -> int:
+    def read_base_address(self) -> int:
         raise NotImplementedError()
 
-    async def deck_to_save(self) -> List["DynamicPlaySpellData"]:
+    def deck_to_save(self) -> list["DynamicPlaySpellData"]:
         spell_data = []
-        for addr in await self.read_shared_vector(72):
+        for addr in self.read_shared_vector(72):
             spell_data.append(DynamicPlaySpellData(self.hook_handler, addr))
 
         return spell_data
 
-    async def graveyard_to_save(self) -> List["DynamicPlaySpellData"]:
+    def graveyard_to_save(self) -> list["DynamicPlaySpellData"]:
         spell_data = []
-        for addr in await self.read_shared_vector(96):
+        for addr in self.read_shared_vector(96):
             spell_data.append(DynamicPlaySpellData(self.hook_handler, addr))
 
         return spell_data
@@ -27,14 +25,14 @@ class DynamicPlayDeck(DynamicMemoryObject, PlayDeck):
 
 
 class PlaySpellData(PropertyClass):
-    async def read_base_address(self) -> int:
+    def read_base_address(self) -> int:
         raise NotImplementedError()
 
-    async def template_id(self) -> int:
-        return await self.read_value_from_offset(72, "unsigned int")
+    def template_id(self) -> int:
+        return self.read_value_from_offset(72, "unsigned int")
 
-    async def enchantment(self) -> int:
-        return await self.read_value_from_offset(76, "unsigned int")
+    def enchantment(self) -> int:
+        return self.read_value_from_offset(76, "unsigned int")
 
 
 class DynamicPlaySpellData(DynamicMemoryObject, PlaySpellData):
