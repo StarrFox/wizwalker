@@ -197,13 +197,37 @@ def wad():
     pass
 
 
-# # TODO: finish
-# @wad.command()
-# def archive():
-#     """
-#     Create a wad from a directory
-#     """
-#     click.echo("Not implimented")
+@wad.command()
+@click.argument("input_dir", type=click.Path(file_okay=False), default=".")
+@click.argument("output_wad", type=str)
+@click.option("--overwrite", default=False, is_flag=True)
+@click.option("--put-in-gamedata", default=False, is_flag=True)
+def archive(input_dir: str, output_wad: str, overwrite: bool, put_in_gamedata: bool):
+    """
+    Create a wad from a directory
+    """
+    input_dir = Path(input_dir)
+    output_wad = Path(output_wad)
+
+    if not overwrite and output_wad.exists():
+        click.echo(f"{output_wad} already exists pass --overwrite to overwrite it")
+        return
+
+    click.echo("Archiving...")
+
+    import time
+
+    if put_in_gamedata:
+        wad_ = Wad.from_game_data(output_wad.name)
+
+    else:
+        wad_ = Wad(output_wad)
+
+    start = time.perf_counter()
+    asyncio.run(wad_.insert_all(input_dir, overwrite=overwrite))
+    end = time.perf_counter()
+
+    click.echo(f"Finished in {end - start} seconds")
 
 
 @wad.command(short_help="Unarchive a wad into a directory")
@@ -243,7 +267,7 @@ def unarchive(input_wad, output_dir):
     end = time.perf_counter()
 
     click.echo(
-        f"Unarchived {len(await wad_.info_list())} files in {int(end - start)} seconds"
+        f"Unarchived {len(wad_._file_map.keys())} files in {int(end - start)} seconds"
     )
 
 

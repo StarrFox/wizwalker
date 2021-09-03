@@ -113,7 +113,6 @@ class Wad:
     # fmt: off
     async def _read(self, start: int, size: int) -> bytes:
         return self._mmap[start: start + size]
-
     # fmt: on
 
     # fmt: off
@@ -152,7 +151,6 @@ class Wad:
             self._file_map[name] = WadFileInfo(
                 name, offset, size, zipped_size, is_zip, crc
             )
-
     # fmt: on
 
     async def read(self, name: str) -> Optional[bytes]:
@@ -282,7 +280,7 @@ class Wad:
         journal_size = 14 + (21 * file_num) + all_names_len + file_num
 
         current_offset = journal_size
-        data_block = b""
+        data_blocks = []
 
         with open(output_path, "wb+") as fp:
             # magic bytes
@@ -332,6 +330,8 @@ class Wad:
                 fp.write(name.replace("\\", "/").encode() + b"\x00")
 
                 current_offset += len(data)
-                data_block += data
 
-            fp.write(data_block)
+                data_blocks.append(data)
+
+            for data_block in data_blocks:
+                fp.write(data_block)
