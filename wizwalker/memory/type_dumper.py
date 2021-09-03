@@ -48,9 +48,9 @@ class TypeDumper:
                         )
                     )
 
-            base_names = await self.get_class_info(data)
+            base_names, class_hash = await self.get_class_info(data)
             formated_class = await self.format_class(
-                name, base_names, formatted_properties
+                name, base_names, class_hash, formatted_properties
             )
 
             yield formated_class
@@ -66,7 +66,8 @@ class TypeDumper:
     @staticmethod
     async def get_class_info(node_data: "wizwalker.memory.type_tree.Type"):
         bases = await node_data.get_bases()
-        return [await base.name() for base in bases]
+        class_hash = await node_data.hash()
+        return [await base.name() for base in bases], class_hash
 
     @staticmethod
     async def get_property_info(property_: "wizwalker.memory.type_tree.Property"):
@@ -82,6 +83,7 @@ class TypeDumper:
             "container": await container.name(),
             "dynamic": await container.is_dynamic(),
             "pointer": await property_type.is_pointer(),
+            "hash": await property_type.hash(),
         }
 
         return property_name, property_info
@@ -95,7 +97,7 @@ class TypeDumper:
         raise NotImplemented()
 
     async def format_class(
-        self, name: str, base_names: list[str], properties: list[str]
+        self, name: str, base_names: list[str], class_hash: int, properties: list[str]
     ):
         raise NotImplemented()
 
@@ -123,14 +125,16 @@ class TextTypeDumper(TypeDumper):
         return res
 
     async def format_class(
-        self, name: str, base_names: list[str], properties: list[str]
+        self, name: str, base_names: list[str], class_hash: int, properties: list[str]
     ):
         if properties:
             props = ":\n" + "\n".join(properties)
         else:
             props = ""
 
-        return f"{name} {base_names}{props}"
+        class_hash = "{" + str(class_hash) + "}"
+
+        return f"{name} {base_names} {class_hash}{props}"
 
 
 class JsonTypeDumper(TypeDumper):
@@ -160,5 +164,12 @@ class JsonTypeDumper(TypeDumper):
 
         return res
 
-    async def format_class(self, name: str, base_names: list[str], properties: dict):
-        return {name: {"bases": base_names, "properties": properties}}
+    async def format_class(
+        self, name: str, base_names: list[str], class_hash: int, properties: dict
+    ):
+        props = {}
+
+        for prop in properties:
+            props.update(prop)
+
+        return {name: {"bases": base_names, "hash": class_hash, "properties": props}}
