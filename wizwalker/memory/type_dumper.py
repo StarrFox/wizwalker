@@ -83,7 +83,7 @@ class TypeDumper:
             "container": await container.name(),
             "dynamic": await container.is_dynamic(),
             "pointer": await property_type.is_pointer(),
-            "hash": await property_type.hash(),
+            "hash": await property_.full_hash(),
         }
 
         return property_name, property_info
