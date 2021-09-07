@@ -1,4 +1,7 @@
 import wizwalker
+from warnings import warn
+from functools import partial
+
 
 
 class CombatMember:
@@ -29,7 +32,10 @@ class CombatMember:
         Get the health text window
         Useful for targeting
         """
-        possible = await self._combatant_control.get_windows_with_name("Health")
+        possible = await wizwalker.utils.maybe_wait_for_any_value_with_timeout(
+            partial(self._combatant_control.get_windows_with_name, "Health"), timeout=5
+        )
+
         if possible:
             return possible[0]
 

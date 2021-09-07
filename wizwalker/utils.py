@@ -403,6 +403,40 @@ async def maybe_wait_for_value_with_timeout(
         )
 
 
+async def maybe_wait_for_any_value_with_timeout(
+    coro,
+    sleep_time: float = 0.5,
+    *,
+    timeout: Optional[float] = None,
+    ignore_exceptions: bool = True,
+):
+    possible_exception = None
+
+    async def _inner():
+        nonlocal possible_exception
+
+        while True:
+            try:
+                res = await coro()
+                if res is not None:
+                    return res
+
+            except Exception as e:
+                if ignore_exceptions:
+                    possible_exception = e
+                    await asyncio.sleep(sleep_time)
+
+                else:
+                    raise e
+
+    try:
+        return await asyncio.wait_for(_inner(), timeout)
+    except asyncio.TimeoutError:
+        raise ExceptionalTimeout(
+            f"Timed out waiting for coro {coro.__name__}", possible_exception
+        )
+
+
 def get_cache_folder() -> Path:
     """
     Get the wizwalker cache folder
