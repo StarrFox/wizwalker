@@ -1,6 +1,7 @@
 import asyncio
 from collections.abc import Callable
 
+import wizwalker
 from .member import CombatMember
 from .card import CombatCard
 from ..memory import DuelPhase, EffectTarget, SpellEffects, WindowFlags
@@ -12,7 +13,7 @@ class CombatHandler:
     Handles client's battles
     """
 
-    def __init__(self, client):
+    def __init__(self, client: "wizwalker.Client"):
         self.client = client
 
         self._spell_check_boxes = None

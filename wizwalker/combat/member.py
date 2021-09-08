@@ -1,7 +1,5 @@
 import wizwalker
-from warnings import warn
 from functools import partial
-
 
 
 class CombatMember:
