@@ -407,7 +407,7 @@ class Client:
             return
 
         je_addr = await self.hook_handler.pattern_scan(
-            rb"\x0F\x84....\xFF\x15\xFC\x81\xFE\x00\x89\x05\xD2\x55\xC9\x01\xBA....\x48\x8D\x4D\xD7",
+            rb"\x0F\x84....\xFF\x15....\x89\x05....\xBA....\x48\x8D\x4D\xD7\xE8....\x90\x66",
             module="WizardGraphicalClient.exe",
         )
 
