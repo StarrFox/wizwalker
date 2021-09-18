@@ -18,6 +18,9 @@ from wizwalker import ExceptionalTimeout
 from wizwalker.constants import Keycode, kernel32, user32, gdi32
 
 
+DEFAULT_INSTALL = "C:/ProgramData/KingsIsle Entertainment/Wizard101"
+
+
 async def async_sorted(iterable, /, *, key=None, reverse=False):
     """
     sorted but key function is awaited
@@ -213,6 +216,11 @@ def get_wiz_install() -> Path:
     """
     if _OVERRIDE_PATH:
         return Path(_OVERRIDE_PATH).absolute()
+
+    default_install_path = Path(DEFAULT_INSTALL)
+
+    if default_install_path.exists():
+        return default_install_path
 
     try:
         with winreg.OpenKey(
