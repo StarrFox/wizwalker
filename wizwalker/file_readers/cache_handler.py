@@ -255,7 +255,7 @@ class CacheHandler:
         """
         template_ids = await self.get_template_ids()
 
-        return template_ids.get(template_id)
+        return template_ids.get(str(template_id))
 
     async def get_langcode_name(self, langcode: str):
         """
