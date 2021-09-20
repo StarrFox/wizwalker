@@ -270,7 +270,11 @@ class Wad:
         source_path: Path,
         output_path: Path,
     ):
-        to_write = [file for file in source_path.glob("**/*") if file.is_file()]
+        to_write = [
+            file.relative_to(source_path)
+            for file in source_path.glob("**/*")
+            if file.is_file()
+        ]
         file_num = len(to_write)
 
         all_names_len = sum(len(str(file)) for file in to_write)
@@ -292,12 +296,11 @@ class Wad:
             fp.write(b"\x01")
 
             for file in to_write:
-                sub_path = file.relative_to(source_path)
-                is_zip = sub_path.suffix not in _NO_COMPRESS
-                data = file.read_bytes()
+                is_zip = file.suffix not in _NO_COMPRESS
+                data = (source_path / file).read_bytes()
                 crc = zlib.crc32(data)
                 size = len(data)
-                name = sub_path.name
+                name = str(file)
 
                 if is_zip:
                     compressed_data = zlib.compress(data)
