@@ -275,8 +275,7 @@ class CombatHandler:
         Get all members that are enemies
 
         Args:
-            same_as_client = True -> returns members on the client's team
-            same_as_client = False -> returns members on the other team
+            same_as_client: get team members on the client's team or False for the other team
         """
         members = await self.get_members()
         client_member = await self.get_client_member()
