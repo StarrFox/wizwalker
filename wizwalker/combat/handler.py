@@ -279,23 +279,28 @@ class CombatHandler:
         Args:
             same_as_client: get team members on the client's team or False for the other team
         """
-        members = await self.get_members()
         client_member = await self.get_client_member()
+
         part = await client_member.get_participant()
         client_team_id = await part.team_id()
 
-        sorted_members = []
-        for member in members:
+        async def _on_other_team(member):
             member_part = await member.get_participant()
             member_team_id = await member_part.team_id()
 
-            if (client_team_id != member_team_id) and (same_as_client == False):
-                sorted_members.append(member)
+            return member_team_id != client_team_id
 
-            if (client_team_id == member_team_id) and (same_as_client == True):
-                sorted_members.append(member)
+        async def _on_same_team(member):
+            member_part = await member.get_participant()
+            member_team_id = await member_part.team_id()
 
-        return sorted_members
+            return member_team_id == client_team_id
+
+        if same_as_client:
+            return await self.get_members_with_predicate(_on_same_team)
+
+        else:
+            return await self.get_members_with_predicate(_on_other_team)
 
     async def get_member_named(self, name: str) -> CombatMember:
         """
