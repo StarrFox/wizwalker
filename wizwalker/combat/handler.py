@@ -270,7 +270,9 @@ class CombatHandler:
 
         return players
 
-    async def get_members_on_team(self, same_as_client: bool = True) -> list[CombatMember]:
+    async def get_members_on_team(
+        self, same_as_client: bool = True
+    ) -> list[CombatMember]:
         """
         Get all members that are enemies
 
@@ -289,12 +291,12 @@ class CombatHandler:
 
             if (client_team_id != member_team_id) and (same_as_client == False):
                 sorted_members.append(member)
-            
+
             if (client_team_id == member_team_id) and (same_as_client == True):
                 sorted_members.append(member)
 
         return sorted_members
-    
+
     async def get_member_named(self, name: str) -> CombatMember:
         """
         Returns the first Member with name
