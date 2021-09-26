@@ -101,7 +101,7 @@ def parse_node_data(file_data: bytes) -> dict:
 # FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-def parse_nav_data(file_data: Union[bytes, TypedBytes]):
+def parse_nav_data(file_data: bytes | TypedBytes):
     if isinstance(file_data, bytes):
         file_data = TypedBytes(file_data)
 
@@ -115,7 +115,7 @@ def parse_nav_data(file_data: Union[bytes, TypedBytes]):
 
     idx = 0
 
-    while idx <= vertex_count - 1:
+    while idx <= vertex_max - 1:
         x = file_data.read_typed("float")
         y = file_data.read_typed("float")
         z = file_data.read_typed("float")
@@ -126,7 +126,7 @@ def parse_nav_data(file_data: Union[bytes, TypedBytes]):
 
         if vertex_index != idx:
             vertices.pop()
-            vertex_count -= 1
+            vertex_max -= 1
         else:
             idx += 1
 
