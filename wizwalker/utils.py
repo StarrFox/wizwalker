@@ -3,6 +3,7 @@ import ctypes
 import ctypes.wintypes
 import functools
 import math
+import struct
 import subprocess
 
 # noinspection PyCompatibility
@@ -11,11 +12,12 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
+from io import BytesIO
 
 import appdirs
 
 from wizwalker import ExceptionalTimeout
-from wizwalker.constants import Keycode, kernel32, user32, gdi32
+from wizwalker.constants import Keycode, kernel32, user32, gdi32, type_format_dict
 
 
 DEFAULT_INSTALL = "C:/ProgramData/KingsIsle Entertainment/Wizard101"
@@ -45,6 +47,19 @@ async def run_in_executor(func, *args, **kwargs):
     function = functools.partial(func, *args, **kwargs)
 
     return await loop.run_in_executor(None, function)
+
+
+class TypedBytes(BytesIO):
+    def split(self, index: int) -> tuple["TypedBytes", "TypedBytes"]:
+        self.seek(0)
+        buffer = self.read(index)
+        return type(self)(buffer), type(self)(self.read())
+
+    def read_typed(self, type_name: str):
+        type_format = type_format_dict[type_name]
+        size = struct.calcsize(type_format)
+        data = self.read(size)
+        return struct.unpack(type_format, data)[0]
 
 
 @dataclass
