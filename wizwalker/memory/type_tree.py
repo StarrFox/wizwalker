@@ -63,7 +63,7 @@ class Type(DynamicMemoryObject):
 
         bases = []
         current_base = fields
-        while base_type := await current_base.base_class():
+        while base_type := await current_base.base_class_list():
             bases.append(base_type)
             current_base = base_type
 
