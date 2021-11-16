@@ -156,7 +156,7 @@ class PropertyList(MemoryObject):
 
 
 class Property(MemoryObject):
-    async def parent_list(self) -> Optional["PropertyList"]:
+    async def list(self) -> Optional["PropertyList"]:
         addr = await self.read_value_from_offset(0x38, "long long")
 
         if not addr:
