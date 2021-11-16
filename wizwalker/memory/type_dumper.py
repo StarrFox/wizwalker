@@ -76,13 +76,16 @@ class TypeDumper:
         property_type = await property_.type()
 
         container = await property_.container()
+        property_list = await property_.list()
 
         property_info = {
             "type": await property_type.name(),
+            "id": await property_.index(),
             "offset": await property_.offset(),
             "flags": await property_.flags(),
             "container": await container.name(),
             "dynamic": await container.is_dynamic(),
+            "singleton": await property_list.is_singleton(),
             "pointer": await property_type.is_pointer(),
             # & 0xFFFF_FFFF makes the value unsigned
             "hash": await property_.full_hash() & 0xFFFF_FFFF,
