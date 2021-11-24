@@ -281,7 +281,7 @@ def extract(input_wad, file_name):
     """
     maybe_path = Path(input_wad)
 
-    maybe_path.suffix = ".wad"
+    maybe_path = maybe_path.with_suffix(".wad")
 
     if maybe_path.exists() and maybe_path.is_file():
         wad_ = Wad(maybe_path)
