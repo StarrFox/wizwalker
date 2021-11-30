@@ -1,6 +1,12 @@
 from enum import Enum, IntFlag
 
 
+class HangingDisposition(Enum):
+    both = 0
+    beneficial = 1
+    harmful = 2
+
+
 class DuelPhase(Enum):
     starting = 0
     pre_planning = 1

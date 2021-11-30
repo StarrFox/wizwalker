@@ -286,6 +286,12 @@ class SpellTemplate(PropertyClass):
     async def write_ignore_dispel(self, ignore_dispel: bool):
         await self.write_value_to_offset(736, ignore_dispel, "bool")
 
+    async def backrow_friendly(self) -> bool:
+        return await self.read_value_from_offset(737, "bool")
+
+    async def write_backrow_friendly(self, backrow_friendly: bool):
+        await self.write_value_to_offset(737, backrow_friendly, "bool")
+
 
 class DynamicSpellTemplate(DynamicMemoryObject, SpellTemplate):
     pass
