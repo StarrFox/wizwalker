@@ -210,11 +210,6 @@ class Client:
         if not self.is_running():
             return
 
-        if self._is_infinite_patched:
-            await self.hook_handler.write_bytes(
-                self._infinite_patch_og_info[0], self._infinite_patch_og_info[1]
-            )
-
         await self.hook_handler.close()
 
     async def get_template_ids(self) -> dict:
@@ -415,24 +410,13 @@ class Client:
         if self._is_infinite_patched:
             return
 
-        je_addr = await self.hook_handler.pattern_scan(
-            rb"\x0F\x84....\xFF\x15....\x89\x05....\xBA....\x48\x8D\x4D\xD7\xE8....\x90\x66",
-            module="WizardGraphicalClient.exe",
-        )
+        cmp_addr = await self.hook_handler.pattern_scan(b"\x80\x3D\x45\x4A\xCF\x01\x00")
 
-        self._infinite_patch_og_info = (
-            je_addr,
-            await self.hook_handler.read_bytes(je_addr, 6),
-        )
+        # +2 offset [4 bytes long]
+        ac_flag_offset = await self.hook_handler.read_typed(cmp_addr + 2, "int")
 
-        jmp_offset = await self.hook_handler.read_typed(je_addr + 2, "unsigned int")
+        ac_flag_addr = cmp_addr + 7 + ac_flag_offset
 
-        # account for instruction size diff
-        jmp_offset += 1
-
-        # jmp offset + no op since original instruction is 6 long
-        await self.hook_handler.write_bytes(
-            je_addr, b"\xE9" + struct.pack("<I", jmp_offset) + b"\x90"
-        )
+        await self.hook_handler.write_typed(ac_flag_addr, True, "bool")
 
         self._is_infinite_patched = True
