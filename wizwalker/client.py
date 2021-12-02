@@ -410,7 +410,7 @@ class Client:
         if self._is_infinite_patched:
             return
 
-        cmp_addr = await self.hook_handler.pattern_scan(b"\x80\x3D\x45\x4A\xCF\x01\x00")
+        cmp_addr = await self.hook_handler.pattern_scan(b"\x80\x3D.....\x0F\x85...........\xE8....\x39")
 
         # +2 offset [4 bytes long]
         ac_flag_offset = await self.hook_handler.read_typed(cmp_addr + 2, "int")
