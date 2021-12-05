@@ -249,7 +249,7 @@ class QuestHook(SimpleHook):
 
 
 class DuelHook(SimpleHook):
-    pattern = rb"\x48\x89\x5C\x24\x58\x48\x89\x44\x24\x50\x48"
+    pattern = rb"\x48\x89...\x48\x89...\x48\x89...\x89\x4C"
     exports = [("current_duel_addr", 8)]
 
     async def bytecode_generator(self, packed_exports):
