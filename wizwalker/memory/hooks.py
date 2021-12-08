@@ -255,6 +255,8 @@ class DuelHook(SimpleHook):
     async def bytecode_generator(self, packed_exports):
         # fmt: off
         bytecode = (
+                b"\x48\x39\xD1"  # cmp rcx,rdx
+                b"\x0F\x85\x0F\x00\x00\x00"  # jne 16
                 b"\x50"  # push rax
                 b"\x49\x8B\x07"  # mov rax,[r15]
                 b"\x48\xA3" + packed_exports[0][1] +  # mov [current_duel],rax
