@@ -1,5 +1,7 @@
+import re
 import struct
 from typing import Any, Tuple
+from warnings import warn
 
 from loguru import logger
 
@@ -251,6 +253,36 @@ class QuestHook(SimpleHook):
 class DuelHook(SimpleHook):
     pattern = rb"\x48\x89...\x48\x89...\x48\x89...\x89\x4C"
     exports = [("current_duel_addr", 8)]
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+
+        self._log_level_check_address = None
+
+    async def posthook(self):
+        # Search above the hook jump address for the log level check.
+        block_size = 256
+        block = await self.read_bytes(self.jump_address - block_size, block_size)
+
+        found = re.search(rb"\x7E.\xE8....\xE9", block, re.DOTALL)
+        if not found:
+            # It's unlikely for users to need this patched so a warning should suffice.
+            warn(
+                "Could not patch DuelHook to run for log levels greater than 100.",
+                RuntimeWarning,
+            )
+        else:
+            offset = block_size - found.span()[0]
+            self._log_level_check_address = self.jump_address - offset
+
+            # Patch jle with jmp so DuelHook runs regardless of log level.
+            await self.write_bytes(self._log_level_check_address, b"\xEB")
+
+    async def unhook(self):
+        if self._log_level_check_address:
+            await self.write_bytes(self._log_level_check_address, b"\x7E")
+            self._log_level_check_address = None
+        await super().unhook()
 
     async def bytecode_generator(self, packed_exports):
         # fmt: off
