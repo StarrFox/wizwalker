@@ -1,9 +1,11 @@
+import re
 import struct
-from typing import Any
+from typing import Any, Tuple
+from warnings import warn
 
 from loguru import logger
 
-from .memory_handler import MemoryHandler
+from .memory_reader import MemoryReader
 
 
 def pack_to_int_or_longlong(num: int) -> bytes:
@@ -13,7 +15,7 @@ def pack_to_int_or_longlong(num: int) -> bytes:
         return struct.pack("<q", num)
 
 
-class MemoryHook(MemoryHandler):
+class MemoryHook(MemoryReader):
     def __init__(self, hook_handler):
         super().__init__(hook_handler.process)
         self.hook_handler = hook_handler
@@ -70,7 +72,7 @@ class MemoryHook(MemoryHandler):
         """
         raise NotImplemented()
 
-    async def get_pattern(self) -> tuple[bytes, str]:
+    async def get_pattern(self) -> Tuple[bytes, str]:
         raise NotImplemented()
 
     async def hook(self):
@@ -188,7 +190,6 @@ class SimpleHook(AutoBotBaseHook):
                 await self.free(getattr(self, export[0]))
 
 
-# TODO: depreciate in favor of ClientObject -> behaviors -> animationbehavior -> 0x70 (body)
 class PlayerHook(SimpleHook):
     pattern = rb"\xF2\x0F\x10\x40\x58\xF2"
     exports = [("player_struct", 8)]
@@ -250,21 +251,50 @@ class QuestHook(SimpleHook):
 
 
 class DuelHook(SimpleHook):
-    pattern = (
-        rb"\x48\x89\x7C\x24\x58\x48\x89\x4C\x24\x50\x4C\x89\x7C\x24\x48\x89\x5C\x24\x40"
-    )
+    pattern = rb"\x48\x89...\x48\x89...\x48\x89...\x89\x4C"
     exports = [("current_duel_addr", 8)]
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+
+        self._log_level_check_address = None
+
+    async def posthook(self):
+        # Search above the hook jump address for the log level check.
+        block_size = 256
+        block = await self.read_bytes(self.jump_address - block_size, block_size)
+
+        found = re.search(rb"\x7E.\xE8....\xE9", block, re.DOTALL)
+        if not found:
+            # It's unlikely for users to need this patched so a warning should suffice.
+            warn(
+                "Could not patch DuelHook to run for log levels greater than 100.",
+                RuntimeWarning,
+            )
+        else:
+            offset = block_size - found.span()[0]
+            self._log_level_check_address = self.jump_address - offset
+
+            # Patch jle with jmp so DuelHook runs regardless of log level.
+            await self.write_bytes(self._log_level_check_address, b"\xEB")
+
+    async def unhook(self):
+        if self._log_level_check_address:
+            await self.write_bytes(self._log_level_check_address, b"\x7E")
+            self._log_level_check_address = None
+        await super().unhook()
 
     async def bytecode_generator(self, packed_exports):
         # fmt: off
         bytecode = (
-                b"\x48\x39\xD1"  # cmp rcx,rdx
-                b"\x0F\x85\x10\x00\x00\x00"  # jne 16
+                # what was this compare for?
+                # b"\x48\x39\xD1"  # cmp rcx,rdx
+                # b"\x0F\x85\x0F\x00\x00\x00"  # jne 15
                 b"\x50"  # push rax
-                b"\x49\x8B\x04\x24"  # mov rax,[r12]
+                b"\x49\x8B\x07"  # mov rax,[r15]
                 b"\x48\xA3" + packed_exports[0][1] +  # mov [current_duel],rax
                 b"\x58"  # pop rax
-                b"\x48\x89\x7C\x24\x58"  # original instruction
+                b"\x48\x89\x5C\x24\x58"  # original instruction
         )
         # fmt: on
 

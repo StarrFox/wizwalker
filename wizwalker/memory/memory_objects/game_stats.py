@@ -733,6 +733,18 @@ class GameStats(PropertyClass):
     async def write_emoji_skin_tone(self, emoji_skin_tone: int):
         await self.write_value_to_offset(988, emoji_skin_tone, "int")
 
+    async def show_pvp_option(self) -> int:
+        return await self.read_value_from_offset(992, "unsigned int")
+
+    async def write_show_pvp_option(self, show_pvp_option: int):
+        await self.write_value_to_offset(992, show_pvp_option, "unsigned int")
+
+    async def favorite_slot(self) -> int:
+        return await self.read_value_from_offset(996, "int")
+
+    async def write_favorite_slot(self, favorite_slot: int):
+        await self.write_value_to_offset(996, favorite_slot, "int")
+
 
 class CurrentGameStats(GameStats):
     async def read_base_address(self) -> int:

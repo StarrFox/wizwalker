@@ -632,6 +632,18 @@ class CombatParticipant(PropertyClass):
     async def write_mob_level(self, mob_level: int):
         await self.write_value_to_offset(828, mob_level, "int")
 
+    async def player_time_updated(self) -> bool:
+        return await self.read_value_from_offset(832, "bool")
+
+    async def write_player_time_updated(self, player_time_updated: bool):
+        await self.write_value_to_offset(832, player_time_updated, "bool")
+
+    async def player_time_eliminated(self) -> bool:
+        return await self.read_value_from_offset(833, "bool")
+
+    async def write_player_time_eliminated(self, player_time_eliminated: bool):
+        await self.write_value_to_offset(833, player_time_eliminated, "bool")
+
 
 class DynamicCombatParticipant(DynamicMemoryObject, CombatParticipant):
     pass
