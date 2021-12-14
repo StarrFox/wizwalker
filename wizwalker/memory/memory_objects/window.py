@@ -144,7 +144,7 @@ class Window(PropertyClass):
                     f"This object is a {type_name} not a CombatantDataControl."
                 )
 
-        addr = await self.read_value_from_offset(1624, "long long")
+        addr = await self.read_value_from_offset(1656, "long long")
 
         if addr == 0:
             return None

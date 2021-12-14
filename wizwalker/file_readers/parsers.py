@@ -3,11 +3,13 @@ import struct
 import zlib
 
 from wizwalker import XYZ
+from wizwalker.utils import TypedBytes
 
 
+# TODO: redo with typedbytes
 def parse_template_id_file(file_data: bytes) -> dict:
     """
-    Pharse a template id file's data
+    Parse a template id file's data
     """
     if not file_data.startswith(b"BINd"):
         raise RuntimeError("No BINd id string")
@@ -36,6 +38,7 @@ def parse_template_id_file(file_data: bytes) -> dict:
     return out
 
 
+# TODO: redo with typedbytes
 def parse_node_data(file_data: bytes) -> dict:
     """
     Converts data into a dict of node nums to points
@@ -98,53 +101,41 @@ def parse_node_data(file_data: bytes) -> dict:
 # FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-def parse_nav_data(file_data: bytes):
-    vertex_count_bytes = file_data[:2]
-    file_data = file_data[2:]
+def parse_nav_data(file_data: bytes | TypedBytes):
+    if isinstance(file_data, bytes):
+        file_data = TypedBytes(file_data)
 
-    vertex_max_bytes = file_data[:2]
-    file_data = file_data[2:]
+    vertex_count = file_data.read_typed("short")
+    vertex_max = file_data.read_typed("short")
 
-    # is always 0
-    unknown = file_data[:2]
-    file_data = file_data[2:]
-
-    vertex_count = struct.unpack("<h", vertex_count_bytes)[0]
-    vertex_max = struct.unpack("<h", vertex_max_bytes)[0]
+    # unknown bytes
+    file_data.read_typed("short")
 
     vertices = []
 
     idx = 0
 
-    while idx <= vertex_count:
-        position_bytes = file_data[:12]
-        file_data = file_data[12:]
+    while idx <= vertex_max - 1:
+        x = file_data.read_typed("float")
+        y = file_data.read_typed("float")
+        z = file_data.read_typed("float")
 
-        x, y, z = struct.unpack("<fff", position_bytes)
         vertices.append(XYZ(x, y, z))
 
-        vertex_index_bytes = file_data[:2]
-        file_data = file_data[2:]
-
-        vertex_index = struct.unpack("<h", vertex_index_bytes)[0]
+        vertex_index = file_data.read_typed("short")
 
         if vertex_index != idx:
             vertices.pop()
-            vertex_count -= 1
+            vertex_max -= 1
         else:
             idx += 1
 
-    edge_count_bytes = file_data[:4]
-    file_data = file_data[4:]
-
-    edge_count = struct.unpack("<i", edge_count_bytes)[0]
+    edge_count = file_data.read_typed("int")
 
     edges = []
     for idx in range(edge_count):
-        start_stop_bytes = file_data[:4]
-        file_data = file_data[4:]
-
-        start, stop = struct.unpack("<hh", start_stop_bytes)
+        start = file_data.read_typed("short")
+        stop = file_data.read_typed("short")
 
         edges.append((start, stop))
 

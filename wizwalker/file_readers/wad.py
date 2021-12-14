@@ -3,10 +3,18 @@ import struct
 import zlib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 from mmap import mmap, ACCESS_READ
+from io import BytesIO
 
 from wizwalker.utils import get_wiz_install, run_in_executor
+
+_NO_COMPRESS = frozenset(
+    (
+        ".mp3",
+        ".ogg",
+    )
+)
 
 
 @dataclass
@@ -20,14 +28,14 @@ class WadFileInfo:
 
 
 class Wad:
-    def __init__(self, path: Union[Path, str]):
-        self.file_path = Path(path)
+    # TODO: allow for `file` that doesnt exist yet
+    def __init__(self, file: Path | str):
+        self.file_path = Path(file)
         self.name = self.file_path.stem
 
         self._file_map = {}
         self._file_pointer = None
         self._mmap = None
-        self._read_lock = asyncio.Lock()
 
         self._refreshed_once = False
 
@@ -48,7 +56,7 @@ class Wad:
         return f"<Wad {self.name=}>"
 
     async def __aenter__(self):
-        await self.open()
+        await self._open()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -59,7 +67,7 @@ class Wad:
         Total size of this wad
         """
         if not self._file_pointer:
-            await self.open()
+            await self._open()
 
         if self._size:
             return self._size
@@ -67,16 +75,25 @@ class Wad:
         self._size = sum(file.size for file in self._file_map.values())
         return self._size
 
-    async def names(self) -> list[str]:
+    async def name_list(self) -> list[str]:
         """
         List of all file names in this wad
         """
         if not self._file_pointer:
-            await self.open()
+            await self._open()
 
         return list(self._file_map.keys())
 
-    async def open(self):
+    async def info_list(self) -> list[WadFileInfo]:
+        """
+        List of all WadFileInfo in this wad
+        """
+        if not self._file_pointer:
+            await self._open()
+
+        return list(self._file_map.values())
+
+    async def _open(self):
         if self._file_pointer:
             raise RuntimeError("This Wad is already opened")
 
@@ -84,6 +101,10 @@ class Wad:
         self._file_pointer = open(self.file_path, "rb")
         self._mmap = mmap(self._file_pointer.fileno(), 0, access=ACCESS_READ)
         await run_in_executor(self._refresh_journal)
+
+    async def open(self, file_name: str) -> BytesIO:
+        data = await self.read(file_name)
+        return BytesIO(data)
 
     def close(self):
         self._file_pointer.close()
@@ -122,9 +143,7 @@ class Wad:
             # 21 is the size of all the data we just read
             file_offset += 21
 
-            name: str = self._mmap[file_offset: file_offset + name_length].decode(
-                "utf-8"
-            )
+            name = self._mmap[file_offset: file_offset + name_length].decode()
             name = name.rstrip("\x00")
 
             file_offset += name_length
@@ -134,7 +153,7 @@ class Wad:
             )
     # fmt: on
 
-    async def get_file(self, name: str) -> Optional[bytes]:
+    async def read(self, name: str) -> Optional[bytes]:
         """
         Get the data contents of the named file
 
@@ -145,9 +164,9 @@ class Wad:
             Bytes of the file or None for "unpatched" dummy files
         """
         if not self._file_pointer:
-            await self.open()
+            await self._open()
 
-        target_file = await self.get_file_info(name)
+        target_file = await self.get_info(name)
 
         if target_file.is_zip:
             data = await self._read(target_file.offset, target_file.zipped_size)
@@ -164,10 +183,12 @@ class Wad:
 
         return data
 
-    async def write_file(self):
-        raise NotImplementedError()
+    # # TODO: finish
+    # async def write(self, name: str, data: str | bytes):
+    #     if isinstance(data, str):
+    #         data = data.encode()
 
-    async def get_file_info(self, name: str) -> WadFileInfo:
+    async def get_info(self, name: str) -> WadFileInfo:
         """
         Gets a WadFileInfo for a named file
 
@@ -175,7 +196,7 @@ class Wad:
             name: name of the file to get info on
         """
         if not self._file_pointer:
-            await self.open()
+            await self._open()
 
         try:
             target_file = self._file_map[name]
@@ -184,32 +205,35 @@ class Wad:
 
         return target_file
 
-    async def unarchive(self, path: Union[Path, str]):
+    async def extract_all(self, path: Path | str):
         """
         Unarchive a wad file into a directory
 
         Args:
-            path: path to the directory to unpack the wad
+            path: source_path to the directory to unpack the wad
         """
         path = Path(path)
 
         if not self._file_pointer:
-            await self.open()
+            await self._open()
 
-        await run_in_executor(self._unarchive, path)
+        await run_in_executor(self._extract_all, path)
 
-    def _unarchive(self, path):
+    # sync thread
+    def _extract_all(self, path):
         with open(self.file_path, "rb") as fp:
             with mmap(fp.fileno(), 0, access=ACCESS_READ) as mm:
                 for file in self._file_map.values():
                     file_path = path / file.name
                     file_path.parent.mkdir(parents=True, exist_ok=True)
 
+                    # fmt: off
                     if file.is_zip:
-                        data = mm[file.offset : file.offset + file.zipped_size]
+                        data = mm[file.offset: file.offset + file.zipped_size]
 
                     else:
-                        data = mm[file.offset : file.offset + file.size]
+                        data = mm[file.offset: file.offset + file.size]
+                    # fmt: on
 
                     # unpatched file
                     if data[:4] == b"\x00\x00\x00\x00":
@@ -221,49 +245,96 @@ class Wad:
 
                     file_path.write_bytes(data)
 
-    async def archive(self):
-        raise NotImplementedError()
+    async def insert_all(
+        self,
+        source_path: Path | str,
+        *,
+        overwrite: bool = False,
+    ):
+        source_path = Path(source_path)
+        output_path = Path(self.file_path)
 
-    @classmethod
-    async def from_directory(cls, path: Union[Path, str], wad_name: str):
-        """
-        Create a Wad object from a directory
+        if not source_path.is_dir():
+            if not source_path.exists():
+                raise FileNotFoundError(source_path)
 
-        Args:
-            path: Path to directory to archive
-            wad_name: Name of the wad
-        """
-        path = Path(path)
+            raise ValueError(f"{source_path} is not a directory.")
 
-        if not path.is_dir():
-            if not path.exists():
-                raise FileNotFoundError(path)
+        if not overwrite and output_path.exists():
+            raise FileExistsError(f"{output_path} already exists.")
 
-            raise ValueError(f"{path} is not a directory.")
+        await run_in_executor(self._insert_all, source_path, output_path)
 
-        # TODO: move to a different function when implemented
-        journal = {}
-        blocks = []
-        for file in path.glob("**/*"):  # probably safe from race condition
-            # sub_path = f"{file.relative_to(path)}\x00".encode("utf-8")
-            sub_path = file.relative_to(path)
-            crc = 0  # not used
-            is_zip = sub_path.suffix not in (
-                ".mp3",
-                ".ogg",
-            )  # this check is probably not complete
-            offset = 0  # impossible to get at this point
-            data = file.read_bytes()
-            size = len(data)
-            if is_zip:
-                data = zlib.compress(data)
-                zsize = len(data)
-            else:
-                zsize = -1
+    @staticmethod
+    def _insert_all(
+        source_path: Path,
+        output_path: Path,
+    ):
+        to_write = [
+            file.relative_to(source_path)
+            for file in source_path.glob("**/*")
+            if file.is_file()
+        ]
+        file_num = len(to_write)
 
-            journal[sub_path] = WadFileInfo(
-                sub_path.name, offset, size, zsize, is_zip, crc
-            )
-            blocks.append(data)
+        all_names_len = sum(len(str(file)) for file in to_write)
 
-        raise NotImplemented()
+        # KIWAD + version + file_num + version 2 0x01 + journal header * file number
+        # + file num for the null terminator
+        journal_size = 14 + (21 * file_num) + all_names_len + file_num
+
+        current_offset = journal_size
+        data_blocks = []
+
+        with open(output_path, "wb+") as fp:
+            # magic bytes
+            fp.write(b"KIWAD")
+
+            fp.write(struct.pack("<ll", 2, file_num))
+
+            # version 2 thing
+            fp.write(b"\x01")
+
+            for file in to_write:
+                is_zip = file.suffix not in _NO_COMPRESS
+                data = (source_path / file).read_bytes()
+                crc = zlib.crc32(data)
+                size = len(data)
+                name = str(file)
+
+                if is_zip:
+                    compressed_data = zlib.compress(data)
+
+                    # they still write the zipped size for optimized files
+                    zipped_size = len(compressed_data)
+
+                    # they optimize in these cases
+                    if zipped_size >= len(data):
+                        is_zip = False
+
+                    else:
+                        data = compressed_data
+                else:
+                    zipped_size = -1
+
+                fp.write(
+                    struct.pack(
+                        "<lll?Ll",
+                        current_offset,
+                        size,
+                        zipped_size,
+                        is_zip,
+                        crc,
+                        len(name) + 1,
+                    )
+                )
+
+                # only / paths are allowed
+                fp.write(name.replace("\\", "/").encode() + b"\x00")
+
+                current_offset += len(data)
+
+                data_blocks.append(data)
+
+            for data_block in data_blocks:
+                fp.write(data_block)

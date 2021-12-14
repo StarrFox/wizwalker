@@ -1,6 +1,8 @@
 import asyncio
+import struct
+from collections.abc import Callable
 from functools import cached_property
-from typing import Callable, Optional
+from typing import Optional
 
 import pymem
 
@@ -61,6 +63,9 @@ class Client:
         self._template_ids = None
         self._is_loading_addr = None
         self._world_view_window = None
+        self._is_infinite_patched = False
+        # (addr, bytes)
+        self._infinite_patch_og_info = None
 
     def __repr__(self):
         return f"<Client {self.window_handle=} {self.process_id=}>"
@@ -378,6 +383,8 @@ class Client:
             yaw: yaw to set or None to not change
             move_after: If the client should rotate some to update the player model position
         """
+        await self.patch_infinite_loading()
+
         await self.body.write_position(xyz)
 
         if move_after:
@@ -385,3 +392,23 @@ class Client:
 
         if yaw is not None:
             await self.body.write_yaw(yaw)
+
+    async def patch_infinite_loading(self):
+        """
+        Patches infinite loading
+        """
+        if self._is_infinite_patched:
+            return
+
+        cmp_addr = await self.hook_handler.pattern_scan(
+            b"\x80\x3D.....\x0F\x85...........\xE8....\x39"
+        )
+
+        # +2 offset [4 bytes long]
+        ac_flag_offset = await self.hook_handler.read_typed(cmp_addr + 2, "int")
+
+        ac_flag_addr = cmp_addr + 7 + ac_flag_offset
+
+        await self.hook_handler.write_typed(ac_flag_addr, True, "bool")
+
+        self._is_infinite_patched = True

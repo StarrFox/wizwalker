@@ -56,7 +56,7 @@ class MemoryReader:
         # noinspection PyUnresolvedReferences
         for exp in pe.DIRECTORY_ENTRY_EXPORT.symbols:
             if exp.name:
-                symbols[exp.name.decode("utf-8")] = exp.address
+                symbols[exp.name.decode()] = exp.address
 
             else:
                 symbols[f"Ordinal {exp.ordinal}"] = exp.address
@@ -128,7 +128,7 @@ class MemoryReader:
 
     async def pattern_scan(
         self, pattern: bytes, *, module: str = None, return_multiple: bool = False
-    ) -> Union[list, int]:
+    ) -> list | int:
         """
         Scan for a pattern
 

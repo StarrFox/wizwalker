@@ -23,7 +23,7 @@ class CombatCard:
     # TODO: add checks before casting
     async def cast(
         self,
-        target: Union["CombatCard", "wizwalker.combat.CombatMember", None],
+        target: Optional[Union["CombatCard", "wizwalker.combat.CombatMember"]],
         *,
         sleep_time: Optional[float] = 1.0,
         debug_paint: bool = False,

@@ -231,7 +231,7 @@ async def teleport_to_friend_from_list(
 async def get_window_from_path(root_window, name_path):
     """
     Returns a window by following a list of window names, the last window is returned
-    Returns False if any window in the path can't be found
+    Returns False if any window in the source_path can't be found
     """
 
     async def _recurse_follow_path(window, path):

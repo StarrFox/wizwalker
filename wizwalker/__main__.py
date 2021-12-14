@@ -186,13 +186,38 @@ def wad():
     pass
 
 
-# # TODO: finish
-# @wad.command()
-# def archive():
-#     """
-#     Create a wad from a directory
-#     """
-#     click.echo("Not implimented")
+@wad.command()
+@click.argument("input_dir", type=click.Path(file_okay=False), default=".")
+@click.argument("output_wad", type=str)
+@click.option("--overwrite", default=False, is_flag=True)
+@click.option("--put-in-gamedata", default=False, is_flag=True)
+def archive(input_dir: str, output_wad: str, overwrite: bool, put_in_gamedata: bool):
+    """
+    Create a wad from a directory
+    """
+    input_dir = Path(input_dir)
+    output_wad = Path(output_wad)
+
+    if not overwrite and output_wad.exists():
+        click.echo(f"{output_wad} already exists pass --overwrite to overwrite it")
+        return
+
+    click.echo("Archiving...")
+
+    import time
+
+    if put_in_gamedata:
+        output_wad = output_wad.with_suffix(".wad")
+        wad_ = Wad.from_game_data(output_wad.name)
+
+    else:
+        wad_ = Wad(output_wad)
+
+    start = time.perf_counter()
+    asyncio.run(wad_.insert_all(input_dir, overwrite=overwrite))
+    end = time.perf_counter()
+
+    click.echo(f"Finished in {end - start} seconds")
 
 
 @wad.command(short_help="Unarchive a wad into a directory")
@@ -202,10 +227,17 @@ def unarchive(input_wad, output_dir):
     """
     Unarchive a wad into a directory
 
-    input_wad automatically fills in the rest of the path so you only need the name; i.e "root"
+    input_wad automatically fills in the rest of the source_path so you only need the name; i.e "root"
     output_dir defaults to the current directory
     """
-    wad = Wad.from_game_data(input_wad)
+    maybe_path = Path(input_wad).with_suffix(".wad")
+
+    if maybe_path.exists() and maybe_path.is_file():
+        wad_ = Wad(maybe_path)
+
+    else:
+        wad_ = Wad.from_game_data(input_wad)
+
     path = Path(output_dir)
 
     if not path.exists():
@@ -219,11 +251,11 @@ def unarchive(input_wad, output_dir):
     import time
 
     start = time.perf_counter()
-    asyncio.run(wad.unarchive(path))
+    asyncio.run(wad_.extract_all(path))
     end = time.perf_counter()
 
     click.echo(
-        f"Unarchived {len(wad._file_map.keys())} files in {int(end - start)} seconds"
+        f"Unarchived {len(wad_._file_map.keys())} files in {int(end - start)} seconds"
     )
 
 
@@ -234,13 +266,21 @@ def extract(input_wad, file_name):
     """
     Extract a single file from a wad
 
-    input_wad automatically fills in the rest of the path so you only need the name; i.e "root"
+    input_wad automatically fills in the rest of the source_path so you only need the name; i.e "root"
     """
-    wad_file = Wad.from_game_data(input_wad)
+    maybe_path = Path(input_wad)
+
+    maybe_path = maybe_path.with_suffix(".wad")
+
+    if maybe_path.exists() and maybe_path.is_file():
+        wad_ = Wad(maybe_path)
+
+    else:
+        wad_ = Wad.from_game_data(input_wad)
 
     async def _extract_file():
         try:
-            file_data = await wad_file.get_file(file_name)
+            file_data = await wad_.read(file_name)
         except ValueError:
             click.echo(f"No file named {file_name} found.")
         else:

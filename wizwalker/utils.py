@@ -3,17 +3,24 @@ import ctypes
 import ctypes.wintypes
 import functools
 import math
+import struct
 import subprocess
 
 # noinspection PyCompatibility
 import winreg
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Iterable, List, Optional
+from typing import Any, Optional
+from io import BytesIO
 
 import appdirs
 
 from wizwalker import ExceptionalTimeout
-from wizwalker.constants import Keycode, kernel32, user32, gdi32
+from wizwalker.constants import Keycode, kernel32, user32, gdi32, type_format_dict
+
+
+DEFAULT_INSTALL = "C:/ProgramData/KingsIsle Entertainment/Wizard101"
 
 
 async def async_sorted(iterable, /, *, key=None, reverse=False):
@@ -23,14 +30,8 @@ async def async_sorted(iterable, /, *, key=None, reverse=False):
     if key is None:
         return sorted(iterable, reverse=reverse)
 
-    evaluated = {}
-
-    for item in iterable:
-        evaluated[item] = await key(item)
-
-    return [
-        i[0] for i in sorted(evaluated.items(), key=lambda it: it[1], reverse=reverse)
-    ]
+    key_item_pairs = [(await key(item), item) for item in iterable]
+    return [item for _, item in sorted(key_item_pairs, reverse=reverse)]
 
 
 async def run_in_executor(func, *args, **kwargs):
@@ -48,20 +49,27 @@ async def run_in_executor(func, *args, **kwargs):
     return await loop.run_in_executor(None, function)
 
 
+class TypedBytes(BytesIO):
+    def split(self, index: int) -> tuple["TypedBytes", "TypedBytes"]:
+        self.seek(0)
+        buffer = self.read(index)
+        return type(self)(buffer), type(self)(self.read())
+
+    def read_typed(self, type_name: str):
+        type_format = type_format_dict[type_name]
+        size = struct.calcsize(type_format)
+        data = self.read(size)
+        return struct.unpack(type_format, data)[0]
+
+
+@dataclass
 class XYZ:
-    def __init__(self, x: float, y: float, z: float):
-        self.x = x
-        self.y = y
-        self.z = z
+    x: float
+    y: float
+    z: float
 
     def __sub__(self, other):
         return self.distance(other)
-
-    def __str__(self):
-        return f"<XYZ ({self.x}, {self.y}, {self.z})>"
-
-    def __repr__(self):
-        return str(self)
 
     def __iter__(self):
         return iter((self.x, self.y, self.z))
@@ -98,48 +106,40 @@ class XYZ:
         return self.yaw(other)
 
 
+@dataclass
 class Rectangle:
-    def __init__(self, x1: int, y1: int, x2: int, y2: int):
-        self.x1 = x1
-        self.y1 = y1
-        self.x2 = x2
-        self.y2 = y2
-
-    def __str__(self):
-        return f"<Rectangle ({self.x1}, {self.y1}, {self.x2}, {self.y2})>"
-
-    def __repr__(self):
-        return str(self)
+    x1: float
+    y1: float
+    x2: float
+    y2: float
 
     def __iter__(self):
         return iter((self.x1, self.x2, self.y1, self.y2))
 
-    def scale_to_client(self, parents: List["Rectangle"], factor: float) -> "Rectangle":
+    def scale_to_client(
+        self, parents: Iterable["Rectangle"], factor: float
+    ) -> "Rectangle":
         """
         Scale this rectangle base on parents and a scale factor
 
         Args:
-            parents: List of other rectangles
+            parents: Iterable of rectangles
             factor: Factor to scale by
 
         Returns:
             The scaled rectangle
         """
-        x1_sum = self.x1
-        y1_sum = self.y1
+        rects = [self, *parents]
 
-        for rect in parents:
-            x1_sum += rect.x1
-            y1_sum += rect.y1
+        x_factor = factor * sum(rect.x1 for rect in rects)
+        y_factor = factor * sum(rect.y1 for rect in rects)
 
-        converted = Rectangle(
-            int(x1_sum * factor),
-            int(y1_sum * factor),
-            int(((self.x2 - self.x1) * factor) + (x1_sum * factor)),
-            int(((self.y2 - self.y1) * factor) + (y1_sum * factor)),
+        return Rectangle(
+            int(x_factor),
+            int(y_factor),
+            int(x_factor + factor * (self.x2 - self.x1)),
+            int(y_factor + factor * (self.y2 - self.y1)),
         )
-
-        return converted
 
     def center(self):
         """
@@ -148,10 +148,10 @@ class Rectangle:
         Returns:
             The center point
         """
-        center_x = ((self.x2 - self.x1) // 2) + self.x1
-        center_y = ((self.y2 - self.y1) // 2) + self.y1
-
-        return center_x, center_y
+        return (
+            (self.x1 + self.x2) // 2,
+            (self.y1 + self.y2) // 2,
+        )
 
     def paint_on_screen(self, window_handle: int, *, rgb: tuple = (255, 0, 0)):
         """
@@ -162,28 +162,17 @@ class Rectangle:
             window_handle: Handle to the window to paint the rectangle on
         """
         paint_struct = PAINTSTRUCT()
-        # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdc
-        device_context = user32.GetDC(window_handle)
-        brush = gdi32.CreateSolidBrush(ctypes.wintypes.RGB(*rgb))
-
         user32.BeginPaint(window_handle, ctypes.byref(paint_struct))
 
-        # left, top = top left corner; right, bottom = bottom right corner
-        draw_rect = ctypes.wintypes.RECT()
-        draw_rect.left = self.x1
-        draw_rect.top = self.y1
-        draw_rect.right = self.x2
-        draw_rect.bottom = self.y2
+        device_context = user32.GetDC(window_handle)
+        gdi32.SetDCBrushColor(device_context, ctypes.wintypes.RGB(*rgb))
+        brush = gdi32.GetStockObject(18)
 
-        # https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-createrectrgnindirect
-        region = gdi32.CreateRectRgnIndirect(ctypes.byref(draw_rect))
-        # https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-fillrgn
-        gdi32.FillRgn(device_context, region, brush)
+        rect = ctypes.wintypes.RECT(self.x1, self.y1, self.x2, self.y2)
+        user32.FillRect(device_context, ctypes.byref(rect), brush)
 
         user32.EndPaint(window_handle, ctypes.byref(paint_struct))
         user32.ReleaseDC(window_handle, device_context)
-        gdi32.DeleteObject(brush)
-        gdi32.DeleteObject(region)
 
 
 class PAINTSTRUCT(ctypes.Structure):
@@ -213,10 +202,10 @@ _OVERRIDE_PATH = None
 
 def override_wiz_install_location(path: str):
     """
-    Override the path returned by get_wiz_install
+    Override the source_path returned by get_wiz_install
 
     Args:
-        path: The path to override with
+        path: The source_path to override with
     """
     # hacking old behavior so I dont have to actually fix the issue
     global _OVERRIDE_PATH
@@ -229,6 +218,11 @@ def get_wiz_install() -> Path:
     """
     if _OVERRIDE_PATH:
         return Path(_OVERRIDE_PATH).absolute()
+
+    default_install_path = Path(DEFAULT_INSTALL)
+
+    if default_install_path.exists():
+        return default_install_path
 
     try:
         with winreg.OpenKey(
@@ -438,6 +432,40 @@ async def maybe_wait_for_value_with_timeout(
         )
 
 
+async def maybe_wait_for_any_value_with_timeout(
+    coro,
+    sleep_time: float = 0.5,
+    *,
+    timeout: Optional[float] = None,
+    ignore_exceptions: bool = True,
+):
+    possible_exception = None
+
+    async def _inner():
+        nonlocal possible_exception
+
+        while True:
+            try:
+                res = await coro()
+                if res is not None:
+                    return res
+
+            except Exception as e:
+                if ignore_exceptions:
+                    possible_exception = e
+                    await asyncio.sleep(sleep_time)
+
+                else:
+                    raise e
+
+    try:
+        return await asyncio.wait_for(_inner(), timeout)
+    except asyncio.TimeoutError:
+        raise ExceptionalTimeout(
+            f"Timed out waiting for coro {coro.__name__}", possible_exception
+        )
+
+
 def get_cache_folder() -> Path:
     """
     Get the wizwalker cache folder
@@ -464,16 +492,15 @@ def get_logs_folder() -> Path:
     return log_dir
 
 
-def get_system_directory(max_size: int = 100) -> Path:
+def get_system_directory() -> Path:
     """
     Get the windows system directory
-
-    Args:
-        max_size: Max size of the string
     """
     # https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getsystemdirectoryw
-    buffer = ctypes.create_unicode_buffer(max_size)
-    kernel32.GetSystemDirectoryW(buffer, max_size)
+    length = kernel32.GetSystemDirectoryW(None, 0)
+
+    buffer = ctypes.create_unicode_buffer(length)
+    kernel32.GetSystemDirectoryW(buffer, length)
 
     return Path(buffer.value)
 
@@ -507,24 +534,30 @@ def set_foreground_window_handle(window_handle: int) -> bool:
 
     Returns:
         False if the operation failed True otherwise
+
+    Notes:
+        These conditions must be true to set the foreground
+        https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setforegroundwindow#remarks
     """
     return user32.SetForegroundWindow(window_handle) != 0
 
 
-def get_window_handle_title(handle: int, max_size: int = 100) -> str:
+def get_window_handle_title(handle: int) -> str:
     """
     Get a window's title bar text
 
     Args:
         handle: Handle to the window
-        max_size: Max size to read
 
     Returns:
         The window title
     """
+    # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowtextlengthw
+    length = user32.GetWindowTextLengthW(handle)
+
     # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowtextw
-    window_title = ctypes.create_unicode_buffer(max_size)
-    user32.GetWindowTextW(handle, ctypes.byref(window_title), max_size)
+    window_title = ctypes.create_unicode_buffer(length)
+    user32.GetWindowTextW(handle, ctypes.byref(window_title), length + 1)
     return window_title.value
 
 

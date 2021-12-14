@@ -26,11 +26,17 @@ class SpellEffect(PropertyClass):
     async def write_string_damage_type(self, string_damage_type: str):
         await self.write_string_to_offset(88, string_damage_type)
 
+    async def disposition(self) -> HangingDisposition:
+        return await self.read_enum(80, HangingDisposition)
+
+    async def write_disposition(self, disposition: HangingDisposition):
+        await self.write_enum(80, disposition)
+
     async def damage_type(self) -> int:
-        return await self.read_value_from_offset(80, "unsigned int")
+        return await self.read_value_from_offset(84, "unsigned int")
 
     async def write_damage_type(self, damage_type: int):
-        await self.write_value_to_offset(80, damage_type, "unsigned int")
+        await self.write_value_to_offset(84, damage_type, "unsigned int")
 
     async def pip_num(self) -> int:
         return await self.read_value_from_offset(128, "int")
