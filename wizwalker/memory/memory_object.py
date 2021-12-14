@@ -3,15 +3,15 @@ from enum import Enum
 from typing import Any, Type
 
 from wizwalker.errors import MemoryReadError
-from .memory_reader import MemoryReader
+from .memory_handler import MemoryHandler
 
 
-class MemoryObject(MemoryReader):
+class MemoryObject(MemoryHandler):
     """
     Class for any represented classes from memory
     """
 
-    def __init__(self, memory_reader: MemoryReader, base_address: int = None):
+    def __init__(self, memory_reader: MemoryHandler, base_address: int = None):
         super().__init__(memory_reader.process)
 
         # sanity check

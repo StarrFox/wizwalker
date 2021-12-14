@@ -1,7 +1,7 @@
 import re
 import struct
 from enum import Enum
-from typing import Any, Type, Union
+from typing import Any, Type
 
 import pefile
 import pymem
@@ -27,7 +27,7 @@ from wizwalker import (
 MAX_STRING = 5_000
 
 
-class MemoryReader:
+class MemoryHandler:
     """
     Represents anything that needs to read/write from/to memory
     """

@@ -16,9 +16,10 @@ class CacheHandler:
     def __init__(self):
         self._wad_cache = None
         self._template_ids = None
-        self._node_cache = None
 
-        self._root_wad = Wad.from_game_data("Root")
+    @cached_property
+    def _root_wad(self) -> Wad:
+        return Wad.from_game_data("Root")
 
     @cached_property
     def install_location(self) -> Path:
@@ -297,17 +298,3 @@ class CacheHandler:
             raise ValueError(f"No lang name with code {code}")
 
         return lang_name
-
-    # async def get_nav_data(self, zone_name: str):
-    #     """
-    #
-    #     Args:
-    #         zone_name:
-    #
-    #     Returns:
-    #
-    #     """
-    #     pass
-    #
-    # async def write_nav_data(self):
-    #     pass
