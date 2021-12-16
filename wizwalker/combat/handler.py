@@ -172,7 +172,7 @@ class CombatHandler:
 
             for effect in effects:
                 effect_type = await effect.maybe_read_type_name()
-                if effect_type.lower() in ("variable", "random"):
+                if any(substr in effect_type.lower() for substr in ("variable", "random")):
                     for sub_effect in await effect.maybe_effect_list():
                         if await sub_effect.effect_target() in (
                             EffectTarget.enemy_team,
@@ -418,14 +418,14 @@ class AoeHandler(CombatHandler):
 
             to_cast = enchanted_aoes[0]
 
-            if to_cast.is_castable():
+            if await to_cast.is_castable():
                 await to_cast.cast(None)
 
         # no enchants so just cast card
         elif not enchants and unenchanted_aoes:
             to_cast = unenchanted_aoes[0]
 
-            if to_cast.is_castable():
+            if await to_cast.is_castable():
                 await to_cast.cast(None)
 
         # hand full of enchants or enchants + other cards
