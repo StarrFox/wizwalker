@@ -172,7 +172,7 @@ class CombatHandler:
 
             for effect in effects:
                 effect_type = await effect.maybe_read_type_name()
-                if effect_type.lower() in ("variable", "random", "variablespelleffect"):
+                if any(substr in effect_type.lower() for substr in ("variable", "random")):
                     for sub_effect in await effect.maybe_effect_list():
                         if await sub_effect.effect_target() in (
                             EffectTarget.enemy_team,
