@@ -11,11 +11,8 @@ DECAMEL = re.compile(r"(?P<before>[a-z])(?P<target>[A-Z])(?P<after>[A-Z$]?)")
 PVP_OVERRIDE = re.compile(r"(?P<before>.?)(?P<target>PvP)(?P<after>.?)")
 ENUM_NAME_PREFIX = re.compile(r"(^[^_]+_)|(^\w(?=[^a-z]))")
 
-_CLASS_SCOPE = "    "
-_METHOD_SCOPE = _CLASS_SCOPE + _CLASS_SCOPE
 
 CLASS_TEMPLATE = Template("class $class_name($parent_class):\n$methods\n")
-
 METHOD_TEMPLATE = Template("async def $method_name(self, $arguments):\n$body")
 
 
