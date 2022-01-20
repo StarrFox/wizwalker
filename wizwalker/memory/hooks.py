@@ -241,10 +241,10 @@ class QuestHook(SimpleHook):
         # fmt: off
         bytecode = (
                 b"\x50"  # push rcx
-                b"\x49\x8D\x86\xAC\x0C\x00\x00"  # lea rcx,[r14+CAC]
+                b"\x49\x8D\x86\xFC\x0C\x00\x00"  # lea rcx,[r14+CFC]
                 b"\x48\xA3" + packed_exports[0][1] +  # mov [export],rcx
                 b"\x58"  # pop rcx
-                b"\xF3\x41\x0F\x10\x86\xAC\x0C\x00\x00"  # original code
+                b"\xF3\x41\x0F\x10\x86\xFC\x0C\x00\x00"  # original code
         )
         # fmt: on
         return bytecode
