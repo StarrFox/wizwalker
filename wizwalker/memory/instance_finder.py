@@ -1,4 +1,4 @@
-import re
+import regex
 import struct
 from collections import defaultdict
 
@@ -40,7 +40,7 @@ class InstanceFinder(MemoryHandler):
         return string_bytes.decode(encoding)
 
     async def scan_for_pointer(self, address: int):
-        pattern = re.escape(struct.pack("<q", address))
+        pattern = regex.escape(struct.pack("<q", address))
         try:
             return await self.pattern_scan(pattern, return_multiple=True)
         except PatternFailed:

@@ -1,12 +1,12 @@
 import asyncio
-import re
+import regex
 from contextlib import suppress
 
 from wizwalker.memory.memory_objects.enums import WindowFlags
 from wizwalker.utils import maybe_wait_for_value_with_timeout
 
 
-_friend_list_entry = re.compile(
+_friend_list_entry = regex.compile(
     r"<Y;\d+><X;\d+><indent;0><Color;[\w\d]+><left>"
     r"<icon;FriendsList/Friend_Icon_List_0(?P<icon_list>[12])\."
     r"dds;\d+;\d+;(?P<icon_index>\d+)></left><Y;(?P<name_y>[-\d]+)><X;(?P<name_x>[-\d]+)>"

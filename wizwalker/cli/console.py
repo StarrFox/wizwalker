@@ -1,6 +1,5 @@
-import argparse
 import asyncio
-import re
+import regex
 import sys
 from collections.abc import Coroutine
 from typing import Optional
@@ -137,9 +136,9 @@ class WizWalkerConsole(cmd2.Cmd):
         """
         template_ids = self.run_coro(self.cache_handler.get_template_ids())
 
-        regex = re.compile(args.pattern, re.IGNORECASE)
+        reg = regex.compile(args.pattern, regex.IGNORECASE)
         for tid, name in template_ids.items():
-            if regex.match(name):
+            if reg.match(name):
                 self.write(f"{tid=} {name=}")
 
     checkid_parser = argparse.ArgumentParser()

@@ -1,6 +1,6 @@
 import asyncio
 import functools
-import re
+import regex
 import struct
 from typing import Any
 
@@ -79,7 +79,7 @@ class MemoryHandler:
 
         found = []
 
-        for match in re.finditer(pattern, page_bytes, re.DOTALL):
+        for match in regex.finditer(pattern, page_bytes, regex.DOTALL):
             found_address = address + match.span()[0]
             found.append(found_address)
 
