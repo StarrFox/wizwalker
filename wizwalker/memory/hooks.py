@@ -1,4 +1,4 @@
-import re
+import regex
 import struct
 from typing import Any, Tuple
 from warnings import warn
@@ -241,10 +241,10 @@ class QuestHook(SimpleHook):
         # fmt: off
         bytecode = (
                 b"\x50"  # push rcx
-                b"\x49\x8D\x86\xAC\x0C\x00\x00"  # lea rcx,[r14+CAC]
+                b"\x49\x8D\x86\xFC\x0C\x00\x00"  # lea rcx,[r14+CFC]
                 b"\x48\xA3" + packed_exports[0][1] +  # mov [export],rcx
                 b"\x58"  # pop rcx
-                b"\xF3\x41\x0F\x10\x86\xAC\x0C\x00\x00"  # original code
+                b"\xF3\x41\x0F\x10\x86\xFC\x0C\x00\x00"  # original code
         )
         # fmt: on
         return bytecode
@@ -264,7 +264,7 @@ class DuelHook(SimpleHook):
         block_size = 256
         block = await self.read_bytes(self.jump_address - block_size, block_size)
 
-        found = re.search(rb"\x7E.\xE8....\xE9", block, re.DOTALL)
+        found = regex.search(rb"\x7E.\xE8....\xE9", block, regex.DOTALL)
         if not found:
             # It's unlikely for users to need this patched so a warning should suffice.
             warn(

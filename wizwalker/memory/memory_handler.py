@@ -1,4 +1,4 @@
-import re
+import regex
 import struct
 from enum import Enum
 from typing import Any, Type
@@ -84,7 +84,7 @@ class MemoryHandler:
 
         found = []
 
-        for match in re.finditer(pattern, page_bytes, re.DOTALL):
+        for match in regex.finditer(pattern, page_bytes, regex.DOTALL):
             found_address = address + match.span()[0]
             found.append(found_address)
 
