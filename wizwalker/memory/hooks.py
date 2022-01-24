@@ -1,4 +1,4 @@
-import re
+import regex
 import struct
 from typing import Any, Tuple
 from warnings import warn
@@ -264,7 +264,7 @@ class DuelHook(SimpleHook):
         block_size = 256
         block = await self.read_bytes(self.jump_address - block_size, block_size)
 
-        found = re.search(rb"\x7E.\xE8....\xE9", block, re.DOTALL)
+        found = regex.search(rb"\x7E.\xE8....\xE9", block, regex.DOTALL)
         if not found:
             # It's unlikely for users to need this patched so a warning should suffice.
             warn(

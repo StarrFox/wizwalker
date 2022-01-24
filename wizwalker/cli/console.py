@@ -1,5 +1,5 @@
 import asyncio
-import re
+import regex
 import sys
 import threading
 from typing import Any, Coroutine, Union
@@ -183,9 +183,9 @@ class WizWalkerConsole(Monitor):
         client = walker.clients[0]
         template_ids: dict = self.run_coro(client.get_template_ids())
 
-        regex = re.compile(pattern, re.IGNORECASE)
+        reg = regex.compile(pattern, regex.IGNORECASE)
         for tid, name in template_ids.items():
-            if regex.match(name):
+            if reg.match(name):
                 self.write(f"{tid=} {name=}")
 
     def do_checkid(self, tid: str):

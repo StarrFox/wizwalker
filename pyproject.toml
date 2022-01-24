@@ -20,6 +20,7 @@ aiomonitor = "^0.4.5"
 terminaltables = "^3.1.0"
 janus = "^0.6.1"
 pefile = "^2021.5.24"
+regex = "^2022.1.18"
 
 [tool.poetry.dev-dependencies]
 pyinstaller = "^3.6"
