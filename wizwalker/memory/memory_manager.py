@@ -64,7 +64,7 @@ class SharedMemoryManager(MemoryManager):
     def _open_shm(self):
         if not self._shm:
             self._inject_adapter()
-            self._shm = mmap.mmap(0, self._buff_size, self._mem_path)
+            self._shm = mmap.mmap(0, self._buff_size + 1, self._mem_path) # re-add the guard byte
 
     async def _wait_for_guard(self, g: int):
         while self._shm[0] != g:
