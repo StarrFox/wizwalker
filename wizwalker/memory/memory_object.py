@@ -17,6 +17,13 @@ from .memory_reader import MemoryReader
 MAX_STRING = 5_000
 
 
+# TODO: Don't use this for release
+def check_pointer(ptr):
+    if ptr == 0:
+        return False
+    return True
+
+
 # TODO: add .find_instances that find instances of whichever class used it
 class MemoryObject(MemoryReader):
     """
@@ -24,7 +31,7 @@ class MemoryObject(MemoryReader):
     """
 
     def __init__(self, hook_handler: HookHandler):
-        super().__init__(hook_handler.process)
+        super().__init__(hook_handler.process, hook_handler.manager)
         self.hook_handler = hook_handler
 
     async def read_base_address(self) -> int:
@@ -32,10 +39,14 @@ class MemoryObject(MemoryReader):
 
     async def read_value_from_offset(self, offset: int, data_type: str) -> Any:
         base_address = await self.read_base_address()
+        if not check_pointer(base_address):
+            raise MemoryReadError(f"Base address was zero (read)")
         return await self.read_typed(base_address + offset, data_type)
 
     async def write_value_to_offset(self, offset: int, value: Any, data_type: str):
         base_address = await self.read_base_address()
+        if not check_pointer(base_address):
+            raise MemoryReadError(f"Base address was zero (write)")
         await self.write_typed(base_address + offset, value, data_type)
 
     async def read_null_terminated_string(
@@ -76,6 +87,8 @@ class MemoryObject(MemoryReader):
         self, offset: int, encoding: str = "utf-16"
     ) -> str:
         base_address = await self.read_base_address()
+        if not check_pointer(base_address):
+            raise MemoryReadError(f"Base address was zero (read widestring)")
         return await self.read_wide_string(base_address + offset, encoding)
 
     async def write_wide_string(
@@ -112,6 +125,8 @@ class MemoryObject(MemoryReader):
         self, offset: int, string: str, encoding: str = "utf-8"
     ):
         base_address = await self.read_base_address()
+        if not check_pointer(base_address):
+            raise MemoryReadError(f"Base address was zero (write widestring)")
         await self.write_string(base_address + offset, string, encoding)
 
     async def read_string(self, address: int, encoding: str = "utf-8") -> str:
@@ -135,6 +150,8 @@ class MemoryObject(MemoryReader):
         self, offset: int, encoding: str = "utf-8"
     ) -> str:
         base_address = await self.read_base_address()
+        if not check_pointer(base_address):
+            raise MemoryReadError(f"Base address was zero (read string)")
         return await self.read_string(base_address + offset, encoding)
 
     async def write_string(self, address: int, string: str, encoding: str = "utf-8"):
@@ -169,6 +186,8 @@ class MemoryObject(MemoryReader):
         self, offset: int, string: str, encoding: str = "utf-8"
     ):
         base_address = await self.read_base_address()
+        if not check_pointer(base_address):
+            raise MemoryReadError(f"Base address was zero (write string)")
         await self.write_string(base_address + offset, string, encoding)
 
     async def read_vector(self, offset: int, size: int = 3, data_type: str = "float"):
@@ -176,6 +195,8 @@ class MemoryObject(MemoryReader):
         size_per_type = struct.calcsize(type_str)
 
         base_address = await self.read_base_address()
+        if not check_pointer(base_address):
+            raise MemoryReadError(f"Base address was zero (read vector)")
         vector_bytes = await self.read_bytes(
             base_address + offset, size_per_type * size
         )
@@ -188,6 +209,8 @@ class MemoryObject(MemoryReader):
         type_str = type_format_dict[data_type].replace("<", "")
 
         base_address = await self.read_base_address()
+        if not check_pointer(base_address):
+            raise MemoryReadError(f"Base address was zero (write vector)")
         packed_bytes = struct.pack("<" + type_str * size, *value)
 
         await self.write_bytes(base_address + offset, packed_bytes)

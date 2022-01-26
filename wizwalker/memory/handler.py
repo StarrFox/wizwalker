@@ -7,6 +7,7 @@ import pymem.exception
 from loguru import logger
 
 from wizwalker import HookAlreadyActivated, HookNotActive, HookNotReady
+
 from .hooks import (
     ClientHook,
     DuelHook,
@@ -18,6 +19,7 @@ from .hooks import (
     RenderContextHook,
 )
 from .memory_reader import MemoryReader
+from .memory_manager import MemoryManager
 
 
 # noinspection PyUnresolvedReferences
@@ -35,8 +37,8 @@ class HookHandler(MemoryReader):
     # rounded down
     AUTOBOT_SIZE = 3900
 
-    def __init__(self, process: pymem.Pymem, client):
-        super().__init__(process)
+    def __init__(self, process: pymem.Pymem, memory_manager: MemoryManager, client):
+        super().__init__(process, memory_manager)
 
         self.client = client
 

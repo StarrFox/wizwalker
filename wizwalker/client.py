@@ -5,6 +5,7 @@ from typing import Callable, List, Optional
 
 import pymem
 
+
 from . import (
     CacheHandler,
     Keycode,
@@ -33,6 +34,7 @@ from .utils import (
     get_window_rectangle,
 )
 
+from .memory.memory_manager import SharedMemoryManager
 
 class Client:
     """
@@ -47,7 +49,8 @@ class Client:
 
         self._pymem = pymem.Pymem()
         self._pymem.open_process_from_id(self.process_id)
-        self.hook_handler = HookHandler(self._pymem, self)
+        self.memory_manager = SharedMemoryManager(self.window_handle, self._pymem)
+        self.hook_handler = HookHandler(self._pymem, self.memory_manager, self)
 
         self.cache_handler = CacheHandler()
         self.mouse_handler = MouseHandler(self)

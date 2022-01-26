@@ -22,14 +22,17 @@ from wizwalker import (
     utils,
 )
 
+from .memory_manager import MemoryManager
+
 
 class MemoryReader:
     """
     Represents anything that needs to read/write from/to memory
     """
 
-    def __init__(self, process: pymem.Pymem):
+    def __init__(self, process: pymem.Pymem, manager: MemoryManager):
         self.process = process
+        self.manager = manager
 
         self._symbol_table = {}
 
@@ -255,24 +258,12 @@ class MemoryReader:
         Args:
             address: The address to read from
             size: The number of bytes to read
-
-        Raises:
-            ClientClosedError: If the client is closed
-            MemoryReadError: If there was an error reading memory
-            AddressOutOfRange: If the addrress is out of bounds
         """
-        if not 0 < address <= 0x7FFFFFFFFFFFFFFF:
-            raise AddressOutOfRange(address)
 
-        try:
-            return await self.run_in_executor(self.process.read_bytes, address, size)
-        except pymem.exception.MemoryReadError:
-            # we don't want to run is running for every read
-            # so we just check after we error
-            if not self.is_running():
-                raise ClientClosedError()
-            else:
-                raise MemoryReadError(address)
+        if address == 0:
+            raise MemoryReadError("Cannot read from 0 address")
+
+        return await self.manager.read(address, size)
 
     async def write_bytes(self, address: int, value: bytes):
         """
@@ -284,19 +275,9 @@ class MemoryReader:
         """
         size = len(value)
         logger.debug(f"Writing bytes {value} to address {address} with size {size}")
-        try:
-            await self.run_in_executor(
-                self.process.write_bytes,
-                address,
-                value,
-                size,
-            )
-        except pymem.exception.MemoryWriteError:
-            # see read_bytes
-            if not self.is_running():
-                raise ClientClosedError()
-            else:
-                raise MemoryWriteError(address)
+        if address == 0:
+            raise MemoryReadError("Cannot write to 0 address")
+        await self.manager.write(address, value)
 
     async def read_typed(self, address: int, data_type: str) -> Any:
         """

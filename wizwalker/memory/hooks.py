@@ -17,7 +17,7 @@ def pack_to_int_or_longlong(num: int) -> bytes:
 
 class MemoryHook(MemoryReader):
     def __init__(self, hook_handler):
-        super().__init__(hook_handler.process)
+        super().__init__(hook_handler.process, hook_handler.manager)
         self.hook_handler = hook_handler
         self.jump_original_bytecode = None
 
