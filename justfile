@@ -12,7 +12,7 @@ docs: install
   cd docs && poetry run make html
 
 # publish a major, minor, or patch version
-publish TYPE:
+publish TYPE: install
   poetry version {{TYPE}}
   poetry build
   poetry publish
