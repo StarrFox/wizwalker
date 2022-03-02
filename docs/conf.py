@@ -71,5 +71,5 @@ html_theme_options = {
     ],
     "footer_text": "",
     # If ``github_link`` is set, a GitHub icon will be shown in the top right.
-    "github_link": "https://github.com/StarrFox/Discord-chan",
+    "github_link": "https://github.com/StarrFox/wizwalker",
 }
