@@ -250,51 +250,29 @@ class QuestHook(SimpleHook):
         return bytecode
 
 
+# NOTE: CombatPlanningPhaseWindow.handle
 class DuelHook(SimpleHook):
-    pattern = rb"\x48\x89...\x48\x89...\x48\x89...\x89\x4C"
+    pattern = (
+        rb"\x44\x0F\xB6\xE0\x88\x44\x24\x60\xE8....\x44\x8D\x6B\x0F"
+        rb"\x44\x8D\x73\x10\x4C\x8D.....\x83\xF8\x64\x7E\x0A\xE8....\xE9"
+    )
     exports = [("current_duel_addr", 8)]
-
-    def __init__(self, *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-
-        self._log_level_check_address = None
-
-    async def posthook(self):
-        # Search above the hook jump address for the log level check.
-        block_size = 256
-        block = await self.read_bytes(self.jump_address - block_size, block_size)
-
-        found = regex.search(rb"\x7E.\xE8....\xE9", block, regex.DOTALL)
-        if not found:
-            # It's unlikely for users to need this patched so a warning should suffice.
-            warn(
-                "Could not patch DuelHook to run for log levels greater than 100.",
-                RuntimeWarning,
-            )
-        else:
-            offset = block_size - found.span()[0]
-            self._log_level_check_address = self.jump_address - offset
-
-            # Patch jle with jmp so DuelHook runs regardless of log level.
-            await self.write_bytes(self._log_level_check_address, b"\xEB")
-
-    async def unhook(self):
-        if self._log_level_check_address:
-            await self.write_bytes(self._log_level_check_address, b"\x7E")
-            self._log_level_check_address = None
-        await super().unhook()
+    instruction_length = 8
+    noops = 3
 
     async def bytecode_generator(self, packed_exports):
         # fmt: off
         bytecode = (
-                # what was this compare for?
-                # b"\x48\x39\xD1"  # cmp rcx,rdx
-                # b"\x0F\x85\x0F\x00\x00\x00"  # jne 15
+                # if al == 1 rcx is ClientDuel
+                b"\x84\xc0"  # test al,al
+                b"\x74\x0F"  # je 8
                 b"\x50"  # push rax
-                b"\x49\x8B\x07"  # mov rax,[r15]
-                b"\x48\xA3" + packed_exports[0][1] +  # mov [current_duel],rax
+                b"\x48\x89\xc8"  # mov rax,rcx
+                b"\x48\xA3" + packed_exports[0][1] +  # movabs [current_duel_addr],rax
                 b"\x58"  # pop rax
-                b"\x48\x89\x5C\x24\x58"  # original instruction
+                # original code
+                b"\x44\x0F\xB6\xE0"  # movzx r12d,al
+                b"\x88\x44\x24\x60"  # mov [rsp+60],al
         )
         # fmt: on
 
