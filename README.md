@@ -4,55 +4,27 @@
 
 Wizard101 scripting library
 
-## documentation
+## Installation
+`pip install wizwalker`
+
+## Documentation
 you can find the documentation [here](https://starrfox.github.io/wizwalker/)
 
-## install
+## Discord
+you can join the offical discord [here](https://discord.gg/JHrdCNK)
+
+## Just
+this package uses [just](https://github.com/casey/just) for command running
 ```shell
-$ pip install -U wizwalker
+just cli          # start wiz instance and then start debug cli
+just docs         # build docs
+just install      # install enviroment
+just publish TYPE # publish a major, minor, or patch version
 ```
 
-## discord
-join the offical discord [here](https://discord.gg/JHrdCNK)
-
-## development install
-This package uses [poetry](https://python-poetry.org/)
+## Console commands
 ```shell
-$ poetry install
+wizwalker           # Runs the wizwalker cli
+wizwalker start-wiz # start wizard101 instances
+wizwalker wad       # edit and extract wizard101 wad files
 ```
-
-## running
-Shell may need admin perms
-```shell
-$ poetry shell
-$ wizwalker
-```
-
-## building
-You'll need the dev install (see above) for this to work
-
-### exe
-```shell
-# Admin if needed
-$ pyinstaller -F --uac-admin --name WizWalker wizwalker/__main__.py
-# Normal
-$ pyinstaller -F --name WizWalker wizwalker/__main__.py
-```
-
-### wheel and source
-```shell
-$ poetry build
-```
-
-### Docs
-```shell
-$ cd docs
-$ make html
-```
-
-## console commands
-wizwalker: Runs the wizwalker cli
-
-wizwalker start-wiz: start wizard101 instances
-
-wizwalker wad: edit and extract wizard101 wad files
