@@ -5,7 +5,7 @@ from warnings import warn
 
 from loguru import logger
 
-from .memory_reader import MemoryReader
+from .memory_handler import MemoryHandler
 
 
 def pack_to_int_or_longlong(num: int) -> bytes:
@@ -15,7 +15,7 @@ def pack_to_int_or_longlong(num: int) -> bytes:
         return struct.pack("<q", num)
 
 
-class MemoryHook(MemoryReader):
+class MemoryHook(MemoryHandler):
     def __init__(self, hook_handler):
         super().__init__(hook_handler.process)
         self.hook_handler = hook_handler
