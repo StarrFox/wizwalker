@@ -306,6 +306,31 @@ class MemoryHandler:
         data = await self.read_bytes(address, struct.calcsize(type_format))
         return struct.unpack(type_format, data)[0]
 
+    async def read_multiple_typed(self, address: int, *data_types: str) -> Any | tuple[Any]:
+        """
+        Read typed bytes from memory
+
+        Args:
+            address: The address to read from
+            data_types: The type to read (defined in constants)
+
+        Returns:
+            The converted data type
+        """
+        type_format = "<"
+        for data_type in data_types:
+            data_type_format = type_format_dict.get(data_type)
+            if data_type_format is None:
+                raise ValueError(f"Invalid data type {data_type}")
+
+            type_format += data_type_format.replace("<", "")
+
+        data = await self.read_bytes(address, struct.calcsize(type_format))
+        if len(data_types) == 1:
+            return struct.unpack(type_format, data)[0]
+
+        return struct.unpack(type_format, data)
+
     async def write_typed(self, address: int, value: Any, data_type: str):
         """
         Write typed bytes to memory
@@ -320,6 +345,26 @@ class MemoryHandler:
             raise ValueError(f"{data_type} is not a valid data type")
 
         packed_data = struct.pack(type_format, value)
+        await self.write_bytes(address, packed_data)
+
+    async def write_multiple_typed(self, address: int, values: Any | tuple[any], *data_types: str):
+        """
+        Write typed bytes to memory
+
+        Args:
+            address: The address to write to
+            values: The value to convert and then write
+            data_types: The data type to convert to
+        """
+        type_format = "<"
+        for data_type in data_types:
+            data_type_format = type_format_dict.get(data_type)
+            if data_type_format is None:
+                raise ValueError(f"Invalid data type {data_type}")
+
+            type_format += data_type_format.removeprefix("<", "")
+
+        packed_data = struct.pack(type_format, *values)
         await self.write_bytes(address, packed_data)
 
     async def read_null_terminated_string(
