@@ -562,12 +562,16 @@ class MemoryHandler:
         list_addr = await self.read_typed(address, "long long")
         list_size = await self.read_typed(address + 8, "int")
 
+        if list_size < 1:
+            return []
+
         addrs = []
-        next_node_addr = list_addr
-        for _ in range(list_size):
-            list_node = await self.read_typed(next_node_addr, "long long")
-            next_node_addr = await self.read_typed(list_node, "long long")
-            # object starts +16 from "last" list node
+        list_node = await self.read_typed(list_addr, "long long")
+        # object starts +16 from node
+        addrs.append(list_node + 16)
+        # -1 because we've already read one node
+        for _ in range(list_size - 1):
+            list_node = await self.read_typed(list_node, "long long")
             addrs.append(list_node + 16)
 
         return addrs
