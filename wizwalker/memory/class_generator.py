@@ -1,195 +1,288 @@
 import re
-from collections import defaultdict
-from string import Template
-
-from loguru import logger
-
-import wizwalker
-
-PROPERTY_NAME_PREFIX = re.compile(r"m_(\w(?=[^a-z]))?")
-DECAMEL = re.compile(r"(?P<before>[a-z])(?P<target>[A-Z])(?P<after>[A-Z$]?)")
-PVP_OVERRIDE = re.compile(r"(?P<before>.?)(?P<target>PvP)(?P<after>.?)")
-ENUM_NAME_PREFIX = re.compile(r"(^[^_]+_)|(^\w(?=[^a-z]))")
 
 
-CLASS_TEMPLATE = Template("class $class_name($parent_class):\n$methods\n")
-METHOD_TEMPLATE = Template("async def $method_name(self, $arguments):\n$body")
+# PROPERTY_NAME_PREFIX = re.compile(r"m_(\w(?=[^a-z]))?")
+# DECAMEL = re.compile(r"(?P<before>[a-z])(?P<target>[A-Z])(?P<after>[A-Z$]?)")
+# PVP_OVERRIDE = re.compile(r"(?P<before>.?)(?P<target>PvP)(?P<after>.?)")
+# ENUM_NAME_PREFIX = re.compile(r"(^[^_]+_)|(^\w(?=[^a-z]))")
 
 
-# TODO: come up with a reason this has to be a class
-class StringModifier:
-    @staticmethod
-    def decamel(name: str) -> str:
-        """
-        AbcDefXYZ -> abc_def_XYZ
-        """
+# CLASS_TEMPLATE = Template("class $class_name($parent_class):\n$methods\n")
+# METHOD_TEMPLATE = Template("async def $method_name(self, $arguments):\n$body")
 
-        def _pvp_override(match):
-            res = ""
 
-            before = match.group("before")
-            after = match.group("after")
+class PythonCodeGenerator:
+    def __init__(self, indent: str = "    "):
+        self.indent = indent
+        self.lines = []
 
-            if before:
-                res += before + "_"
+    def generate(self, joiner: str = "\n") -> str:
+        return joiner.join(self.lines)
 
-            res += "pvp"
+    def add_line(self, line: str, level: int = 0):
+        self.lines.append(self.indent * level + line)
 
-            if after:
-                res += "_" + after
+    def add_blank_line(self):
+        self.lines.append("")
 
-            return res
+    def add_block(self, lines: list[str], level: int = 0):
+        for line in lines:
+            self.add_line(line, level)
 
-        def _decamel_replacer(match):
-            res = match.group("before") + "_"
+    def add_if(self, condition: str, body_lines: list[str], level: int = 0):
+        self.add_line(f"if {condition}:", level)
+        self.add_block(body_lines, level + 1)
 
-            after = match.group("after")
 
-            if after:
-                res += match.group("target") + after
+class PythonFile(PythonCodeGenerator):
+    classes = {}
 
+    def add_class(self, python_class: "PythonClass"):
+        if self.classes.get(python_class.name):
+            raise ValueError(f"Class {python_class.name} already exists")
+
+        self.classes[python_class.name] = python_class
+
+
+class PythonClass(PythonCodeGenerator):
+    def __init__(self, name: str,  indent: str = "    "):
+        super().__init__(indent)
+        self.name = name
+        self.methods = {}
+
+    def add_method(self, python_method: "PythonMethod"):
+        if self.methods.get(python_method.name):
+            raise ValueError(f"Method {python_method.name} already exists")
+
+        self.methods[python_method.name] = python_method
+
+
+class PythonMethod(PythonCodeGenerator):
+    def __init__(self, name: str, indent: str = "    ", *, is_async: bool = False):
+        super().__init__(indent)
+        self.name = name
+        self.is_async = is_async
+        self.arguments = {}
+        self.kwarguments = {}
+
+    def generate(self, joiner: str = "\n") -> str:
+        def_line = "async def" if self.is_async else "def"
+
+        args = []
+        for name, (type_name, default_value) in self.arguments.items():
+            if default_value is not None:
+                args.append(f"{name}: {type_name} = {default_value}")
             else:
-                res += match.group("target").lower()
+                args.append(f"{name}: {type_name}")
 
-            return res
-
-        name = PVP_OVERRIDE.sub(_pvp_override, name)
-        return DECAMEL.sub(_decamel_replacer, name)
-
-    def clean_name(self, name: str, target_type: str) -> str:
-        match target_type:
-            case "class" | "return" | "enum" | "file":
-                # class CoreObject -> CoreObject
-                name = name.replace("class ", "")
-
-                # Namespace::CoreObject -> Namespace_CoreObject
-                name = name.replace("::", "_")
-
-            case "file":
-                name = name.lower()
-
-            case "property":
-                # m_duelID.m_full -> m_duelID_m_full
-                name = name.replace(".", "_")
-
-                # m_id -> id
-                name = PROPERTY_NAME_PREFIX.sub("", name)
-
-                # fullPartyGroup -> full_party_group
-                name = self.decamel(name)
-
-                # Battleground -> battleground
-                name = name.lower()
-
-            case "enum" | "return":
-                # enum kDuelExecutionOrder -> kDuelExecutionOrder
-                name = name.replace("enum ", "")
-
-                # TODO: handle this prefix
-                # # kDuelExecutionOrder -> DuelExecutionOrder
-                # name = name.lstrip("k")
-
-            case "return":
-                # class SharedPointer<class CoreObject> -> class CoreObject
-                name = name.replace("class SharedPointer<", "")
-                name = name.replace(">", "")
-
-                # unsigned int -> int
-                name = name.replace("unsigned ", "")
-
-            case _:
-                name = name.replace("*", "")
-
-        return name
-
-
-# TODO:
-#  goals:
-#   1. support for hidden properties
-#   2. clean interface that can be improved and adapted later
-class ClassGenerator:
-    """
-    Generates a file of classes generated from type information
-    """
-
-    def __init__(self, type_tree: dict[str, "wizwalker.memory.type_tree.HashNode"]):
-        self.type_tree = type_tree
-        self.string_modifier = StringModifier()
-
-    async def generate(self) -> str:
-        """
-        returns the generated class file as a string
-        """
-        class_file_string = ""
-
-        # we do this to order the class definitions so parent classes are defined before their subclasses
-        # number of bases: list[HashNode]
-        node_base_map = defaultdict(list)
-        for dirty_class_name, node in self.type_tree.items():
-            if any(
-                (
-                    not dirty_class_name.startswith("class"),
-                    dirty_class_name.endswith("*"),
-                    dirty_class_name.startswith("class SharedPointer<"),
-                    dirty_class_name.startswith("class std::"),
-                )
-            ):
-                logger.debug(f"Invalid class type {dirty_class_name}")
-
+        kwargs = []
+        for name, (type_name, default_value) in self.kwarguments.items():
+            if default_value is not None:
+                kwargs.append(f"{name}: {type_name} = {default_value}")
             else:
-                # TODO: this is gotten once when getting the type tree also, fix
-                type_data = await node.node_data()
-                # the bases list if cached, so we don't need to store it
-                node_base_map[len(await type_data.get_bases())].append(
-                    (dirty_class_name, type_data)
-                )
+                kwargs.append(f"{name}: {type_name}")
 
-        for base_number in range(max(node_base_map.keys())):
-            for dirty_class_name, class_type in node_base_map[base_number]:
-                class_file_string += await self.handle_class_type(
-                    dirty_class_name, class_type
-                )
+        def_line += f" {self.name}(self, "
+        if args:
+            def_line += ", ".join(args)
 
-        return class_file_string
+        if kwargs:
+            def_line += ", *, " if args else "*,"
+            def_line += ", ".join(kwargs)
 
-    async def handle_class_type(
-        self, dirty_class_name: str, class_type: "wizwalker.memory.type_tree.Type"
-    ) -> str:
-        class_name = self.string_modifier.clean_name(dirty_class_name, "class")
+        def_line += "):"
 
-        logger.debug(f"Cleaned class name {dirty_class_name} => {class_name}")
-        del dirty_class_name
+        self.lines = [def_line] + self.lines
 
-        bases = await class_type.get_bases()
+        return super().generate(f"{joiner}{self.indent}")
 
-        if bases:
-            parent_class = bases[0]
-            dirty_parent_class = await parent_class.name()
-            parent_class = self.string_modifier.clean_name(dirty_parent_class, "class")
+    def add_argument(self, name: str, type_name: str, *, default_value: str = None):
+        if self.arguments.get(name):
+            raise ValueError(f"Argument {name} already exists")
 
-            logger.debug(f"Cleaned parent name {dirty_parent_class} => {parent_class}")
-        else:
-            parent_class = ""
+        self.arguments[name] = (type_name, default_value)
 
-        property_list = await class_type.property_list()
+    def add_kwargument(self, name: str, type_name: str, *, default_value: str = None):
+        if self.kwarguments.get(name):
+            raise ValueError(f"Kwargument {name} already exists")
 
-        methods = (" " * 4) + "pass"
+        self.kwarguments[name] = (type_name, default_value)
 
-        if not property_list:
-            logger.debug(f"No property list for class {class_name}")
 
-        else:
-            properties = await property_list.properties()
-
-            if not properties:
-                logger.debug(f"No properties in list for class {class_name}")
-
-            else:
-                methods = "    raise RuntimeError()"
-
-        return CLASS_TEMPLATE.substitute(
-            class_name=class_name, parent_class=parent_class, methods=methods
-        )
+# # TODO: come up with a reason this has to be a class
+# class StringModifier:
+#     @staticmethod
+#     def decamel(name: str) -> str:
+#         """
+#         AbcDefXYZ -> abc_def_XYZ
+#         """
+#
+#         def _pvp_override(match):
+#             res = ""
+#
+#             before = match.group("before")
+#             after = match.group("after")
+#
+#             if before:
+#                 res += before + "_"
+#
+#             res += "pvp"
+#
+#             if after:
+#                 res += "_" + after
+#
+#             return res
+#
+#         def _decamel_replacer(match):
+#             res = match.group("before") + "_"
+#
+#             after = match.group("after")
+#
+#             if after:
+#                 res += match.group("target") + after
+#
+#             else:
+#                 res += match.group("target").lower()
+#
+#             return res
+#
+#         name = PVP_OVERRIDE.sub(_pvp_override, name)
+#         return DECAMEL.sub(_decamel_replacer, name)
+#
+#     def clean_name(self, name: str, target_type: str) -> str:
+#         match target_type:
+#             case "class" | "return" | "enum" | "file":
+#                 # class CoreObject -> CoreObject
+#                 name = name.replace("class ", "")
+#
+#                 # Namespace::CoreObject -> Namespace_CoreObject
+#                 name = name.replace("::", "_")
+#
+#             case "file":
+#                 name = name.lower()
+#
+#             case "property":
+#                 # m_duelID.m_full -> m_duelID_m_full
+#                 name = name.replace(".", "_")
+#
+#                 # m_id -> id
+#                 name = PROPERTY_NAME_PREFIX.sub("", name)
+#
+#                 # fullPartyGroup -> full_party_group
+#                 name = self.decamel(name)
+#
+#                 # Battleground -> battleground
+#                 name = name.lower()
+#
+#             case "enum" | "return":
+#                 # enum kDuelExecutionOrder -> kDuelExecutionOrder
+#                 name = name.replace("enum ", "")
+#
+#                 # TODO: handle this prefix
+#                 # # kDuelExecutionOrder -> DuelExecutionOrder
+#                 # name = name.lstrip("k")
+#
+#             case "return":
+#                 # class SharedPointer<class CoreObject> -> class CoreObject
+#                 name = name.replace("class SharedPointer<", "")
+#                 name = name.replace(">", "")
+#
+#                 # unsigned int -> int
+#                 name = name.replace("unsigned ", "")
+#
+#             case _:
+#                 name = name.replace("*", "")
+#
+#         return name
+#
+#
+# # TODO:
+# #  goals:
+# #   1. support for hidden properties
+# #   2. clean interface that can be improved and adapted later
+# class ClassGenerator:
+#     """
+#     Generates a file of classes generated from type information
+#     """
+#
+#     def __init__(self, type_tree: dict[str, "wizwalker.memory.type_tree.HashNode"]):
+#         self.type_tree = type_tree
+#         self.string_modifier = StringModifier()
+#
+#     async def generate(self) -> str:
+#         """
+#         returns the generated class file as a string
+#         """
+#         class_file_string = ""
+#
+#         # we do this to order the class definitions so parent classes are defined before their subclasses
+#         # number of bases: list[HashNode]
+#         node_base_map = defaultdict(list)
+#         for dirty_class_name, node in self.type_tree.items():
+#             if any(
+#                 (
+#                     not dirty_class_name.startswith("class"),
+#                     dirty_class_name.endswith("*"),
+#                     dirty_class_name.startswith("class SharedPointer<"),
+#                     dirty_class_name.startswith("class std::"),
+#                 )
+#             ):
+#                 logger.debug(f"Invalid class type {dirty_class_name}")
+#
+#             else:
+#                 # TODO: this is gotten once when getting the type tree also, fix
+#                 type_data = await node.node_data()
+#                 # the bases list if cached, so we don't need to store it
+#                 node_base_map[len(await type_data.get_bases())].append(
+#                     (dirty_class_name, type_data)
+#                 )
+#
+#         for base_number in range(max(node_base_map.keys())):
+#             for dirty_class_name, class_type in node_base_map[base_number]:
+#                 class_file_string += await self.handle_class_type(
+#                     dirty_class_name, class_type
+#                 )
+#
+#         return class_file_string
+#
+#     async def handle_class_type(
+#         self, dirty_class_name: str, class_type: "wizwalker.memory.type_tree.Type"
+#     ) -> str:
+#         class_name = self.string_modifier.clean_name(dirty_class_name, "class")
+#
+#         logger.debug(f"Cleaned class name {dirty_class_name} => {class_name}")
+#         del dirty_class_name
+#
+#         bases = await class_type.get_bases()
+#
+#         if bases:
+#             parent_class = bases[0]
+#             dirty_parent_class = await parent_class.name()
+#             parent_class = self.string_modifier.clean_name(dirty_parent_class, "class")
+#
+#             logger.debug(f"Cleaned parent name {dirty_parent_class} => {parent_class}")
+#         else:
+#             parent_class = ""
+#
+#         property_list = await class_type.property_list()
+#
+#         methods = (" " * 4) + "pass"
+#
+#         if not property_list:
+#             logger.debug(f"No property list for class {class_name}")
+#
+#         else:
+#             properties = await property_list.properties()
+#
+#             if not properties:
+#                 logger.debug(f"No properties in list for class {class_name}")
+#
+#             else:
+#                 methods = "    raise RuntimeError()"
+#
+#         return CLASS_TEMPLATE.substitute(
+#             class_name=class_name, parent_class=parent_class, methods=methods
+#         )
 
 
 # class InheritanceTree:
