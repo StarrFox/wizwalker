@@ -6,6 +6,7 @@ from .game_stats import DynamicGameStats
 from .game_object_template import DynamicWizGameObjectTemplate
 from .behavior_instance import DynamicBehaviorInstance
 from .client_zone import DynamicClientZone
+from .actor_body import DynamicActorBody
 
 
 class ClientObject(PropertyClass):
@@ -31,7 +32,18 @@ class ClientObject(PropertyClass):
 
         return behaviors
 
-    # convenience method
+    # helper method
+    async def actor_body(self) -> Optional[DynamicActorBody]:
+        for behavior in await self.inactive_behaviors():
+            if await behavior.behavior_name() == "AnimationBehavior":
+                addr = await behavior.read_value_from_offset(0x70, "unsigned long long")
+
+                if addr == 0:
+                    return None
+
+                return DynamicActorBody(self.hook_handler, addr)
+
+    # helper method
     async def object_name(self) -> Optional[str]:
         """
         This client object's object name

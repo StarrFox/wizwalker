@@ -136,3 +136,6 @@ cache/*
 
 # ide stuff
 /.vs
+
+# local tests
+tests_local/
