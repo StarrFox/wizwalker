@@ -4,7 +4,6 @@ from wizwalker.memory.memory_object import PropertyClass, DynamicMemoryObject
 from .behavior_template import DynamicBehaviorTemplate
 
 
-# TODO: 0x58 = behavior template
 class BehaviorInstance(PropertyClass):
     """
     Base class for behavior instances
@@ -12,6 +11,15 @@ class BehaviorInstance(PropertyClass):
 
     async def read_base_address(self) -> int:
         raise NotImplementedError()
+
+    # note: helper method
+    async def behavior_name(self) -> Optional[str]:
+        template = await self.behavior_template()
+
+        if template is None:
+            return None
+
+        return await template.behavior_name()
 
     async def behavior_template_name_id(self) -> int:
         """

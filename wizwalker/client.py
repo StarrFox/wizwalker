@@ -1,5 +1,4 @@
 import asyncio
-import struct
 from collections.abc import Callable
 from functools import cached_property
 from typing import Optional
@@ -385,7 +384,6 @@ class Client:
             move_after: If the client should rotate some to update the player model position
         """
         await self.patch_infinite_loading()
-
         await self.body.write_position(xyz)
 
         if move_after:
@@ -393,6 +391,30 @@ class Client:
 
         if yaw is not None:
             await self.body.write_yaw(yaw)
+
+    # TODO: test what the speed loss is using this instead of normal .teleport
+    async def pet_teleport(self, xyz: XYZ, yaw: float = None, *, move_after: bool = True):
+        """
+        Teleport the client's pet
+
+        Args:
+            xyz: xyz to teleport to
+            yaw: yaw to set or None to not change
+
+        Keyword Args:
+            move_after: If the client's pet should rotate some to update the player model position
+        """
+        # when you are playing as pet .client_object is the pet ClientObject
+        pet_actor_body = await self.client_object.actor_body()
+
+        await self.patch_infinite_loading()
+        await pet_actor_body.write_position(xyz)
+
+        if move_after:
+            await self.send_key(Keycode.D, 0.1)
+
+        if yaw is not None:
+            await pet_actor_body.write_yaw(yaw)
 
     async def patch_infinite_loading(self):
         """
