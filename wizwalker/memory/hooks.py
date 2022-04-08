@@ -252,41 +252,13 @@ class QuestHook(SimpleHook):
 
 # NOTE: CombatPlanningPhaseWindow.handle
 class DuelHook(SimpleHook):
-    pattern = rb"\x44\x0F\xB6\xE0\x88\x44\x24\x60\xE8....\x44\x8D\x6B\x0F" \
-              rb"\x44\x8D\x73\x10\x4C\x8D.....\x83\xF8\x64\x7E\x0A\xE8....\xE9"
+    pattern = (
+        rb"\x44\x0F\xB6\xE0\x88\x44\x24\x60\xE8....\x44\x8D\x6B\x0F"
+        rb"\x44\x8D\x73\x10\x4C\x8D.....\x83\xF8\x64\x7E\x0A\xE8....\xE9"
+    )
     exports = [("current_duel_addr", 8)]
     instruction_length = 8
     noops = 3
-
-    def __init__(self, *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-
-        self._log_level_check_address = None
-
-    async def posthook(self):
-        # Search above the hook jump address for the log level check.
-        block_size = 256
-        block = await self.read_bytes(self.jump_address - block_size, block_size)
-
-        found = regex.search(rb"\x7E.\xE8....\xE9", block, regex.DOTALL)
-        if not found:
-            # It's unlikely for users to need this patched so a warning should suffice.
-            warn(
-                "Could not patch DuelHook to run for log levels greater than 100.",
-                RuntimeWarning,
-            )
-        else:
-            offset = block_size - found.span()[0]
-            self._log_level_check_address = self.jump_address - offset
-
-            # Patch jle with jmp so DuelHook runs regardless of log level.
-            await self.write_bytes(self._log_level_check_address, b"\xEB")
-
-    async def unhook(self):
-        if self._log_level_check_address:
-            await self.write_bytes(self._log_level_check_address, b"\x7E")
-            self._log_level_check_address = None
-        await super().unhook()
 
     async def bytecode_generator(self, packed_exports):
         # fmt: off
