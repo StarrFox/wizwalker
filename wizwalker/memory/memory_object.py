@@ -79,7 +79,7 @@ class MemoryObject(MemoryReader):
         return await self.read_wide_string(base_address + offset, encoding)
 
     async def write_wide_string(
-        self, address: int, string: str, encoding: str = "utf-8"
+        self, address: int, string: str, encoding: str = "utf-16"
     ):
         string_len_addr = address + 16
         encoded = string.encode(encoding)
@@ -106,13 +106,14 @@ class MemoryObject(MemoryReader):
         else:
             await self.write_bytes(address, encoded + b"\x00")
 
-        await self.write_typed(string_len_addr, string_len, "int")
+        # take 2 bytes
+        await self.write_typed(string_len_addr, string_len // 2, "int")
 
     async def write_wide_string_to_offset(
-        self, offset: int, string: str, encoding: str = "utf-8"
+        self, offset: int, string: str, encoding: str = "utf-16"
     ):
         base_address = await self.read_base_address()
-        await self.write_string(base_address + offset, string, encoding)
+        await self.write_wide_string(base_address + offset, string, encoding)
 
     async def read_string(self, address: int, encoding: str = "utf-8") -> str:
         string_len = await self.read_typed(address + 16, "int")
