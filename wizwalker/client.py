@@ -6,6 +6,7 @@ import pymem
 
 from . import (
     CacheHandler,
+    ClientClosedError,
     Keycode,
     MemoryReadError,
     ReadingEnumFailed,
@@ -205,11 +206,10 @@ class Client:
         """
         Closes this client; unhooking all active hooks
         """
-        # if the client isn't running there isn't anything to unhook
-        if not self.is_running():
-            return
-
-        await self.hook_handler.close()
+        try:
+            await self.hook_handler.close()
+        except ClientClosedError:
+            pass
 
     async def get_template_ids(self) -> dict:
         """
