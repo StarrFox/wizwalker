@@ -235,9 +235,7 @@ class SpellEffects(Enum):
     remove_converted_charm = 144
     remove_converted_ward = 145
     remove_converted_over_time = 146
-    extend_damage_over_time = 147
-    extend_heal_over_time = 148
-    
+    modify_over_time_duration = 147
 
 
 class EffectTarget(Enum):
