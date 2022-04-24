@@ -275,6 +275,8 @@ class Wad:
             for file in source_path.glob("**/*")
             if file.is_file()
         ]
+        # sort by name
+        to_write = sorted(to_write, key=lambda path: str(path))
         file_num = len(to_write)
 
         all_names_len = sum(len(str(file)) for file in to_write)
@@ -309,7 +311,7 @@ class Wad:
                     zipped_size = len(compressed_data)
 
                     # they optimize in these cases
-                    if zipped_size >= len(data):
+                    if zipped_size >= size:
                         is_zip = False
 
                     else:
