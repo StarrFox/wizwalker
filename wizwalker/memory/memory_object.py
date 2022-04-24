@@ -277,17 +277,19 @@ class MemoryObject(MemoryReader):
 
         return pointers
 
-    async def read_shared_linked_list(self, offset: int) -> List[int]:
+    async def read_shared_linked_list(self, offset: int):
         list_addr = await self.read_value_from_offset(offset, "long long")
 
         addrs = []
-        next_node_addr = list_addr
+        # TODO: ensure this is always the case
+        # skip first node
+        next_node_addr = await self.read_typed(list_addr, "long long")
         list_size = await self.read_value_from_offset(offset + 8, "int")
-        for _ in range(list_size):
-            list_node = await self.read_typed(next_node_addr, "long long")
-            next_node_addr = await self.read_typed(list_node, "long long")
-            # pointer is +16 from "last" list node
-            addrs.append(await self.read_typed(list_node + 16, "long long"))
+
+        for i in range(list_size):
+            addr = await self.read_typed(next_node_addr + 16, "long long")
+            addrs.append(addr)
+            next_node_addr = await self.read_typed(next_node_addr, "long long")
 
         return addrs
 

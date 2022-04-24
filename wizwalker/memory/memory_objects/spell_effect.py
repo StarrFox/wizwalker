@@ -137,9 +137,10 @@ class SpellEffect(PropertyClass):
     ) -> List["DynamicSpellEffect"]:
         if check_type:
             type_name = await self.maybe_read_type_name()
-            if type_name not in ("RandomSpellEffect", "RandomPerTargetSpellEffect"):
+            if type_name not in ("RandomSpellEffect", "RandomPerTargetSpellEffect", "VariableSpellEffect"):
                 raise ValueError(
-                    f"This object is a {type_name} not a RandomSpellEffect/RandomPerTargetSpellEffect."
+                    f"This object is a {type_name} not a"
+                    f" Random/RandomPerTarget/Variable SpellEffect."
                 )
 
         effects = []
