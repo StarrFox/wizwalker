@@ -7,6 +7,7 @@ from .enums import DuelExecutionOrder, DuelPhase, SigilInitiativeSwitchMode
 from .combat_resolver import DynamicCombatResolver
 
 
+# TODO: add m_gameEffectInfo and friends, and fix offsets
 class Duel(PropertyClass):
     async def read_base_address(self) -> int:
         raise NotImplementedError()

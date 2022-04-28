@@ -172,6 +172,7 @@ class MemoryObject(MemoryReader):
         base_address = await self.read_base_address()
         await self.write_string(base_address + offset, string, encoding)
 
+    # todo: rework this into from_offset and add read_vector which takes an address
     async def read_vector(self, offset: int, size: int = 3, data_type: str = "float"):
         type_str = type_format_dict[data_type].replace("<", "")
         size_per_type = struct.calcsize(type_str)
@@ -276,6 +277,26 @@ class MemoryObject(MemoryReader):
             current_address += size_per_type
 
         return pointers
+
+    async def read_inlined_vector(
+            self,
+            offset: int,
+            object_size: int,
+            object_type: type,
+    ):
+        start = await self.read_value_from_offset(offset, "unsigned long long")
+        end = await self.read_value_from_offset(offset + 16, "unsigned long long")
+
+        total_size = (end - start) // object_size
+
+        current_addr = start
+
+        res = []
+        for _ in total_size:
+            res.append(object_type(self.hook_handler, current_addr))
+            current_addr += object_size
+
+        return res
 
     async def read_shared_linked_list(self, offset: int):
         list_addr = await self.read_value_from_offset(offset, "long long")

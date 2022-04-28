@@ -30,7 +30,7 @@ class HookHandler(MemoryReader):
         rb"\x48\x8B\xC4\x55\x41\x54\x41\x55\x41\x56\x41\x57......."
         rb"\x48......\x48.......\x48\x89\x58\x10\x48\x89"
         rb"\x70\x18\x48\x89\x78\x20.......\x48\x33\xC4....."
-        rb"..\x4C\x8B\xE9.......\x80"
+        rb"..\x4C\x8B\xE9.......\x80......\x0F"
     )
     # rounded down
     AUTOBOT_SIZE = 3900

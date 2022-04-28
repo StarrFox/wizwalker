@@ -1,4 +1,5 @@
 import asyncio
+import struct
 from functools import cached_property
 from typing import Callable, List, Optional
 
@@ -62,9 +63,9 @@ class Client:
         self._template_ids = None
         self._is_loading_addr = None
         self._world_view_window = None
-        self._is_infinite_patched = False
-        # (addr, bytes)
-        self._infinite_patch_og_info = None
+
+        # (pos_pointer_addr, hash_addr)
+        self._position_holder_globals = None
 
     def __repr__(self):
         return f"<Client {self.window_handle=} {self.process_id=}>"
@@ -392,7 +393,7 @@ class Client:
         Keyword Args:
             move_after: If the client should rotate some to update the player model position
         """
-        await self.patch_infinite_loading()
+        await self._patch_position_holder(xyz)
         await self.body.write_position(xyz)
 
         if move_after:
@@ -416,7 +417,7 @@ class Client:
         # when you are playing as pet .client_object is the pet ClientObject
         pet_actor_body = await self.client_object.actor_body()
 
-        await self.patch_infinite_loading()
+        await self._patch_position_holder(xyz)
         await pet_actor_body.write_position(xyz)
 
         if move_after:
@@ -425,22 +426,50 @@ class Client:
         if yaw is not None:
             await pet_actor_body.write_yaw(yaw)
 
-    async def patch_infinite_loading(self):
+    async def _patch_position_holder(self, xyz: XYZ):
         """
-        Patches infinite loading
+        Patches position holder to a new xyz
         """
-        if self._is_infinite_patched:
-            return
+        position_pointer_addr, position_hash_addr = await self._get_position_holder_globals()
 
-        cmp_addr = await self.hook_handler.pattern_scan(
-            b"\x80\x3D.....\x0F\x85...........\xE8....\x39"
+        packed_position_bytes = struct.pack("<fff", *xyz)
+        position_hash = self._calculate_position_hash(packed_position_bytes)
+
+        position_addr = await self.hook_handler.read_typed(position_pointer_addr, "unsigned long long")
+        await self.hook_handler.write_bytes(position_addr, packed_position_bytes)
+        await self.hook_handler.write_typed(position_hash_addr, position_hash, "unsigned int")
+
+    @staticmethod
+    def _calculate_position_hash(xyz_bytes: bytes):
+        res = 0x811c9dc5
+
+        for byte in xyz_bytes:
+            res = (byte ^ res) * 0x1000193
+
+        return res & 0xffffffff
+
+    async def _get_position_holder_globals(self):
+        """
+        returns: positional(pointer), hash
+        """
+        if self._position_holder_globals:
+            return self._position_holder_globals
+
+        player_position_func_pattern = rb"\x48\x83\xEC\x28\x48\x8D.....\x48\x8D.....\xE8....\x33\xC0\x48\x8D....." \
+                                       rb"\x48\x89.....\x48\x89.....\x88.....\x89.....\xE8....\x89.....\x48\x83\xC4" \
+                                       rb"\x28\xC3"
+
+        player_position_func_addr = await self.hook_handler.pattern_scan(
+            player_position_func_pattern,
+            module="WizardGraphicalClient.exe"
         )
 
-        # +2 offset [4 bytes long]
-        ac_flag_offset = await self.hook_handler.read_typed(cmp_addr + 2, "int")
+        position_pointer_offset_mov_addr = player_position_func_addr + 32
+        position_pointer_offset_rip = await self.hook_handler.read_typed(
+            position_pointer_offset_mov_addr + 3,
+            "unsigned int"
+        )
+        position_pointer = position_pointer_offset_mov_addr + 7 + position_pointer_offset_rip
 
-        ac_flag_addr = cmp_addr + 7 + ac_flag_offset
-
-        await self.hook_handler.write_typed(ac_flag_addr, True, "bool")
-
-        self._is_infinite_patched = True
+        self._position_holder_globals = (position_pointer, position_pointer + 12)
+        return self._position_holder_globals

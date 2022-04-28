@@ -1,3 +1,4 @@
+import struct
 from typing import Callable, List, Optional
 from contextlib import suppress
 
@@ -7,7 +8,7 @@ from wizwalker.memory.memory_object import DynamicMemoryObject, PropertyClass
 from .enums import WindowFlags, WindowStyle
 from .spell import DynamicGraphicalSpell
 from .combat_participant import DynamicCombatParticipant
-from wizwalker import AddressOutOfRange, MemoryReadError, Rectangle, utils
+from wizwalker import AddressOutOfRange, MemoryReadError, Rectangle, utils, type_format_dict
 
 
 # TODO: Window.click
@@ -276,7 +277,91 @@ class Window(PropertyClass):
         await self.write_vector(176, parent_offset, 4, "int")
 
 
+class DeckListControlSpellEntry(DynamicMemoryObject):
+    async def graphical_spell(self) -> Optional[DynamicGraphicalSpell]:
+        addr = await self.read_value_from_offset(0, "unsigned long long")
+
+        if addr == 0:
+            return None
+
+        return DynamicGraphicalSpell(self.hook_handler, addr)
+
+
+class SpellListControlSpellEntry(DynamicMemoryObject):
+    async def graphical_spell(self) -> Optional[DynamicGraphicalSpell]:
+        addr = await self.read_value_from_offset(0, "unsigned long long")
+
+        if addr == 0:
+            return None
+
+        return DynamicGraphicalSpell(self.hook_handler, addr)
+
+    async def max_copies(self) -> int:
+        return await self.read_value_from_offset(0x10, "unsigned int")
+
+    async def current_copies(self) -> int:
+        return await self.read_value_from_offset(0x14, "unsigned int")
+
+    async def _read_vector(self, address: int, size: int = 3, data_type: str = "float"):
+        type_str = type_format_dict[data_type].replace("<", "")
+        size_per_type = struct.calcsize(type_str)
+
+        vector_bytes = await self.read_bytes(
+            address, size_per_type * size
+        )
+
+        return struct.unpack("<" + type_str * size, vector_bytes)
+
+    async def window_rectangle(self) -> Rectangle:
+        rect_addr = await self.read_value_from_offset(0x18, "unsigned long long")
+
+        rect = await self._read_vector(rect_addr, 4, "int")
+        return Rectangle(*rect)
+
+
+class DeckListControl(Window):
+    async def read_base_address(self) -> int:
+        raise NotImplementedError()
+
+    async def spell_entries(self) -> List[DeckListControlSpellEntry]:
+        return await self.read_inlined_vector(0x280, 0x28, DeckListControlSpellEntry)
+
+    async def card_size_horizontal(self) -> int:
+        return await self.read_value_from_offset(0x2A4, "unsigned int")
+
+    async def card_size_vertical(self) -> int:
+        return await self.read_value_from_offset(0x2A8, "unsigned int")
+
+    async def card_spacing(self) -> int:
+        return await self.read_value_from_offset(0x2AC, "unsigned int")
+
+    async def card_spacing_vertical_adjust(self) -> int:
+        return await self.read_value_from_offset(0x2B0, "unsigned int")
+
+
+class SpellListControl(Window):
+    async def read_base_address(self) -> int:
+        raise NotImplementedError()
+
+    async def spell_entries(self) -> List[SpellListControlSpellEntry]:
+        return await self.read_inlined_vector(0x278, 0x20, SpellListControlSpellEntry)
+
+    async def card_size_horizontal(self) -> int:
+        return await self.read_value_from_offset(0x2C4, "unsigned int")
+
+    async def card_size_vertical(self) -> int:
+        return await self.read_value_from_offset(0x2C8, "unsigned int")
+
+
 class DynamicWindow(DynamicMemoryObject, Window):
+    pass
+
+
+class DynamicDeckListControl(DynamicWindow, DeckListControl):
+    pass
+
+
+class DynamicSpellListControl(DynamicWindow, SpellListControl):
     pass
 
 
