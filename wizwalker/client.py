@@ -12,7 +12,7 @@ from . import (
     ReadingEnumFailed,
     utils,
 )
-from .constants import WIZARD_SPEED
+from .constants import WIZARD_SPEED, ntdll
 from .memory import (
     CurrentActorBody,
     CurrentClientObject,
@@ -393,8 +393,11 @@ class Client:
         Keyword Args:
             move_after: If the client should rotate some to update the player model position
         """
+        ntdll.NtSuspendProcess(self.hook_handler.process.process_handle)
         await self._patch_position_holder(xyz)
         await self.body.write_position(xyz)
+        await self.body.write_model_update_scheduled(True)
+        ntdll.NtResumeProcess(self.hook_handler.process.process_handle)
 
         if move_after:
             await self.send_key(Keycode.D, 0.1)
@@ -417,8 +420,11 @@ class Client:
         # when you are playing as pet .client_object is the pet ClientObject
         pet_actor_body = await self.client_object.actor_body()
 
+        ntdll.NtSuspendProcess(self.hook_handler.process.process_handle)
         await self._patch_position_holder(xyz)
         await pet_actor_body.write_position(xyz)
+        await pet_actor_body.write_model_update_scheduled(True)
+        ntdll.NtResumeProcess(self.hook_handler.process.process_handle)
 
         if move_after:
             await self.send_key(Keycode.D, 0.1)

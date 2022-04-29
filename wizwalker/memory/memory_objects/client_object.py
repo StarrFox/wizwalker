@@ -303,6 +303,7 @@ class ClientObject(PropertyClass):
         """
         await self.write_value_to_offset(440, character_id, "unsigned long long")
 
+    # Note: not defined
     async def game_stats(self) -> Optional[DynamicGameStats]:
         """
         This client object's game stats or None if doesn't have them
