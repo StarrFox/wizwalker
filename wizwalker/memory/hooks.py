@@ -1,11 +1,12 @@
-import regex
+import ctypes
+import ctypes.wintypes
 import struct
 from typing import Any, Tuple
-from warnings import warn
 
 from loguru import logger
 
 from .memory_reader import MemoryReader
+from wizwalker.constants import kernel32
 
 
 def pack_to_int_or_longlong(num: int) -> bytes:
@@ -341,6 +342,124 @@ class RenderContextHook(SimpleHook):
         # fmt: on
 
         return bytecode
+
+
+class MovementTeleportHook(SimpleHook):
+    pattern = rb"\x40\x57\x48\x83\xEC\x30\x48\xC7\x44\x24\x20\xFE" \
+              rb"\xFF\xFF\xFF\x48\x89\x5C\x24\x40\x48\x8B\x99\xB0" \
+              rb"\x01\x00\x00\x48\x85\xDB\x74\x13\x4C\x8B\x43\x70" \
+              rb"\x48\x8B\x5B\x78\x48\x85\xDB\x74\x0C\xF0\xFF\x43" \
+              rb"\x08\xEB\x06\x45\x33\xC0\x41\x8B\xD8\x4D\x85\xC0\x74\x19"
+    instruction_length = 6
+    noops = 1
+    # position vector = 12 + 1 for update bool + 8 for target object address
+    exports = [("teleport_helper", 21)]
+
+    async def prehook(self):
+        jes = await self.hook_handler.client._get_je_instruction_forward_backwards()
+
+        target_address = jes[0]
+
+        old_protection = ctypes.wintypes.DWORD()
+
+        target_address_passable = ctypes.c_uint64(target_address)
+
+        result = kernel32.VirtualProtectEx(
+            self.hook_handler.process.process_handle,
+            target_address_passable,
+            24,
+            0x40,
+            ctypes.byref(old_protection),
+        )
+
+        if result == 0:
+            raise RuntimeError(f"Movement teleport virtual protect returned 0 result={result}")
+
+    async def bytecode_generator(self, packed_exports):
+        packed_should_update = bytearray(packed_exports[0][1])
+        packed_should_update[0] += 12
+
+        packed_z = bytearray(packed_exports[0][1])
+        packed_z[0] += 8
+
+        packed_target_addr = bytearray(packed_exports[0][1])
+        packed_target_addr[0] += 13
+
+        jes = await self.hook_handler.client._get_je_instruction_forward_backwards()
+
+        jes_and_bytes = await self.hook_handler.read_bytes(jes[0], 8)
+        jes_cmp_bytes = await self.hook_handler.read_bytes(jes[1], 8)
+
+        packed_jes_and = struct.pack("<Q", jes[0])
+        packed_jes_cmp = struct.pack("<Q", jes[1])
+
+        # fmt: off
+        bytecode = (
+            b"\x50"  # push rax
+            # b"\x48\x8B\x81\xA0\x01\x00\x00"  # mov rax,[rcx+1A0]
+            # b"\x48\x85\xC0"  # test rax,rax
+            b"\x48\xa1" + packed_target_addr +  # mov rax,[target_object_addr]
+            b"\x48\x39\xC1"  # cmp rcx,rax
+            b"\x58"  # pop rax
+            b"\x0F\x84\x05\x00\x00\x00"  # je down 5 (local client object)
+            b"\xE9\x6E\x00\x00\x00"  # jmp ( not local client object)
+            b"\x50"  # push rax
+            b"\xA0" + packed_should_update +  # mov al,[should_update_bool]
+            b"\x84\xC0"  # test al,al (test if should_update is True)
+            b"\x58"  # pop rax
+            b"\x0F\x85\x05\x00\x00\x00"  # jne 5 (should_update is True)
+            b"\xE9\x56\x00\x00\x00"  # jmp (should_update is False)
+            b"\x50"  # push rax
+            b"\x48\xA1" + packed_exports[0][1] +  # mov rax, [new_pos]
+            b"\x48\x89\x02"  # mov[rdx], rax
+            b"\xA1" + packed_z +  # mov eax, [7FF7E5541010]
+            b"\x89\x42\x08"  # mov[rdx+08], eax
+            b"\x48\xB8\x00\x00\x00\x00\x00\x00\x00\x00"  # mov rax,0000000000000000
+            b"\xA2" + packed_should_update +  # mov [should_update_bool],al
+            b"\x48\xB8" + jes_and_bytes +
+            b"\x48\xA3" + packed_jes_and +
+            b"\x48\xB8" + jes_cmp_bytes +
+            b"\x48\xA3" + packed_jes_cmp +
+            b"\x58"  # pop rax
+            b"\x57"  # push rdi (original bytes)
+            b"\x48\x83\xEC\x30"  # sub rsp, 30 (original bytes)
+        )
+        # fmt: on
+
+        return bytecode
+
+    async def hook(self):
+        """
+        Writes jump_bytecode to jump address and hook bytecode to hook address
+        """
+        pattern, module = await self.get_pattern()
+
+        self.jump_address = await self.get_jump_address(pattern, module=module)
+        self.hook_address = await self.get_hook_address(200)
+
+        logger.debug(f"Got hook address {self.hook_address} in {type(self)}")
+        logger.debug(f"Got jump address {self.jump_address} in {type(self)}")
+
+        self.hook_bytecode = await self.get_hook_bytecode()
+        self.jump_bytecode = await self.get_jump_bytecode()
+
+        logger.debug(f"Got hook bytecode {self.hook_bytecode} in {type(self)}")
+        logger.debug(f"Got jump bytecode {self.jump_bytecode} in {type(self)}")
+
+        self.jump_original_bytecode = await self.read_bytes(
+            self.jump_address, len(self.jump_bytecode)
+        )
+
+        logger.debug(
+            f"Got jump original bytecode {self.jump_original_bytecode} in {type(self)}"
+        )
+
+        await self.prehook()
+
+        await self.write_bytes(self.hook_address, self.hook_bytecode)
+        await self.write_bytes(self.jump_address, self.jump_bytecode)
+
+        await self.posthook()
 
 
 # TODO: fix this hacky class

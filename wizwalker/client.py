@@ -1,5 +1,6 @@
 import asyncio
 import struct
+import warnings
 from functools import cached_property
 from typing import Callable, List, Optional
 
@@ -23,6 +24,8 @@ from .memory import (
     DuelPhase,
     HookHandler,
     CurrentRenderContext,
+    TeleportHelper,
+    MovementTeleportHook,
 )
 from .mouse_handler import MouseHandler
 from .utils import (
@@ -31,6 +34,7 @@ from .utils import (
     get_window_title,
     set_window_title,
     get_window_rectangle,
+    wait_for_value,
 )
 
 
@@ -60,12 +64,17 @@ class Client:
         self.root_window = CurrentRootWindow(self.hook_handler)
         self.render_context = CurrentRenderContext(self.hook_handler)
 
+        self._teleport_helper = TeleportHelper(self.hook_handler)
+
         self._template_ids = None
         self._is_loading_addr = None
         self._world_view_window = None
 
         # (pos_pointer_addr, hash_addr)
         self._position_holder_globals = None
+
+        # for teleport
+        self._je_instruction_forward_backwards = None
 
     def __repr__(self):
         return f"<Client {self.window_handle=} {self.process_id=}>"
@@ -189,7 +198,7 @@ class Client:
         return self._world_view_window
 
     async def activate_hooks(
-        self, *, wait_for_ready: bool = True, timeout: float = None
+            self, *, wait_for_ready: bool = True, timeout: float = None
     ):
         """
         Activate all memory hooks but mouseless
@@ -299,7 +308,7 @@ class Client:
         return int(used), int(total)
 
     async def wait_for_zone_change(
-        self, name: Optional[str] = None, *, sleep_time: Optional[float] = 0.5
+            self, name: Optional[str] = None, *, sleep_time: Optional[float] = 0.5
     ):
         """
         Wait for the client's zone to change
@@ -382,7 +391,15 @@ class Client:
         await self.body.write_yaw(yaw)
         await utils.timed_send_key(self.window_handle, Keycode.W, move_seconds)
 
-    async def teleport(self, xyz: XYZ, yaw: float = None, *, move_after: bool = True):
+    # TODO: 2.0 remove move_after as it isn't needed anymore
+    async def teleport(
+            self,
+            xyz: XYZ,
+            yaw: float = None,
+            *,
+            move_after: bool = True,
+            wait_on_inuse: bool = False,
+    ):
         """
         Teleport the client
 
@@ -391,24 +408,32 @@ class Client:
             yaw: yaw to set or None to not change
 
         Keyword Args:
-            move_after: If the client should rotate some to update the player model position
+            move_after: depreciated
+            wait_on_inuse: If we should wait for the update bool to be False
         """
-        ntdll.NtSuspendProcess(self.hook_handler.process.process_handle)
-        await self._patch_position_holder(xyz)
-        await self.body.write_position(xyz)
-        await self.body.write_model_update_scheduled(True)
-        ntdll.NtResumeProcess(self.hook_handler.process.process_handle)
+        # we do this because the old teleport only required the body hook
+        client_object = await self.body.parent_client_object()
+        client_object_addr = await client_object.read_base_address()
+
+        await self._teleport_object(client_object_addr, xyz, wait_on_inuse)
 
         if move_after:
+            warnings.warn(DeprecationWarning("Move after will be removed in 2.0"))
             await self.send_key(Keycode.D, 0.1)
 
         if yaw is not None:
             await self.body.write_yaw(yaw)
 
-    # TODO: test what the speed loss is using this instead of normal .teleport
-    async def pet_teleport(self, xyz: XYZ, yaw: float = None, *, move_after: bool = True):
+    async def pet_teleport(
+            self,
+            xyz: XYZ,
+            yaw: float = None,
+            *,
+            move_after: bool = True,
+            wait_on_inuse: bool = False,
+    ):
         """
-        Teleport the client's pet
+        Teleport while playing as pet
 
         Args:
             xyz: xyz to teleport to
@@ -417,20 +442,54 @@ class Client:
         Keyword Args:
             move_after: If the client's pet should rotate some to update the player model position
         """
-        # when you are playing as pet .client_object is the pet ClientObject
-        pet_actor_body = await self.client_object.actor_body()
+        client_object_addr = await self.client_object.read_base_address()
 
-        ntdll.NtSuspendProcess(self.hook_handler.process.process_handle)
-        await self._patch_position_holder(xyz)
-        await pet_actor_body.write_position(xyz)
-        await pet_actor_body.write_model_update_scheduled(True)
-        ntdll.NtResumeProcess(self.hook_handler.process.process_handle)
+        await self._teleport_object(client_object_addr, xyz, wait_on_inuse)
 
         if move_after:
+            warnings.warn(DeprecationWarning("Move after will be removed in 2.0"))
             await self.send_key(Keycode.D, 0.1)
 
         if yaw is not None:
-            await pet_actor_body.write_yaw(yaw)
+            await self.body.write_yaw(yaw)
+
+    async def _teleport_object(self, object_address: int, xyz: XYZ, wait_on_inuse: bool = False):
+        if await self._teleport_helper.should_update():
+            if not wait_on_inuse:
+                raise ValueError("Tried to teleport while should update bool is set")
+
+            await wait_for_value(self._teleport_helper.should_update, True)
+
+        jes = await self._get_je_instruction_forward_backwards()
+
+        if not self.hook_handler._check_if_hook_active(MovementTeleportHook):
+            raise RuntimeError("MOVEMENT TELEPORT NOT ACTIVE")
+
+        await self._teleport_helper.write_target_object_address(object_address)
+        await self._teleport_helper.write_position(xyz)
+        await self._teleport_helper.write_should_update(True)
+
+        for je in jes:
+            await self.hook_handler.write_bytes(je, b"\x90" * 6)
+
+    async def _get_je_instruction_forward_backwards(self):
+        """
+        this method returns the two je instruction addresses :)
+        """
+        if self._je_instruction_forward_backwards is not None:
+            return self._je_instruction_forward_backwards
+
+        movement_state_instruction_addr = await self.hook_handler.pattern_scan(
+            rb"\x8B\x5F\x70\xF3",
+            module="WizardGraphicalClient.exe"
+        )
+
+        self._je_instruction_forward_backwards = (
+            movement_state_instruction_addr + 15,
+            movement_state_instruction_addr + 24,
+        )
+
+        return self._je_instruction_forward_backwards
 
     async def _patch_position_holder(self, xyz: XYZ):
         """
@@ -454,6 +513,7 @@ class Client:
 
         return res & 0xffffffff
 
+    # TODO: remove
     async def _get_position_holder_globals(self):
         """
         returns: positional(pointer), hash

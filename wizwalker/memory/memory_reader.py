@@ -192,7 +192,7 @@ class MemoryReader:
         force_reload: bool = False,
     ) -> int:
         """
-        Get an addres from a module using it's symbol
+        Get an address from a module using its symbol
 
         Args:
             module_name: Name of the module

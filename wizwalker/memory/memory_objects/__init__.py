@@ -1,4 +1,4 @@
-from .actor_body import ActorBody, CurrentActorBody
+from .actor_body import ActorBody, CurrentActorBody, DynamicActorBody
 from .client_zone import ClientZone, DynamicClientZone
 from .client_object import (
     ClientObject,
@@ -20,3 +20,4 @@ from .play_deck import PlayDeck, PlaySpellData, DynamicPlayDeck, DynamicPlaySpel
 from .game_object_template import WizGameObjectTemplate, DynamicWizGameObjectTemplate
 from .behavior_template import BehaviorTemplate, DynamicBehaviorTemplate
 from .behavior_instance import BehaviorInstance, DynamicBehaviorInstance
+from .teleport_helper import TeleportHelper

@@ -2,11 +2,11 @@ from typing import List, Optional
 
 from wizwalker import XYZ
 from wizwalker.memory.memory_object import PropertyClass, DynamicMemoryObject
+from wizwalker.memory.memory_objects import DynamicActorBody
 from .game_stats import DynamicGameStats
 from .game_object_template import DynamicWizGameObjectTemplate
 from .behavior_instance import DynamicBehaviorInstance
 from .client_zone import DynamicClientZone
-from .actor_body import DynamicActorBody
 
 
 class ClientObject(PropertyClass):
@@ -17,7 +17,7 @@ class ClientObject(PropertyClass):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 
-    # TODO: test if this actually active behaviors
+    # TODO: test if this is actually active behaviors
     async def inactive_behaviors(self) -> List[DynamicBehaviorInstance]:
         """
         This client object's inactive behaviors

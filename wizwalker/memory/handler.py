@@ -16,6 +16,7 @@ from .hooks import (
     QuestHook,
     RootWindowHook,
     RenderContextHook,
+    MovementTeleportHook,
 )
 from .memory_reader import MemoryReader
 
@@ -193,6 +194,7 @@ class HookHandler(MemoryReader):
         await self.activate_client_hook(wait_for_ready=False)
         await self.activate_root_window_hook(wait_for_ready=False)
         await self.activate_render_context_hook(wait_for_ready=False)
+        await self.activate_movement_teleport_hook(wait_for_ready=False)
 
         if wait_for_ready:
             wait_tasks = []
@@ -541,6 +543,57 @@ class HookHandler(MemoryReader):
         return await self._read_hook_base_addr(
             "current_render_context", "Render context"
         )
+
+    async def activate_movement_teleport_hook(
+            self, *, wait_for_ready: bool = False, timeout: float = None
+    ):
+        """
+        Activate movement teleport hook
+
+        wait_for_ready is useless for this hook
+
+        Keyword Args:
+            wait_for_ready: Wait for hook values to be written
+            timeout: How long to wait for hook values to be written (None for no timeout)
+        """
+        if self._check_if_hook_active(MovementTeleportHook):
+            raise HookAlreadyActivated("Movement teleport")
+
+        await self._check_for_autobot()
+
+        movement_teleport_hook = MovementTeleportHook(self)
+        await movement_teleport_hook.hook()
+
+        self._active_hooks.append(movement_teleport_hook)
+        self._base_addrs[
+            "teleport_helper"
+        ] = movement_teleport_hook.teleport_helper
+
+    async def deactivate_movement_teleport_hook(self):
+        """
+        Deactivate movement teleport hook
+        """
+        if not self._check_if_hook_active(MovementTeleportHook):
+            raise HookNotActive("Movement teleport")
+
+        hook = self._get_hook_by_type(MovementTeleportHook)
+        self._active_hooks.remove(hook)
+        await hook.unhook()
+
+        del self._base_addrs["teleport_helper"]
+
+    async def read_teleport_helper(self) -> int:
+        """
+        Read teleport helper base address
+
+        Returns:
+            The teleport helper base address
+        """
+        addr = self._base_addrs.get("teleport_helper")
+        if addr is None:
+            raise HookNotActive("Movement teleport")
+
+        return addr
 
     # nothing to wait for in this hook
     async def activate_mouseless_cursor_hook(self):
