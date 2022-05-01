@@ -125,6 +125,10 @@ class CombatMember:
         This member's owner id
         """
         part = await self.get_participant()
+
+        if part is None:
+            raise ValueError(f"Participant not yet set; try sleeping before calling this")
+
         return await part.owner_id_full()
 
     async def template_id(self) -> int:

@@ -14,12 +14,10 @@ class Quester(wizwalker.ClientHandler):
             await client.hook_handler.activate_quest_hook()
             await client.hook_handler.activate_player_hook()
             await client.hook_handler.activate_movement_teleport_hook()
-            await client.hook_handler.activate_client_hook()
 
     async def handle_e_pressed(self):
         for client in self.clients:
-            #await client.teleport(await client.quest_position.position())
-            await client.pet_teleport(await client.quest_position.position())
+            await client.teleport(await client.quest_position.position())
 
     async def run(self):
         await self.activate_hooks()
