@@ -90,12 +90,12 @@ class HookHandler(MemoryReader):
                 self._autobot_address, len(self.AUTOBOT_PATTERN)
             )
             # Give some time for execution point to leave hooks
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.5)
 
             # Only write if the pattern isn't there
             if compare_bytes != self._original_autobot_bytes:
                 logger.debug(
-                    f"Rewriting bytes {self._original_autobot_bytes} to autbot"
+                    f"Rewriting bytes {self._original_autobot_bytes} to autobot"
                 )
                 await self.write_bytes(
                     self._autobot_address, self._original_autobot_bytes

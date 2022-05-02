@@ -20,6 +20,12 @@ class ClientHandler:
         self._managed_handles = []
         self.clients = []
 
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.close()
+
     def __repr__(self):
         return f"<WizWalker {self.clients=}>"
 

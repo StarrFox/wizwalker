@@ -355,6 +355,8 @@ class MovementTeleportHook(SimpleHook):
     # position vector = 12 + 1 for update bool + 8 for target object address
     exports = [("teleport_helper", 21)]
 
+    _old_jes_bytes = None
+
     async def prehook(self):
         jes = await self.hook_handler.client._get_je_instruction_forward_backwards()
 
@@ -389,6 +391,8 @@ class MovementTeleportHook(SimpleHook):
 
         jes_and_bytes = await self.hook_handler.read_bytes(jes[0], 8)
         jes_cmp_bytes = await self.hook_handler.read_bytes(jes[1], 8)
+
+        self._old_jes_bytes = (jes_and_bytes, jes_cmp_bytes)
 
         packed_jes_and = struct.pack("<Q", jes[0])
         packed_jes_cmp = struct.pack("<Q", jes[1])
@@ -460,6 +464,17 @@ class MovementTeleportHook(SimpleHook):
         await self.write_bytes(self.jump_address, self.jump_bytecode)
 
         await self.posthook()
+
+    async def unhook(self):
+        await super().unhook()
+
+        if self._old_jes_bytes is None:
+            return
+
+        jes = await self.hook_handler.client._get_je_instruction_forward_backwards()
+
+        for je, je_bytes in zip(jes, self._old_jes_bytes):
+            await self.hook_handler.write_bytes(je, je_bytes)
 
 
 # TODO: fix this hacky class
