@@ -21,3 +21,12 @@ from .game_object_template import WizGameObjectTemplate, DynamicWizGameObjectTem
 from .behavior_template import BehaviorTemplate, DynamicBehaviorTemplate
 from .behavior_instance import BehaviorInstance, DynamicBehaviorInstance
 from .teleport_helper import TeleportHelper
+from .game_client import GameClient, CurrentGameClient
+from .camera_controller import (
+    CameraController,
+    DynamicCameraController,
+    FreeCameraController,
+    DynamicFreeCameraController,
+    ElasticCameraController,
+    DynamicElasticCameraController,
+)

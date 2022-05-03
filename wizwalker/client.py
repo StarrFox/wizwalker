@@ -13,7 +13,7 @@ from . import (
     ReadingEnumFailed,
     utils,
 )
-from .constants import WIZARD_SPEED, ntdll
+from .constants import WIZARD_SPEED
 from .memory import (
     CurrentActorBody,
     CurrentClientObject,
@@ -21,6 +21,7 @@ from .memory import (
     CurrentGameStats,
     CurrentQuestPosition,
     CurrentRootWindow,
+    CurrentGameClient,
     DuelPhase,
     HookHandler,
     CurrentRenderContext,
@@ -63,6 +64,7 @@ class Client:
         self.client_object = CurrentClientObject(self.hook_handler)
         self.root_window = CurrentRootWindow(self.hook_handler)
         self.render_context = CurrentRenderContext(self.hook_handler)
+        self.game_client = CurrentGameClient(self.hook_handler)
 
         self._teleport_helper = TeleportHelper(self.hook_handler)
 

@@ -7,7 +7,8 @@ from wizwalker.errors import (
     AddressOutOfRange,
     MemoryReadError,
     ReadingEnumFailed,
-    WizWalkerMemoryError,
+    PatternFailed,
+    PatternMultipleResults
 )
 from wizwalker.utils import XYZ
 from .handler import HookHandler
@@ -27,6 +28,8 @@ class MemoryObject(MemoryReader):
         super().__init__(hook_handler.process)
         self.hook_handler = hook_handler
 
+        self._offset_lookup_cache = {}
+
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 
@@ -37,6 +40,35 @@ class MemoryObject(MemoryReader):
     async def write_value_to_offset(self, offset: int, value: Any, data_type: str):
         base_address = await self.read_base_address()
         await self.write_typed(base_address + offset, value, data_type)
+
+    async def pattern_scan_offset(
+            self,
+            pattern: bytes,
+            instruction_length: int,
+            static_backup: int = None,
+    ) -> int:
+        try:
+            addr = await self.pattern_scan(pattern, module="WizardGraphicalClient.exe")
+            return await self.read_typed(addr + instruction_length, "unsigned int")
+        except (PatternFailed, PatternMultipleResults) as exc:
+            if static_backup is not None:
+                return static_backup
+
+            raise exc
+
+    async def pattern_scan_offset_cached(
+            self,
+            pattern: bytes,
+            instruction_length: int,
+            name: str,
+            static_backup: int = None
+    ):
+        try:
+            return self._offset_lookup_cache[name]
+        except KeyError:
+            offset = await self.pattern_scan_offset(pattern, instruction_length, static_backup)
+            self._offset_lookup_cache[name] = offset
+            return offset
 
     async def read_null_terminated_string(
         self, address: int, max_size: int = 20, encoding: str = "utf-8"
