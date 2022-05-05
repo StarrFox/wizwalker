@@ -111,12 +111,8 @@ class CurrentGameClient(GameClient):
         if self._base_address is not None:
             return self._base_address
 
-        process_base = self.hook_handler.process.base_address
-        offset = await self.pattern_scan_offset(rb"\x48\x8B.....\x48\x8B\xD9\x80\xB8\x45", 3)
+        addr = await self.pattern_scan(rb"\x48\x8B.....\x48\x8B\xD9\x80\xB8\x45")
+        offset = await self.read_typed(addr + 3, "int")
 
-        self._base_address = process_base + offset
+        self._base_address = await self.read_typed(addr + 7 + offset, "unsigned long long")
         return self._base_address
-
-
-
-

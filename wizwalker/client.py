@@ -72,8 +72,9 @@ class Client:
         self._is_loading_addr = None
         self._world_view_window = None
 
-        # (pos_pointer_addr, hash_addr)
-        self._position_holder_globals = None
+        self._movement_update_address = None
+        self._movement_update_original_bytes = None
+        self._movement_update_patched = False
 
         # for teleport
         self._je_instruction_forward_backwards = None
@@ -221,6 +222,7 @@ class Client:
         if not self.is_running():
             return
 
+        await self._unpatch_movement_update()
         await self.hook_handler.close()
 
     async def get_template_ids(self) -> dict:
@@ -401,7 +403,6 @@ class Client:
             *,
             move_after: bool = False,
             wait_on_inuse: bool = False,
-            wait_for_done: bool = True,
     ):
         """
         Teleport the client
@@ -494,51 +495,144 @@ class Client:
 
         return self._je_instruction_forward_backwards
 
-    async def _patch_position_holder(self, xyz: XYZ):
+    async def camera_swap(self):
         """
-        Patches position holder to a new xyz
+        Swaps the current camera controller
         """
-        position_pointer_addr, position_hash_addr = await self._get_position_holder_globals()
+        if await self.game_client.is_freecam():
+            await self.camera_elastic()
 
-        packed_position_bytes = struct.pack("<fff", *xyz)
-        position_hash = self._calculate_position_hash(packed_position_bytes)
+        else:
+            await self.camera_freecam()
 
-        position_addr = await self.hook_handler.read_typed(position_pointer_addr, "unsigned long long")
-        await self.hook_handler.write_bytes(position_addr, packed_position_bytes)
-        await self.hook_handler.write_typed(position_hash_addr, position_hash, "unsigned int")
-
-    @staticmethod
-    def _calculate_position_hash(xyz_bytes: bytes):
-        res = 0x811c9dc5
-
-        for byte in xyz_bytes:
-            res = (byte ^ res) * 0x1000193
-
-        return res & 0xffffffff
-
-    # TODO: remove
-    async def _get_position_holder_globals(self):
+    async def camera_freecam(self):
         """
-        returns: positional(pointer), hash
+        Switches to the freecam camera controller
         """
-        if self._position_holder_globals:
-            return self._position_holder_globals
+        await self._patch_movement_update()
 
-        player_position_func_pattern = rb"\x48\x83\xEC\x28\x48\x8D.....\x48\x8D.....\xE8....\x33\xC0\x48\x8D....." \
-                                       rb"\x48\x89.....\x48\x89.....\x88.....\x89.....\xE8....\x89.....\x48\x83\xC4" \
-                                       rb"\x28\xC3"
+        await self.game_client.write_is_freecam(True)
 
-        player_position_func_addr = await self.hook_handler.pattern_scan(
-            player_position_func_pattern,
-            module="WizardGraphicalClient.exe"
+        elastic = await self.game_client.elastic_camera_controller()
+        free = await self.game_client.free_camera_controller()
+
+        elastic_address = await elastic.read_base_address()
+        free_address = await free.read_base_address()
+
+        await self._switch_camera(free_address, elastic_address)
+
+    async def camera_elastic(self):
+        """
+        Switches to the elastic camera controller
+        """
+        await self._unpatch_movement_update()
+
+        await self.game_client.write_is_freecam(False)
+
+        elastic = await self.game_client.elastic_camera_controller()
+        free = await self.game_client.free_camera_controller()
+
+        elastic_address = await elastic.read_base_address()
+        free_address = await free.read_base_address()
+
+        await self._switch_camera(elastic_address, free_address)
+
+    async def _patch_movement_update(self):
+        """
+        Causes movement update to not run, means your character doesn't move
+        """
+        if self._movement_update_patched:
+            return
+
+        movement_update_address = await self._get_movement_update_address()
+        self._movement_update_original_bytes = await self.hook_handler.read_bytes(movement_update_address, 3)
+        # ret
+        await self.hook_handler.write_bytes(movement_update_address, b"\xC3\x90\x90")
+
+        self._movement_update_patched = True
+
+    async def _unpatch_movement_update(self):
+        if not self._movement_update_patched:
+            return
+
+        movement_update_address = await self._get_movement_update_address()
+        await self.hook_handler.write_bytes(movement_update_address, self._movement_update_original_bytes)
+
+        self._movement_update_patched = False
+
+    async def _get_movement_update_address(self):
+        if self._movement_update_address:
+            return self._movement_update_address
+
+        self._movement_update_address = await self.hook_handler.pattern_scan(
+            rb"\x48\x8B\xC4\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48"
+            rb"\x8D\xA8\xE8\xFD\xFF\xFF\x48\x81\xEC\xE0\x02\x00\x00\x48\xC7"
+            rb"\x45\x28\xFE\xFF\xFF\xFF",
+            module="WizardGraphicalClient.exe",
         )
 
-        position_pointer_offset_mov_addr = player_position_func_addr + 32
-        position_pointer_offset_rip = await self.hook_handler.read_typed(
-            position_pointer_offset_mov_addr + 3,
-            "unsigned int"
-        )
-        position_pointer = position_pointer_offset_mov_addr + 7 + position_pointer_offset_rip
+        return self._movement_update_address
 
-        self._position_holder_globals = (position_pointer, position_pointer + 12)
-        return self._position_holder_globals
+    async def _switch_camera(self, new_camera_address: int, old_camera_address: int):
+        def _pack(address):
+            return struct.pack("<Q", address)
+
+        game_client_address = await self.game_client.read_base_address()
+        packed_game_client_address = _pack(game_client_address)
+
+        packed_new_camera_address = _pack(new_camera_address)
+        packed_old_camera_address = _pack(old_camera_address)
+
+        # fmt: off
+        shellcode = (
+                # setup
+                b"\x50"  # push rax
+                b"\x51"  # push rcx
+                b"\x52"  # push rdx
+                b"\x41\x50"  # push r8
+                b"\x41\x51"  # push r9
+
+                # call set_cam(client, new_cam, ?, cam_swap_fn)
+                b"\x48\xB9" + packed_game_client_address +  # mov rcx, client_addr
+                b"\x48\xBA" + packed_new_camera_address +  # mov rdx, new_cam_addr
+                b"\x49\xC7\xC0\x01\x00\x00\x00"  # mov r8, 0x1
+                b"\x48\x8B\x01"  # mov rax, [rcx]
+                b"\x48\x8B\x80\x40\x04\x00\x00"  # mov rax, [rax+0x440]
+                b"\x49\x89\xC1"  # mov r9, rax
+                b"\xFF\xD0"  # call rax
+
+                # call register_input_handlers(cam, active) [new_cam]
+                b"\x48\xB9" + packed_game_client_address +  # mov rcx, client_addr
+                b"\x48\xB8" + packed_new_camera_address +  # mov rax, new_cam_addr
+                b"\x48\x89\xC1"  # mov rcx, rax
+                b"\x48\x8B\x01"  # mov rax, [rcx]
+                b"\x48\x8B\x40\x70"  # mov rax, [rax+0x70]
+                b"\x48\xC7\xC2\x01\x00\x00\x00"  # mov rdx, 1
+                b"\xFF\xD0"  # call rax
+
+                # call register_input_handlers(cam, active) [old_cam]
+                b"\x48\xB9" + packed_game_client_address +  # mov rcx, client_addr
+                b"\x48\xB8" + packed_old_camera_address +  # mov rax, old_cam_addr
+                b"\x48\x89\xC1"  # mov rcx, rax
+                b"\x48\x8B\x01"  # mov rax, [rcx]
+                b"\x48\x8B\x40\x70"  # mov rax, [rax+0x70]
+                b"\x48\xC7\xC2\x00\x00\x00\x00"  # mov rdx, 0
+                b"\xFF\xD0"  # call rax
+
+                # cleanup
+                b"\x41\x59"  # pop r9
+                b"\x41\x58"  # pop r8
+                b"\x5A"  # pop rdx
+                b"\x59"  # pop rcx
+                b"\x58"  # pop rax
+
+                # end
+                b"\xC3"  # ret
+        )
+        # fmt: on
+
+        shell_ptr = await self.hook_handler.allocate(len(shellcode))
+        await self.hook_handler.write_bytes(shell_ptr, shellcode)
+        await self.hook_handler.start_thread(shell_ptr)
+        # we can free here because start_thread waits for the thread to return
+        await self.hook_handler.free(shell_ptr)

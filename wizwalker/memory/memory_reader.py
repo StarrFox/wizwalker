@@ -66,7 +66,7 @@ class MemoryReader:
 
         for exp in pe.DIRECTORY_ENTRY_EXPORT.symbols:
             if exp.name:
-                symbols[exp.name.decode("utf-8")] = exp.address
+                symbols[exp.name.decode()] = exp.address
 
             else:
                 symbols[f"Ordinal {exp.ordinal}"] = exp.address
@@ -155,11 +155,15 @@ class MemoryReader:
             A list of results if return_multple is True otherwise one result
         """
         if module:
-            module = pymem.process.module_from_name(self.process.process_handle, module)
+            module_object = pymem.process.module_from_name(self.process.process_handle, module)
+
+            if module_object is None:
+                raise ValueError(f"{module} module not found.")
+
             found_addresses = await self.run_in_executor(
                 self._scan_entire_module,
                 self.process.process_handle,
-                module,
+                module_object,
                 pattern,
             )
 
@@ -247,6 +251,16 @@ class MemoryReader:
              address: The address to free
         """
         await self.run_in_executor(self.process.free, address)
+
+    # TODO: figure out how params works
+    async def start_thread(self, address: int):
+        """
+        Start a thread at an address
+
+        Args:
+            address: The address to start the thread at
+        """
+        await self.run_in_executor(self.process.start_thread, address)
 
     async def read_bytes(self, address: int, size: int) -> bytes:
         """
