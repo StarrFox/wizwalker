@@ -186,6 +186,24 @@ must be on inventory page to use</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="wizwalker.Client.camera_elastic">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">camera_elastic</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.camera_elastic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Switches to the elastic camera controller</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wizwalker.Client.camera_freecam">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">camera_freecam</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.camera_freecam" title="Permalink to this definition">¶</a></dt>
+<dd><p>Switches to the freecam camera controller</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wizwalker.Client.camera_swap">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">camera_swap</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.camera_swap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Swaps the current camera controller</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="wizwalker.Client.close">
 <em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.close" title="Permalink to this definition">¶</a></dt>
 <dd><p>Closes this client; unhooking all active hooks</p>
@@ -364,7 +382,7 @@ ids are str</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="wizwalker.Client.teleport">
-<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">teleport</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xyz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#wizwalker.XYZ" title="wizwalker.utils.XYZ"><span class="pre">wizwalker.utils.XYZ</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">yaw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">move_after</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wait_on_inuse</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wait_for_done</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.teleport" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">teleport</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xyz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#wizwalker.XYZ" title="wizwalker.utils.XYZ"><span class="pre">wizwalker.utils.XYZ</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">yaw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">move_after</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wait_on_inuse</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.teleport" title="Permalink to this definition">¶</a></dt>
 <dd><p>Teleport the client</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1679,6 +1697,17 @@ kwargs are passed to set_mouse_position</p>
 <li><p><strong>args</strong> – Args to pass to the function</p></li>
 <li><p><strong>kwargs</strong> – Kwargs to pass to the function</p></li>
 </ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wizwalker.memory.MemoryReader.start_thread">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">start_thread</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">address</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.memory.MemoryReader.start_thread" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start a thread at an address</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>address</strong> – The address to start the thread at</p>
 </dd>
 </dl>
 </dd></dl>
