@@ -399,8 +399,9 @@ class Client:
             xyz: XYZ,
             yaw: float = None,
             *,
-            move_after: bool = True,
+            move_after: bool = False,
             wait_on_inuse: bool = False,
+            wait_for_done: bool = True,
     ):
         """
         Teleport the client
@@ -460,12 +461,12 @@ class Client:
             if not wait_on_inuse:
                 raise ValueError("Tried to teleport while should update bool is set")
 
-            await wait_for_value(self._teleport_helper.should_update, True)
+            await wait_for_value(self._teleport_helper.should_update, False)
 
         jes = await self._get_je_instruction_forward_backwards()
 
         if not self.hook_handler._check_if_hook_active(MovementTeleportHook):
-            raise RuntimeError("MOVEMENT TELEPORT NOT ACTIVE")
+            raise RuntimeError("Movement teleport not active")
 
         await self._teleport_helper.write_target_object_address(object_address)
         await self._teleport_helper.write_position(xyz)

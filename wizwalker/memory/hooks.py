@@ -1,12 +1,16 @@
+import asyncio
 import ctypes
 import ctypes.wintypes
 import struct
 from typing import Any, Tuple
+from contextlib import suppress
 
 from loguru import logger
 
 from .memory_reader import MemoryReader
 from wizwalker.constants import kernel32
+from wizwalker.utils import maybe_wait_for_value_with_timeout, wait_for_value
+from wizwalker.errors import ExceptionalTimeout
 
 
 def pack_to_int_or_longlong(num: int) -> bytes:
@@ -356,26 +360,65 @@ class MovementTeleportHook(SimpleHook):
     exports = [("teleport_helper", 21)]
 
     _old_jes_bytes = None
+    _old_collision_jes_bytes = None
+    _collision_je_addrs = None
+    _old_je_page_protection = None
+
+    def _set_page_protection(self, address: int, protections: int, size: int = 24) -> int:
+        old_protection = ctypes.wintypes.DWORD()
+        target_address_passable = ctypes.c_uint64(address)
+
+        result = kernel32.VirtualProtectEx(
+            self.hook_handler.process.process_handle,
+            target_address_passable,
+            size,
+            protections,
+            ctypes.byref(old_protection),
+        )
+
+        if result == 0:
+            raise RuntimeError(f"Movement teleport virtual protect returned 0 result={result}")
+
+        return old_protection.value
+
+    async def _wait_for_update_bool_unset_with_timeout(self):
+        async def _inner():
+            while True:
+                should_update = await self.hook_handler.client._teleport_helper.should_update()
+
+                if should_update is False:
+                    return
+
+                await asyncio.sleep(0.2)
+
+        with suppress(asyncio.TimeoutError):
+            return await asyncio.wait_for(_inner(), 5)
 
     async def prehook(self):
         jes = await self.hook_handler.client._get_je_instruction_forward_backwards()
 
         target_address = jes[0]
 
-        old_protection = ctypes.wintypes.DWORD()
-
-        target_address_passable = ctypes.c_uint64(target_address)
-
-        result = kernel32.VirtualProtectEx(
-            self.hook_handler.process.process_handle,
-            target_address_passable,
-            24,
-            0x40,
-            ctypes.byref(old_protection),
+        inside_event_je_addr = await self.pattern_scan(
+            rb"\x74.\xF3\x0F\x10\x55\xA8",
+            module="WizardGraphicalClient.exe",
+        )
+        event_dispatch_je_addr = await self.pattern_scan(
+            rb"\x74.\xF3\x0F\x10\x44\x24\x54\xF3\x0F",
+            module="WizardGraphicalClient.exe",
         )
 
-        if result == 0:
-            raise RuntimeError(f"Movement teleport virtual protect returned 0 result={result}")
+        old_inside_event_je_bytes = await self.read_bytes(inside_event_je_addr, 2)
+        old_event_dispatch_je_addr = await self.read_bytes(event_dispatch_je_addr, 2)
+
+        self._collision_je_addrs = (inside_event_je_addr, event_dispatch_je_addr)
+        self._old_collision_jes_bytes = (old_inside_event_je_bytes, old_event_dispatch_je_addr)
+
+        for addr in self._collision_je_addrs:
+            await self.write_bytes(addr, b"\x90\x90")
+
+        # 0x40 is read, write, execute
+        self._old_je_page_protection = self._set_page_protection(target_address, 0x40)
 
     async def bytecode_generator(self, packed_exports):
         packed_should_update = bytearray(packed_exports[0][1])
@@ -466,6 +509,21 @@ class MovementTeleportHook(SimpleHook):
         await self.posthook()
 
     async def unhook(self):
+        # with suppress(ExceptionalTimeout):
+        #     await maybe_wait_for_value_with_timeout(
+        #         self.hook_handler.client._teleport_helper.should_update,
+        #         value=False,
+        #         timeout=0.5,
+        #     )
+
+        # await wait_for_value(
+        #     self.hook_handler.client._teleport_helper.should_update,
+        #     False,
+        #     ignore_errors=False,
+        # )
+
+        await self._wait_for_update_bool_unset_with_timeout()
+
         await super().unhook()
 
         if self._old_jes_bytes is None:
@@ -475,6 +533,11 @@ class MovementTeleportHook(SimpleHook):
 
         for je, je_bytes in zip(jes, self._old_jes_bytes):
             await self.hook_handler.write_bytes(je, je_bytes)
+
+        for addr, old_bytes in zip(self._collision_je_addrs, self._old_collision_jes_bytes):
+            await self.write_bytes(addr, old_bytes)
+
+        self._set_page_protection(jes[0], self._old_je_page_protection)
 
 
 # TODO: fix this hacky class
