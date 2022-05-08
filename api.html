@@ -217,9 +217,23 @@ energy globe must be visible to use</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="wizwalker.Client.get_base_entities_with_display_name">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_base_entities_with_display_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">display_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.get_base_entities_with_display_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get entities with a display name</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>display_name</strong> – The name to search for</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>List of the matching entities</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="wizwalker.Client.get_base_entities_with_name">
 <em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_base_entities_with_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.get_base_entities_with_name" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get entites with a name</p>
+<dd><p>Get entities with a name</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>name</strong> – The name to search for</p>
@@ -261,6 +275,12 @@ ids are str</p>
 <dt class="sig sig-object py" id="wizwalker.Client.get_world_view_window">
 <em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_world_view_window</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#wizwalker.Client.get_world_view_window" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the world view window</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wizwalker.Client.goal_id">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">goal_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#wizwalker.Client.goal_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the client’s current goal id</p>
 </dd></dl>
 
 <dl class="py method">
@@ -350,6 +370,12 @@ ids are str</p>
 <dt class="sig sig-object py" id="wizwalker.Client.process_id">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">process_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#wizwalker.Client.process_id" title="Permalink to this definition">¶</a></dt>
 <dd><p>Client’s process id</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wizwalker.Client.quest_id">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">quest_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#wizwalker.Client.quest_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the client’s current quest id</p>
 </dd></dl>
 
 <dl class="py method">
@@ -890,8 +916,13 @@ Useful for targeting</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="wizwalker.combat.CombatCard.wait_for_graphical_spell">
-<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">wait_for_graphical_spell</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">wizwalker.memory.memory_objects.spell.DynamicGraphicalSpell</span></span></span><a class="headerlink" href="#wizwalker.combat.CombatCard.wait_for_graphical_spell" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">wait_for_graphical_spell</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">wizwalker.memory.memory_objects.spell.DynamicGraphicalSpell</span></span></span><a class="headerlink" href="#wizwalker.combat.CombatCard.wait_for_graphical_spell" title="Permalink to this definition">¶</a></dt>
 <dd><p>Wait for GraphicalSpell</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>ExceptionalTimeout</strong> – if passed timeout; getting graphical spell took too long</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
