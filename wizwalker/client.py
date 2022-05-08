@@ -11,7 +11,7 @@ from . import (
     Keycode,
     MemoryReadError,
     ReadingEnumFailed,
-    utils,
+    utils, ExceptionalTimeout,
 )
 from .constants import WIZARD_SPEED
 from .memory import (
@@ -36,6 +36,7 @@ from .utils import (
     set_window_title,
     get_window_rectangle,
     wait_for_value,
+    maybe_wait_for_any_value_with_timeout,
 )
 
 
@@ -144,29 +145,13 @@ class Client:
 
         return None
 
+    # TODO: 2.0 remove the base_ here and in sub methods
     async def get_base_entity_list(self):
         """
         List of WizClientObjects currently loaded
         """
         root_client = await self.client_object.parent()
         return await root_client.children()
-
-    async def get_base_entities_with_name(self, name: str):
-        """
-        Get entites with a name
-
-        Args:
-            name: The name to search for
-
-        Returns:
-            List of the matching entities
-        """
-
-        async def _pred(entity):
-            object_template = await entity.object_template()
-            return await object_template.object_name() == name
-
-        return await self.get_base_entities_with_predicate(_pred)
 
     # TODO: add example
     async def get_base_entities_with_predicate(self, predicate: Callable):
@@ -186,6 +171,46 @@ class Client:
                 entities.append(entity)
 
         return entities
+
+    async def get_base_entities_with_name(self, name: str):
+        """
+        Get entities with a name
+
+        Args:
+            name: The name to search for
+
+        Returns:
+            List of the matching entities
+        """
+        async def _pred(entity):
+            object_template = await entity.object_template()
+            return await object_template.object_name() == name
+
+        return await self.get_base_entities_with_predicate(_pred)
+
+    async def get_base_entities_with_display_name(self, display_name: str):
+        """
+        Get entities with a display name
+
+        Args:
+            display_name: The name to search for
+
+        Returns:
+            List of the matching entities
+        """
+        async def predicate(entity):
+            try:
+                mob_display_name = await maybe_wait_for_any_value_with_timeout(
+                    entity.display_name,
+                    0.1,
+                    timeout=1
+                )
+            except ExceptionalTimeout:
+                return False
+
+            return display_name.lower() in mob_display_name.lower()
+
+        return await self.get_base_entities_with_predicate(predicate)
 
     async def get_world_view_window(self):
         """
@@ -235,6 +260,20 @@ class Client:
 
         self._template_ids = await self.cache_handler.get_template_ids()
         return self._template_ids
+
+    async def quest_id(self) -> int:
+        """
+        Get the client's current quest id
+        """
+        registry = await self.game_client.character_registry()
+        return await registry.active_quest_id()
+
+    async def goal_id(self) -> int:
+        """
+        Get the client's current goal id
+        """
+        registry = await self.game_client.character_registry()
+        return await registry.active_goal_id()
 
     async def in_battle(self) -> bool:
         """

@@ -46,12 +46,28 @@ class ClientObject(PropertyClass):
     # helper method
     async def object_name(self) -> Optional[str]:
         """
-        This client object's object name
+        This client object's object name if it has one
         """
         object_template = await self.object_template()
         if object_template is not None:
             return await object_template.object_name()
 
+        # explict None
+        return None
+
+    # helper method
+    async def display_name(self) -> Optional[str]:
+        """
+        This client object's display name if it has one
+        """
+        object_template = await self.object_template()
+        if object_template is not None:
+            display_name_code = await object_template.display_name()
+            # this is sometimes just a blank string
+            if display_name_code:
+                return await self.hook_handler.client.cache_handler.get_langcode_name(display_name_code)
+
+        # explict None
         return None
 
     # note: not defined

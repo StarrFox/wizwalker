@@ -119,11 +119,16 @@ class CombatCard:
 
     async def wait_for_graphical_spell(
         self,
+        *,
+        timeout: float = 2,
     ) -> "wizwalker.memory.memory_objects.spell.DynamicGraphicalSpell":
         """
         Wait for GraphicalSpell
+
+        Raises:
+            ExceptionalTimeout: if passed timeout; getting graphical spell took too long
         """
-        return await wizwalker.utils.wait_for_non_error(self.get_graphical_spell)
+        return await wizwalker.utils.maybe_wait_for_value_with_timeout(self.get_graphical_spell, timeout=timeout)
 
     async def get_spell_effects(
         self,

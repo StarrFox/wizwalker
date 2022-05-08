@@ -147,6 +147,12 @@ class CombatHandler:
 
         raise ValueError(f"Couldn't find a card named {name}")
 
+    async def get_cards_with_display_name(self, display_name: str):
+        async def _pred(card: CombatCard):
+            return display_name.lower() in (await card.display_name()).lower()
+
+        return await self.get_cards_with_predicate(_pred)
+
     # TODO: add allow_treasure_cards that defaults to False
     async def get_damaging_aoes(self, *, check_enchanted: bool = None):
         """

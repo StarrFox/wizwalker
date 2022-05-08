@@ -9,8 +9,6 @@ from loguru import logger
 
 from .memory_reader import MemoryReader
 from wizwalker.constants import kernel32
-from wizwalker.utils import maybe_wait_for_value_with_timeout, wait_for_value
-from wizwalker.errors import ExceptionalTimeout
 
 
 def pack_to_int_or_longlong(num: int) -> bytes:
@@ -255,7 +253,7 @@ class QuestHook(SimpleHook):
         return bytecode
 
 
-# NOTE: CombatPlanningPhaseWindow.handle
+# NOTE: CombatPlanningPhaseWindow::handle
 class DuelHook(SimpleHook):
     pattern = (
         rb"\x44\x0F\xB6\xE0\x88\x44\x24\x60\xE8....\x44\x8D\x6B\x0F"

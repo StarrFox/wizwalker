@@ -292,20 +292,42 @@ class ObjectType(Enum):
     plant = 29
 
 
-# class MagicSchool(Enum):
-#     ice = 72777
-#     sun = 78483
-#     life = 2330892
-#     fire = 2343174
-#     star = 2625203
-#     myth = 2448141
-#     moon = 2504141
-#     death = 78318724
-#     storm = 83375795
-#     gardening = 663550619
-#     castle_magic = 806477568
-#     whirly_burly = 931528087
-#     balance = 1027491821
-#     shadow = 1429009101
-#     fishing = 1488274711
-#     cantrips = 1760873841
+# TODO: are these ids static?
+class MagicSchool(Enum):
+    ice = 72777
+    sun = 78483
+    life = 2330892
+    fire = 2343174
+    star = 2625203
+    myth = 2448141
+    moon = 2504141
+    death = 78318724
+    storm = 83375795
+    gardening = 663550619
+    castle_magic = 806477568
+    whirly_burly = 931528087
+    balance = 1027491821
+    shadow = 1429009101
+    fishing = 1488274711
+    cantrips = 1760873841
+
+
+class AccountPermissions(IntFlag):
+    no_permissions = 0b0
+    can_chat = 0b1
+    can_filtered_chat = 0b10
+    can_open_chat = 0b100
+    can_open_chat_legacy = 0b1000
+    can_true_friend_code = 0b10000
+    can_gift = 0b100000
+    can_report_bugs = 0b1000000
+    unknown = 0b10000000
+    unknown1 = 0b100000000
+    unknown2 = 0b1000000000
+    can_earn_crowns_offers = 0b10000000000
+    can_earn_crowns_button = 0b100000000000
+    unknown3 = 0b1000000000000
+    unknown4 = 0b10000000000000
+    # 5 and 6 are probably not used
+    unknown5 = 0b100000000000000
+    unknown6 = 0b1000000000000000

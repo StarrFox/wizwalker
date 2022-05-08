@@ -375,8 +375,7 @@ async def wait_for_non_error(coro, sleep_time: float = 0.5):
     while True:
         # noinspection PyBroadException
         try:
-            now = await coro()
-            return now
+            return await coro()
 
         except Exception:
             await asyncio.sleep(sleep_time)
