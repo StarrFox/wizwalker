@@ -279,7 +279,7 @@ class MemoryReader:
             raise AddressOutOfRange(address)
 
         try:
-            return await self.run_in_executor(self.process.read_bytes, address, size)
+            return self.process.read_bytes(address, size)
         except pymem.exception.MemoryReadError:
             # we don't want to run is running for every read
             # so we just check after we error
