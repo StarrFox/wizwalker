@@ -11,4 +11,4 @@ class RenderContext(MemoryObject):
 
 class CurrentRenderContext(RenderContext):
     async def read_base_address(self) -> int:
-        return await self.hook_handler.read_current_render_context_base()
+        return await self.memory_reader.read_current_render_context_base()

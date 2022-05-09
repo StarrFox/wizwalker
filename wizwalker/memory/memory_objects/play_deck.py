@@ -1,28 +1,28 @@
 from typing import List
 
-from wizwalker.memory.memory_object import PropertyClass, DynamicMemoryObject
+from wizwalker.memory.memory_object import PropertyClass
 
 
 class PlayDeck(PropertyClass):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 
-    async def deck_to_save(self) -> List["DynamicPlaySpellData"]:
+    async def deck_to_save(self) -> List["AddressedPlaySpellData"]:
         spell_data = []
         for addr in await self.read_shared_vector(72):
-            spell_data.append(DynamicPlaySpellData(self.hook_handler, addr))
+            spell_data.append(AddressedPlaySpellData(self.memory_reader, addr))
 
         return spell_data
 
-    async def graveyard_to_save(self) -> List["DynamicPlaySpellData"]:
+    async def graveyard_to_save(self) -> List["AddressedPlaySpellData"]:
         spell_data = []
         for addr in await self.read_shared_vector(96):
-            spell_data.append(DynamicPlaySpellData(self.hook_handler, addr))
+            spell_data.append(AddressedPlaySpellData(self.memory_reader, addr))
 
         return spell_data
 
 
-class DynamicPlayDeck(DynamicMemoryObject, PlayDeck):
+class AddressedPlayDeck(PlayDeck):
     pass
 
 
@@ -37,5 +37,5 @@ class PlaySpellData(PropertyClass):
         return await self.read_value_from_offset(76, "unsigned int")
 
 
-class DynamicPlaySpellData(DynamicMemoryObject, PlaySpellData):
+class AddressedPlaySpellData(PlaySpellData):
     pass

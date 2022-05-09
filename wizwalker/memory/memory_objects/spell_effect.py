@@ -1,7 +1,7 @@
 from typing import List
 
-from wizwalker.memory.memory_object import DynamicMemoryObject, PropertyClass
-from .enums import SpellEffects, EffectTarget, HangingDisposition
+from wizwalker.memory.memory_object import PropertyClass
+from .enums import SpellEffects, EffectTarget
 
 
 class SpellEffect(PropertyClass):
@@ -134,7 +134,7 @@ class SpellEffect(PropertyClass):
 
     async def maybe_effect_list(
         self, *, check_type: bool = False
-    ) -> List["DynamicSpellEffect"]:
+    ) -> List["AddressedSpellEffect"]:
         if check_type:
             type_name = await self.maybe_read_type_name()
             if type_name not in ("RandomSpellEffect", "RandomPerTargetSpellEffect", "VariableSpellEffect"):
@@ -146,10 +146,10 @@ class SpellEffect(PropertyClass):
         effects = []
 
         for addr in await self.read_shared_linked_list(224):
-            effects.append(DynamicSpellEffect(self.hook_handler, addr))
+            effects.append(AddressedSpellEffect(self.memory_reader, addr))
 
         return effects
 
 
-class DynamicSpellEffect(DynamicMemoryObject, SpellEffect):
+class AddressedSpellEffect(SpellEffect):
     pass

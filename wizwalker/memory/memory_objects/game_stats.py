@@ -1,6 +1,6 @@
 from typing import List
 
-from wizwalker.memory.memory_object import DynamicMemoryObject, PropertyClass
+from wizwalker.memory.memory_object import PropertyClass
 
 
 class GameStats(PropertyClass):
@@ -772,8 +772,8 @@ class GameStats(PropertyClass):
 
 class CurrentGameStats(GameStats):
     async def read_base_address(self) -> int:
-        return await self.hook_handler.read_current_player_stat_base()
+        return await self.memory_reader.read_current_player_stat_base()
 
 
-class DynamicGameStats(DynamicMemoryObject, GameStats):
+class AddressedGameStats(GameStats):
     pass

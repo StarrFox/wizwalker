@@ -4,7 +4,9 @@ from collections.abc import Callable
 import wizwalker
 from .member import CombatMember
 from .card import CombatCard
-from ..memory import DuelPhase, EffectTarget, SpellEffects, WindowFlags
+
+# TODO
+# from ..memory import DuelPhase, EffectTarget, SpellEffects, WindowFlags
 from wizwalker import utils
 
 

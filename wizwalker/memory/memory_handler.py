@@ -1,8 +1,7 @@
-import asyncio
-import functools
 import regex
 import struct
-from typing import Any
+from enum import Enum
+from typing import Any, Type
 
 import pefile
 import pymem
@@ -18,9 +17,14 @@ from wizwalker import (
     MemoryWriteError,
     PatternFailed,
     PatternMultipleResults,
+    WizWalkerMemoryError,
+    XYZ,
     type_format_dict,
     utils,
 )
+
+
+MAX_STRING = 5_000
 
 
 class MemoryHandler:
@@ -49,6 +53,7 @@ class MemoryHandler:
 
         symbols = {}
 
+        # noinspection PyUnresolvedReferences
         for exp in pe.DIRECTORY_ENTRY_EXPORT.symbols:
             if exp.name:
                 symbols[exp.name.decode()] = exp.address
@@ -315,6 +320,31 @@ class MemoryHandler:
         data = await self.read_bytes(address, struct.calcsize(type_format))
         return struct.unpack(type_format, data)[0]
 
+    async def read_multiple_typed(self, address: int, *data_types: str) -> Any | tuple[Any]:
+        """
+        Read typed bytes from memory
+
+        Args:
+            address: The address to read from
+            data_types: The type to read (defined in constants)
+
+        Returns:
+            The converted data type
+        """
+        type_format = "<"
+        for data_type in data_types:
+            data_type_format = type_format_dict.get(data_type)
+            if data_type_format is None:
+                raise ValueError(f"Invalid data type {data_type}")
+
+            type_format += data_type_format.replace("<", "")
+
+        data = await self.read_bytes(address, struct.calcsize(type_format))
+        if len(data_types) == 1:
+            return struct.unpack(type_format, data)[0]
+
+        return struct.unpack(type_format, data)
+
     async def write_typed(self, address: int, value: Any, data_type: str):
         """
         Write typed bytes to memory
@@ -330,3 +360,277 @@ class MemoryHandler:
 
         packed_data = struct.pack(type_format, value)
         await self.write_bytes(address, packed_data)
+
+    async def write_multiple_typed(self, address: int, values: Any | tuple[any], *data_types: str):
+        """
+        Write typed bytes to memory
+
+        Args:
+            address: The address to write to
+            values: The value to convert and then write
+            data_types: The data type to convert to
+        """
+        type_format = "<"
+        for data_type in data_types:
+            data_type_format = type_format_dict.get(data_type)
+            if data_type_format is None:
+                raise ValueError(f"Invalid data type {data_type}")
+
+            type_format += data_type_format.removeprefix("<", "")
+
+        packed_data = struct.pack(type_format, *values)
+        await self.write_bytes(address, packed_data)
+
+    async def read_null_terminated_string(
+        self, address: int, max_size: int = 20, encoding: str = "utf-8"
+    ):
+        search_bytes = await self.read_bytes(address, max_size)
+        string_end = search_bytes.find(b"\x00")
+
+        if string_end == 0:
+            return ""
+        elif string_end == -1:
+            raise MemoryReadError(f"Couldn't read string at {address}; no end byte.")
+
+        # Don't include the 0 byte
+        string_bytes = search_bytes[:string_end]
+        return string_bytes.decode(encoding)
+
+    async def read_wide_string(self, address: int, encoding: str = "utf-16") -> str:
+        string_len = await self.read_typed(address + 16, "int")
+        if string_len == 0:
+            return ""
+
+        # wide chars take 2 bytes
+        string_len *= 2
+
+        # wide strings larger than 8 bytes are pointers
+        if string_len >= 8:
+            string_address = await self.read_typed(address, "long long")
+        else:
+            string_address = address
+
+        try:
+            return (await self.read_bytes(string_address, string_len)).decode(encoding)
+        except UnicodeDecodeError:
+            return ""
+
+    async def write_wide_string(
+        self, address: int, string: str, encoding: str = "utf-8"
+    ):
+        string_len_addr = address + 16
+        encoded = string.encode(encoding)
+        # len(encoded) instead of string bc it can be larger in some encodings
+        string_len = len(encoded)
+
+        current_string_len = await self.read_typed(address + 16, "int")
+
+        # we need to create a pointer to the string data
+        if string_len >= 7 > current_string_len:
+            # +1 for 0 byte after
+            pointer_address = await self.allocate(string_len + 1)
+
+            # need 0 byte for some c++ null termination standard
+            await self.write_bytes(pointer_address, encoded + b"\x00")
+            await self.write_typed(address, pointer_address, "long long")
+
+        # string is already a pointer
+        elif string_len >= 7 and current_string_len >= 8:
+            pointer_address = await self.read_typed(address, "long long")
+            await self.write_bytes(pointer_address, encoded + b"\x00")
+
+        # normal buffer string
+        else:
+            await self.write_bytes(address, encoded + b"\x00")
+
+        await self.write_typed(string_len_addr, string_len, "int")
+
+    async def read_wchar(self, address: int):
+        data = await self.read_bytes(address, 2)
+        return data.decode("utf-16")
+
+    async def write_wchar(self, address: int, wchar: str):
+        data = wchar.encode("utf-16")
+        await self.write_bytes(address, data)
+
+    async def read_string(
+        self, address: int, encoding: str = "utf-8", *, sso_size: int = 16
+    ) -> str:
+        string_len = await self.read_typed(address + 16, "int")
+
+        if not 1 <= string_len <= MAX_STRING:
+            return ""
+
+        # strings larger than 16 bytes are pointers
+        if string_len >= sso_size:
+            string_address = await self.read_typed(address, "long long")
+        else:
+            string_address = address
+
+        try:
+            return (await self.read_bytes(string_address, string_len)).decode(encoding)
+        except UnicodeDecodeError:
+            return ""
+
+    async def write_string(self, address: int, string: str, encoding: str = "utf-8"):
+        string_len_addr = address + 16
+        encoded = string.encode(encoding)
+        # len(encoded) instead of string bc it can be larger in some encodings
+        string_len = len(encoded)
+
+        current_string_len = await self.read_typed(address + 16, "int")
+
+        # we need to create a pointer to the string data
+        if string_len >= 15 > current_string_len:
+            # +1 for 0 byte after
+            pointer_address = await self.allocate(string_len + 1)
+
+            # need 0 byte for some c++ null termination standard
+            await self.write_bytes(pointer_address, encoded + b"\x00")
+            await self.write_typed(address, pointer_address, "long long")
+
+        # string is already a pointer
+        elif string_len >= 15 and current_string_len >= 15:
+            pointer_address = await self.read_typed(address, "long long")
+            await self.write_bytes(pointer_address, encoded + b"\x00")
+
+        # normal buffer string
+        else:
+            await self.write_bytes(address, encoded + b"\x00")
+
+        await self.write_typed(string_len_addr, string_len, "int")
+
+    async def read_vector(self, address, size: int = 3, data_type: str = "float"):
+        type_str = type_format_dict[data_type].replace("<", "")
+        size_per_type = struct.calcsize(type_str)
+
+        vector_bytes = await self.read_bytes(address, size_per_type * size)
+
+        return struct.unpack("<" + type_str * size, vector_bytes)
+
+    async def write_vector(
+        self, address: int, value: tuple, size: int = 3, data_type: str = "float"
+    ):
+        type_str = type_format_dict[data_type].replace("<", "")
+        packed_bytes = struct.pack("<" + type_str * size, *value)
+        await self.write_bytes(address, packed_bytes)
+
+    async def read_xyz(self, offset: int) -> XYZ:
+        x, y, z = await self.read_vector(offset)
+        return XYZ(x, y, z)
+
+    async def write_xyz(self, offset: int, xyz: XYZ):
+        await self.write_vector(offset, (xyz.x, xyz.y, xyz.z))
+
+    async def read_enum(self, address, enum: Type[Enum]):
+        value = await self.read_typed(address, "int")
+        try:
+            res = enum(value)
+        except ValueError:
+            raise WizWalkerMemoryError(
+                f"{value} is not a valid value of {enum.__name__}"
+            )
+        else:
+            return res
+
+    async def write_enum(self, address, value: Enum):
+        await self.write_typed(address, value.value, "int")
+
+    async def read_shared_vector(
+        self, address: int, *, max_size: int = 1000
+    ) -> list[int]:
+        start_address = await self.read_typed(address, "long long")
+        end_address = await self.read_typed(address + 8, "long long")
+        size = end_address - start_address
+
+        element_number = size // 16
+
+        if size == 0:
+            return []
+
+        # dealloc
+        if size < 0:
+            return []
+
+        if element_number > max_size:
+            raise ValueError(f"Size was {element_number} and the max was {max_size}")
+
+        try:
+            shared_pointers_data = await self.read_bytes(start_address, size)
+        except (ValueError, AddressOutOfRange, MemoryError):
+            return []
+
+        pointers = []
+        data_pos = 0
+        # Shared pointers are 16 in length
+        for _ in range(element_number):
+            # fmt: off
+            shared_pointer_data = shared_pointers_data[data_pos: data_pos + 16]
+            # fmt: on
+
+            # first 8 bytes are the address
+            pointers.append(struct.unpack("<q", shared_pointer_data[:8])[0])
+
+            data_pos += 16
+
+        return pointers
+
+    # note: dynamic actually has no meaning here
+    # is just a pointer to
+    async def read_dynamic_vector(
+        self, address: int, data_type: str = "long long"
+    ) -> list[int]:
+        """
+        Read a vector that changes in size
+        """
+        start_address = await self.read_typed(address, "long long")
+        end_address = await self.read_typed(address + 8, "long long")
+
+        type_str = type_format_dict[data_type].replace("<", "")
+        size_per_type = struct.calcsize(type_str)
+
+        size = (end_address - start_address) // size_per_type
+
+        if size == 0:
+            return []
+
+        current_address = start_address
+        pointers = []
+        for _ in range(size):
+            pointers.append(await self.read_typed(current_address, data_type))
+
+            current_address += size_per_type
+
+        return pointers
+
+    async def read_shared_linked_list(self, address: int) -> list[int]:
+        list_addr = await self.read_typed(address, "long long")
+        list_size = await self.read_typed(address + 8, "int")
+
+        addrs = []
+        next_node_addr = list_addr
+        for _ in range(list_size):
+            list_node = await self.read_typed(next_node_addr, "long long")
+            next_node_addr = await self.read_typed(list_node, "long long")
+            # pointer is +16 from "last" list node
+            addrs.append(await self.read_typed(list_node + 16, "long long"))
+
+        return addrs
+
+    async def read_linked_list(self, address: int) -> list[int]:
+        list_addr = await self.read_typed(address, "long long")
+        list_size = await self.read_typed(address + 8, "int")
+
+        if list_size < 1:
+            return []
+
+        addrs = []
+        list_node = await self.read_typed(list_addr, "long long")
+        # object starts +16 from node
+        addrs.append(list_node + 16)
+        # -1 because we've already read one node
+        for _ in range(list_size - 1):
+            list_node = await self.read_typed(list_node, "long long")
+            addrs.append(list_node + 16)
+
+        return addrs

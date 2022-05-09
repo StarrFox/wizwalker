@@ -1,12 +1,11 @@
 from typing import List, Optional
 
 from wizwalker import XYZ
-from wizwalker.memory.memory_object import PropertyClass, DynamicMemoryObject
-from wizwalker.memory.memory_objects import DynamicActorBody
-from .game_stats import DynamicGameStats
-from .game_object_template import DynamicWizGameObjectTemplate
-from .behavior_instance import DynamicBehaviorInstance
-from .client_zone import DynamicClientZone
+from wizwalker.memory.memory_object import PropertyClass
+from .game_stats import AddressedGameStats
+from .game_object_template import AddressedWizGameObjectTemplate
+from .behavior_instance import AddressedBehaviorInstance
+from .client_zone import AddressedClientZone
 
 
 class ClientObject(PropertyClass):
@@ -18,7 +17,7 @@ class ClientObject(PropertyClass):
         raise NotImplementedError()
 
     # TODO: test if this is actually active behaviors
-    async def inactive_behaviors(self) -> List[DynamicBehaviorInstance]:
+    async def inactive_behaviors(self) -> List[AddressedBehaviorInstance]:
         """
         This client object's inactive behaviors
 
@@ -28,7 +27,7 @@ class ClientObject(PropertyClass):
         behaviors = []
         for addr in await self.read_shared_vector(224):
             if addr != 0:
-                behaviors.append(DynamicBehaviorInstance(self.hook_handler, addr))
+                behaviors.append(AddressedBehaviorInstance(self.memory_reader, addr))
 
         return behaviors
 
@@ -41,7 +40,7 @@ class ClientObject(PropertyClass):
                 if addr == 0:
                     return None
 
-                return DynamicActorBody(self.hook_handler, addr)
+                return AddressedActorBody(self.hook_handler, addr)
 
     # helper method
     async def object_name(self) -> Optional[str]:
@@ -71,7 +70,7 @@ class ClientObject(PropertyClass):
         return None
 
     # note: not defined
-    async def parent(self) -> Optional["DynamicClientObject"]:
+    async def parent(self) -> Optional["AddressedClientObject"]:
         """
         This client object's parent or None if it is the root client object
 
@@ -83,10 +82,10 @@ class ClientObject(PropertyClass):
         if addr == 0:
             return None
 
-        return DynamicClientObject(self.hook_handler, addr)
+        return AddressedClientObject(self.memory_reader, addr)
 
     # note: not defined
-    async def children(self) -> List["DynamicClientObject"]:
+    async def children(self) -> list["AddressedClientObject"]:
         """
         This client object's child client objects
 
@@ -95,12 +94,12 @@ class ClientObject(PropertyClass):
         """
         children = []
         for addr in await self.read_shared_vector(384):
-            children.append(DynamicClientObject(self.hook_handler, addr))
+            children.append(AddressedClientObject(self.memory_reader, addr))
 
         return children
 
     # note: not defined
-    async def client_zone(self) -> Optional["DynamicClientZone"]:
+    async def client_zone(self) -> Optional["AddressedClientZone"]:
         """
         This client object's client zone or None
 
@@ -112,10 +111,10 @@ class ClientObject(PropertyClass):
         if addr == 0:
             return None
 
-        return DynamicClientZone(self.hook_handler, addr)
+        return AddressedClientZone(self.memory_reader, addr)
 
     # note: not defined
-    async def object_template(self) -> Optional[DynamicWizGameObjectTemplate]:
+    async def object_template(self) -> Optional[AddressedWizGameObjectTemplate]:
         """
         This client object's template object
 
@@ -127,7 +126,7 @@ class ClientObject(PropertyClass):
         if addr == 0:
             return None
 
-        return DynamicWizGameObjectTemplate(self.hook_handler, addr)
+        return AddressedWizGameObjectTemplate(self.memory_reader, addr)
 
     async def global_id_full(self) -> int:
         """
@@ -320,7 +319,7 @@ class ClientObject(PropertyClass):
         await self.write_value_to_offset(440, character_id, "unsigned long long")
 
     # Note: not defined
-    async def game_stats(self) -> Optional[DynamicGameStats]:
+    async def game_stats(self) -> Optional[AddressedGameStats]:
         """
         This client object's game stats or None if doesn't have them
 
@@ -332,7 +331,7 @@ class ClientObject(PropertyClass):
         if addr == 0:
             return None
 
-        return DynamicGameStats(self.hook_handler, addr)
+        return AddressedGameStats(self.memory_reader, addr)
 
 
 class CurrentClientObject(ClientObject):
@@ -341,10 +340,10 @@ class CurrentClientObject(ClientObject):
     """
 
     async def read_base_address(self) -> int:
-        return await self.hook_handler.read_current_client_base()
+        return await self.memory_reader.read_current_client_base()
 
 
-class DynamicClientObject(DynamicMemoryObject, ClientObject):
+class AddressedClientObject(ClientObject):
     """
     Dynamic client object that can take an address
     """

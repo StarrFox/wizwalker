@@ -10,25 +10,26 @@ import pymem
 from . import (
     CacheHandler,
     Keycode,
-    MemoryReadError,
-    ReadingEnumFailed,
+    WizWalkerMemoryError,
     utils,
     ExceptionalTimeout,
 )
 from .constants import WIZARD_SPEED
+
+# TODO
 from .memory import (
-    CurrentActorBody,
-    CurrentClientObject,
-    CurrentDuel,
-    CurrentGameStats,
-    CurrentQuestPosition,
-    CurrentRootWindow,
-    CurrentGameClient,
-    DuelPhase,
+    # CurrentActorBody,
+    # CurrentClientObject,
+    # CurrentDuel,
+    # CurrentGameStats,
+    # CurrentQuestPosition,
+    # CurrentRootWindow,
+    # CurrentGameClient,
+    # DuelPhase,
     HookHandler,
-    CurrentRenderContext,
-    TeleportHelper,
-    MovementTeleportHook,
+    # CurrentRenderContext,
+    # TeleportHelper,
+    # MovementTeleportHook,
 )
 from .mouse_handler import MouseHandler
 from .utils import (
@@ -60,16 +61,17 @@ class Client:
         self.cache_handler = CacheHandler()
         self.mouse_handler = MouseHandler(self)
 
-        self.stats = CurrentGameStats(self.hook_handler)
-        self.body = CurrentActorBody(self.hook_handler)
-        self.duel = CurrentDuel(self.hook_handler)
-        self.quest_position = CurrentQuestPosition(self.hook_handler)
-        self.client_object = CurrentClientObject(self.hook_handler)
-        self.root_window = CurrentRootWindow(self.hook_handler)
-        self.render_context = CurrentRenderContext(self.hook_handler)
-        self.game_client = CurrentGameClient(self.hook_handler)
-
-        self._teleport_helper = TeleportHelper(self.hook_handler)
+        # TODO: readd
+        # self.stats = CurrentGameStats(self.hook_handler)
+        # self.body = CurrentActorBody(self.hook_handler)
+        # self.duel = CurrentDuel(self.hook_handler)
+        # self.quest_position = CurrentQuestPosition(self.hook_handler)
+        # self.client_object = CurrentClientObject(self.hook_handler)
+        # self.root_window = CurrentRootWindow(self.hook_handler)
+        # self.render_context = CurrentRenderContext(self.hook_handler)
+        # self.game_client = CurrentGameClient(self.hook_handler)
+        #
+        # self._teleport_helper = TeleportHelper(self.hook_handler)
 
         self._template_ids = None
         self._is_loading_addr = None
@@ -285,7 +287,7 @@ class Client:
         """
         try:
             duel_phase = await self.duel.duel_phase()
-        except (ReadingEnumFailed, MemoryReadError):
+        except WizWalkerMemoryError:
             return False
         else:
             return duel_phase is not DuelPhase.ended

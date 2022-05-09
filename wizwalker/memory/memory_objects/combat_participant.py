@@ -1,11 +1,11 @@
 from typing import List, Optional
 
-from wizwalker.memory.memory_object import DynamicMemoryObject, PropertyClass
+from wizwalker.memory.memory_object import PropertyClass
 from .enums import PipAquiredByEnum
-from .game_stats import DynamicGameStats
-from .spell import DynamicHand
-from .play_deck import DynamicPlayDeck
-from .spell_effect import DynamicSpellEffect
+from .game_stats import AddressedGameStats
+from .spell import AddressedHand
+from .play_deck import AddressedPlayDeck
+from .spell_effect import AddressedSpellEffect
 
 
 class CombatParticipant(PropertyClass):
@@ -244,45 +244,45 @@ class CombatParticipant(PropertyClass):
     async def write_max_hand_size(self, max_hand_size: int):
         await self.write_value_to_offset(248, max_hand_size, "int")
 
-    async def hand(self) -> Optional[DynamicHand]:
+    async def hand(self) -> Optional[AddressedHand]:
         addr = await self.read_value_from_offset(256, "long long")
 
         if addr == 0:
             return None
 
-        return DynamicHand(self.hook_handler, addr)
+        return AddressedHand(self.memory_reader, addr)
 
-    async def saved_hand(self) -> Optional[DynamicHand]:
+    async def saved_hand(self) -> Optional[AddressedHand]:
         addr = await self.read_value_from_offset(264, "long long")
 
         if addr == 0:
             return None
 
-        return DynamicHand(self.hook_handler, addr)
+        return AddressedHand(self.memory_reader, addr)
 
-    async def play_deck(self) -> Optional[DynamicPlayDeck]:
+    async def play_deck(self) -> Optional[AddressedPlayDeck]:
         addr = await self.read_value_from_offset(272, "long long")
 
         if addr == 0:
             return None
 
-        return DynamicPlayDeck(self.hook_handler, addr)
+        return AddressedPlayDeck(self.memory_reader, addr)
 
-    async def saved_play_deck(self) -> Optional[DynamicPlayDeck]:
+    async def saved_play_deck(self) -> Optional[AddressedPlayDeck]:
         addr = await self.read_value_from_offset(280, "long long")
 
         if addr == 0:
             return None
 
-        return DynamicPlayDeck(self.hook_handler, addr)
+        return AddressedPlayDeck(self.memory_reader, addr)
 
-    async def saved_game_stats(self) -> Optional[DynamicGameStats]:
+    async def saved_game_stats(self) -> Optional[AddressedGameStats]:
         addr = await self.read_value_from_offset(288, "long long")
 
         if addr == 0:
             return None
 
-        return DynamicGameStats(self.hook_handler, addr)
+        return AddressedGameStats(self.memory_reader, addr)
 
     async def saved_primary_magic_school_id(self) -> int:
         return await self.read_value_from_offset(304, "int")
@@ -292,13 +292,13 @@ class CombatParticipant(PropertyClass):
     ):
         await self.write_value_to_offset(304, saved_primary_magic_school_id, "int")
 
-    async def game_stats(self) -> Optional[DynamicGameStats]:
+    async def game_stats(self) -> Optional[AddressedGameStats]:
         addr = await self.read_value_from_offset(312, "long long")
 
         if addr == 0:
             return None
 
-        return DynamicGameStats(self.hook_handler, addr)
+        return AddressedGameStats(self.memory_reader, addr)
 
     # TODO: figure out what color is
     # async def color(self) -> class Color:
@@ -349,24 +349,24 @@ class CombatParticipant(PropertyClass):
     async def write_is_minion(self, is_minion: bool):
         await self.write_value_to_offset(396, is_minion, "bool")
 
-    async def hanging_effects(self) -> List[DynamicSpellEffect]:
+    async def hanging_effects(self) -> List[AddressedSpellEffect]:
         hanging_effects = []
         for addr in await self.read_linked_list(408):
-            hanging_effects.append(DynamicSpellEffect(self.hook_handler, addr))
+            hanging_effects.append(AddressedSpellEffect(self.memory_reader, addr))
 
         return hanging_effects
 
-    async def public_hanging_effects(self) -> List[DynamicSpellEffect]:
+    async def public_hanging_effects(self) -> List[AddressedSpellEffect]:
         hanging_effects = []
         for addr in await self.read_linked_list(424):
-            hanging_effects.append(DynamicSpellEffect(self.hook_handler, addr))
+            hanging_effects.append(AddressedSpellEffect(self.memory_reader, addr))
 
         return hanging_effects
 
-    async def aura_effects(self) -> List[DynamicSpellEffect]:
+    async def aura_effects(self) -> List[AddressedSpellEffect]:
         aura_effects = []
         for addr in await self.read_linked_list(440):
-            aura_effects.append(DynamicSpellEffect(self.hook_handler, addr))
+            aura_effects.append(AddressedSpellEffect(self.memory_reader, addr))
 
         return aura_effects
 
@@ -374,25 +374,27 @@ class CombatParticipant(PropertyClass):
     # async def shadow_effects(self) -> class SharedPointer<class ShadowSpellTrackingData>:
     #     return await self.read_value_from_offset(456, "class SharedPointer<class ShadowSpellTrackingData>")
 
-    async def shadow_spell_effects(self) -> List[DynamicSpellEffect]:
+    async def shadow_spell_effects(self) -> List[AddressedSpellEffect]:
         shadow_spell_effects = []
         for addr in await self.read_linked_list(472):
-            shadow_spell_effects.append(DynamicSpellEffect(self.hook_handler, addr))
+            shadow_spell_effects.append(AddressedSpellEffect(self.memory_reader, addr))
 
         return shadow_spell_effects
 
-    async def death_activated_effects(self) -> List[DynamicSpellEffect]:
+    async def death_activated_effects(self) -> List[AddressedSpellEffect]:
         death_activated_effects = []
         for addr in await self.read_shared_linked_list(504):
-            death_activated_effects.append(DynamicSpellEffect(self.hook_handler, addr))
+            death_activated_effects.append(
+                AddressedSpellEffect(self.memory_reader, addr)
+            )
 
         return death_activated_effects
 
     # note: these are actually DelaySpellEffects
-    async def delay_cast_effects(self) -> List[DynamicSpellEffect]:
+    async def delay_cast_effects(self) -> List[AddressedSpellEffect]:
         delay_cast_effects = []
         for addr in await self.read_linked_list(520):
-            delay_cast_effects.append(DynamicSpellEffect(self.hook_handler, addr))
+            delay_cast_effects.append(AddressedSpellEffect(self.memory_reader, addr))
 
         return delay_cast_effects
 
@@ -464,13 +466,13 @@ class CombatParticipant(PropertyClass):
     async def write_shadow_creature_level_count(self, shadow_creature_level_count: int):
         await self.write_value_to_offset(712, shadow_creature_level_count, "int")
 
-    async def intercept_effect(self) -> Optional[DynamicSpellEffect]:
+    async def intercept_effect(self) -> Optional[AddressedSpellEffect]:
         addr = await self.read_value_from_offset(736, "long long")
 
         if addr == 0:
             return None
 
-        return DynamicSpellEffect(self.hook_handler, addr)
+        return AddressedSpellEffect(self.memory_reader, addr)
 
     async def rounds_since_shadow_pip(self) -> int:
         return await self.read_value_from_offset(768, "int")
@@ -478,13 +480,13 @@ class CombatParticipant(PropertyClass):
     async def write_rounds_since_shadow_pip(self, rounds_since_shadow_pip: int):
         await self.write_value_to_offset(768, rounds_since_shadow_pip, "int")
 
-    async def polymorph_effect(self) -> Optional[DynamicSpellEffect]:
+    async def polymorph_effect(self) -> Optional[AddressedSpellEffect]:
         addr = await self.read_value_from_offset(792, "long long")
 
         if addr == 0:
             return None
 
-        return DynamicSpellEffect(self.hook_handler, addr)
+        return AddressedSpellEffect(self.memory_reader, addr)
 
     async def confused(self) -> int:
         return await self.read_value_from_offset(188, "int")
@@ -645,5 +647,5 @@ class CombatParticipant(PropertyClass):
         await self.write_value_to_offset(833, player_time_eliminated, "bool")
 
 
-class DynamicCombatParticipant(DynamicMemoryObject, CombatParticipant):
+class AddressedCombatParticipant(CombatParticipant):
     pass

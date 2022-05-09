@@ -1,8 +1,8 @@
 from typing import List
 
-from wizwalker.memory.memory_object import DynamicMemoryObject, PropertyClass
+from wizwalker.memory.memory_object import PropertyClass
 from .enums import DelayOrder, SpellSourceType
-from .spell_effect import DynamicSpellEffect
+from .spell_effect import AddressedSpellEffect
 
 
 class SpellTemplate(PropertyClass):
@@ -36,10 +36,10 @@ class SpellTemplate(PropertyClass):
     async def write_spell_base(self, spell_base: str):
         await self.write_string_to_offset(208, spell_base)
 
-    async def effects(self) -> List[DynamicSpellEffect]:
+    async def effects(self) -> List[AddressedSpellEffect]:
         effects = []
         for addr in await self.read_shared_vector(240):
-            effects.append(DynamicSpellEffect(self.hook_handler, addr))
+            effects.append(AddressedSpellEffect(self.memory_reader, addr))
 
         return effects
 
@@ -293,5 +293,5 @@ class SpellTemplate(PropertyClass):
         await self.write_value_to_offset(737, backrow_friendly, "bool")
 
 
-class DynamicSpellTemplate(DynamicMemoryObject, SpellTemplate):
+class AddressedSpellTemplate(SpellTemplate):
     pass

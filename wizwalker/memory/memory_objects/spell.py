@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from typing import List, Optional
 
-from wizwalker.memory.memory_object import DynamicMemoryObject, PropertyClass
+from wizwalker.memory.memory_object import PropertyClass
 from .enums import DelayOrder
-from .spell_template import DynamicSpellTemplate
-from .spell_effect import DynamicSpellEffect
+from .spell_template import AddressedSpellTemplate
+from .spell_effect import AddressedSpellEffect
 
 
 @dataclass
@@ -24,13 +24,13 @@ class Spell(PropertyClass):
         await self.write_value_to_offset(128, template_id, "unsigned int")
 
     # note: not defined
-    async def spell_template(self) -> Optional[DynamicSpellTemplate]:
+    async def spell_template(self) -> Optional[AddressedSpellTemplate]:
         addr = await self.read_value_from_offset(120, "long long")
 
         if addr == 0:
             return None
 
-        return DynamicSpellTemplate(self.hook_handler, addr)
+        return AddressedSpellTemplate(self.memory_reader, addr)
 
     # write spell_template
 
@@ -76,10 +76,10 @@ class Spell(PropertyClass):
     async def write_accuracy(self, accuracy: int):
         await self.write_value_to_offset(132, accuracy, "unsigned char")
 
-    async def spell_effects(self) -> List[DynamicSpellEffect]:
+    async def spell_effects(self) -> List[AddressedSpellEffect]:
         effects = []
         for addr in await self.read_shared_vector(88):
-            effects.append(DynamicSpellEffect(self.hook_handler, addr))
+            effects.append(AddressedSpellEffect(self.memory_reader, addr))
 
         return effects
 
@@ -183,11 +183,11 @@ class GraphicalSpell(Spell):
         raise NotImplementedError()
 
 
-class DynamicSpell(DynamicMemoryObject, Spell):
+class AddressedSpell(Spell):
     pass
 
 
-class DynamicGraphicalSpell(DynamicMemoryObject, GraphicalSpell):
+class AddressedGraphicalSpell(GraphicalSpell):
     pass
 
 
@@ -195,13 +195,13 @@ class Hand(PropertyClass):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 
-    async def spell_list(self) -> List[DynamicSpell]:
+    async def spell_list(self) -> List[AddressedSpell]:
         spells = []
         for addr in await self.read_shared_linked_list(72):
-            spells.append(DynamicSpell(self.hook_handler, addr))
+            spells.append(AddressedSpell(self.memory_reader, addr))
 
         return spells
 
 
-class DynamicHand(DynamicMemoryObject, Hand):
+class AddressedHand(Hand):
     pass

@@ -8,8 +8,9 @@ from click_default_group import DefaultGroup
 from loguru import logger
 
 from wizwalker import Wad, utils, ClientHandler
-from wizwalker.memory.type_tree import get_hash_map
-from wizwalker.cli import run_cmd, dump_class_to_string, dump_class_to_json
+from wizwalker.memory.type_tree import get_type_tree
+from wizwalker.memory import TextTypeDumper, JsonTypeDumper
+from wizwalker.cli import run_cmd
 
 
 logger.enable("wizwalker")
@@ -69,12 +70,18 @@ def dump():
 
 
 @dump.command()
-@click.argument("file_path", type=click.Path(dir_okay=False), default="dumped.txt")
+@click.argument("file_path", type=click.Path(dir_okay=False), default=b"\x01")
 def text(file_path):
     """
     Dump classes to file
     """
-    file_path = Path(file_path)
+    # we use b"\x01" because we can't use None
+    if file_path == b"\x01":
+        wiz_reversion = utils.get_wiz_version()
+        file_path = Path(wiz_reversion.replace(".", "_")).with_suffix(".txt")
+
+    else:
+        file_path = Path(file_path)
 
     if file_path.exists():
         if not click.confirm(f"{file_path} already exists overwrite it?", default=True):
@@ -89,33 +96,27 @@ def text(file_path):
                 return
 
             client = clients[0]
-
-            hash_map = await get_hash_map(client)
-
-            out = file_path.open("w+")
-
-            with click.progressbar(
-                list(hash_map.items()),
-                show_pos=True,
-                show_percent=False,
-                item_show_func=lambda i: i[0][:40] if i else i,
-                show_eta=False,
-            ) as items:
-                for name, node in items:
-                    out.write(await dump_class_to_string(name, node))
-                    out.write("\n")
+            type_tree = await get_type_tree(client)
+            dumper = TextTypeDumper(type_tree)
+            await dumper.dump(file_path)
 
     asyncio.run(_dump())
 
 
 @dump.command(name="json")
-@click.argument("file_path", type=click.Path(dir_okay=False), default="dumped.json")
+@click.argument("file_path", type=click.Path(dir_okay=False), default=b"\x01")
 @click.option("--indent", default=4, show_default=True, help="indent in json")
 def json_(file_path, indent):
     """
     Dump classes to file
     """
-    file_path = Path(file_path)
+    # we use b"\x01" because we can't use None
+    if file_path == b"\x01":
+        wiz_reversion = utils.get_wiz_version()
+        file_path = Path(wiz_reversion.replace(".", "_")).with_suffix(".json")
+
+    else:
+        file_path = Path(file_path)
 
     if file_path.exists():
         if not click.confirm(f"{file_path} already exists overwrite it?", default=True):
@@ -130,22 +131,9 @@ def json_(file_path, indent):
                 return
 
             client = clients[0]
-
-            hash_map = await get_hash_map(client)
-
-            res = {}
-
-            with click.progressbar(
-                list(hash_map.items()),
-                show_pos=True,
-                show_percent=False,
-                item_show_func=lambda i: i[0][:40] if i else i,
-                show_eta=False,
-            ) as items:
-                for name, node in items:
-                    res.update(await dump_class_to_json(name, node))
-
-            json.dump(res, file_path.open("w+"), indent=indent)
+            type_tree = await get_type_tree(client)
+            dumper = JsonTypeDumper(type_tree)
+            await dumper.dump(file_path, indent=indent)
 
     asyncio.run(_dump())
 
@@ -175,6 +163,7 @@ def compare(file_one, file_two):
         old_props = loaded_file_one[class_name]["properties"]
         new_props = loaded_file_two[class_name]["properties"]
 
+        # TODO: this should be a dict not a list
         for prop in new_props.keys():
             if prop not in old_props.keys():
                 click.echo(f"New property {prop} on {class_name}")

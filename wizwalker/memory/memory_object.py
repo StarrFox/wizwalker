@@ -1,37 +1,64 @@
 import struct
 from enum import Enum
-from typing import Any
+from typing import Any, Type
 
-import wizwalker
-from wizwalker.constants import type_format_dict
-from wizwalker.errors import (
-    AddressOutOfRange,
-    MemoryReadError,
-    ReadingEnumFailed,
-    WizWalkerMemoryError,
-)
-from wizwalker.utils import XYZ
-from .handler import HookHandler
+from wizwalker.errors import MemoryReadError
 from .memory_handler import MemoryHandler
 
 
-MAX_STRING = 5_000
-
-
-# TODO: add .find_instances that find instances of whichever class used it
 class MemoryObject(MemoryHandler):
     """
     Class for any represented classes from memory
     """
 
-    def __init__(self, hook_handler: HookHandler):
-        super().__init__(hook_handler.process)
-        self.hook_handler = hook_handler
+    def __init__(self, memory_reader: MemoryHandler, base_address: int = None):
+        super().__init__(memory_reader.process)
+
+        # sanity check
+        if base_address == 0:
+            raise RuntimeError(
+                f"Dynamic object {type(self).__name__} passed 0 base address."
+            )
+
+        self.memory_reader = memory_reader
+        self.base_address = base_address
 
         self._offset_lookup_cache = {}
 
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return False
+
+        if not self.base_address or other.base_address:
+            return False
+
+        return self.base_address == other.base_address
+
+    async def find_other_instances(self, *, force_module: str = None):
+        base_address = await self.read_base_address()
+        vtable_bytes = await self.read_bytes(base_address, 8)
+
+        other_instances = []
+
+        for addr in await self.pattern_scan(
+            vtable_bytes, return_multiple=True, module=force_module
+        ):
+            # don't include the base object
+            if addr == base_address:
+                continue
+
+            other_instances.append(type(self)(self.memory_reader, addr))
+
+        return other_instances
+
     async def read_base_address(self) -> int:
-        raise NotImplementedError()
+        # so subclasses can have dynamic base addresses
+        # i.e Current* objects
+        if self.base_address:
+            return self.base_address
+
+        else:
+            raise TypeError("Nonetype base_address")
 
     async def read_value_from_offset(self, offset: int, data_type: str) -> Any:
         base_address = await self.read_base_address()
@@ -70,101 +97,25 @@ class MemoryObject(MemoryHandler):
             self._offset_lookup_cache[name] = offset
             return offset
 
-    async def read_null_terminated_string(
-        self, address: int, max_size: int = 20, encoding: str = "utf-8"
-    ):
-        search_bytes = await self.read_bytes(address, max_size)
-        string_end = search_bytes.find(b"\x00")
-
-        if string_end == 0:
-            return ""
-        elif string_end == -1:
-            raise MemoryReadError(f"Couldn't read string at {address}; no end byte.")
-
-        # Don't include the 0 byte
-        string_bytes = search_bytes[:string_end]
-        return string_bytes.decode(encoding)
-
-    async def read_wide_string(self, address: int, encoding: str = "utf-16") -> str:
-        string_len = await self.read_typed(address + 16, "int")
-        if string_len == 0:
-            return ""
-
-        # wide chars take 2 bytes
-        string_len *= 2
-
-        # wide strings larger than 8 bytes are pointers
-        if string_len >= 8:
-            string_address = await self.read_typed(address, "long long")
-        else:
-            string_address = address
-
-        try:
-            return (await self.read_bytes(string_address, string_len)).decode(encoding)
-        except UnicodeDecodeError:
-            return ""
-
     async def read_wide_string_from_offset(
         self, offset: int, encoding: str = "utf-16"
     ) -> str:
         base_address = await self.read_base_address()
         return await self.read_wide_string(base_address + offset, encoding)
 
-    async def write_wide_string(
-        self, address: int, string: str, encoding: str = "utf-16"
-    ):
-        string_len_addr = address + 16
-        encoded = string.encode(encoding)
-        # len(encoded) instead of string bc it can be larger in some encodings
-        string_len = len(encoded)
-
-        current_string_len = await self.read_typed(address + 16, "int")
-
-        # we need to create a pointer to the string data
-        if string_len >= 7 > current_string_len:
-            # +1 for 0 byte after
-            pointer_address = await self.allocate(string_len + 1)
-
-            # need 0 byte for some c++ null termination standard
-            await self.write_bytes(pointer_address, encoded + b"\x00")
-            await self.write_typed(address, pointer_address, "long long")
-
-        # string is already a pointer
-        elif string_len >= 7 and current_string_len >= 8:
-            pointer_address = await self.read_typed(address, "long long")
-            await self.write_bytes(pointer_address, encoded + b"\x00")
-
-        # normal buffer string
-        else:
-            await self.write_bytes(address, encoded + b"\x00")
-
-        # take 2 bytes
-        await self.write_typed(string_len_addr, string_len // 2, "int")
-
     async def write_wide_string_to_offset(
         self, offset: int, string: str, encoding: str = "utf-16"
     ):
         base_address = await self.read_base_address()
-        await self.write_wide_string(base_address + offset, string, encoding)
+        await self.write_string(base_address + offset, string, encoding)
 
-    async def read_string(
-        self, address: int, encoding: str = "utf-8", *, sso_size: int = 16
-    ) -> str:
-        string_len = await self.read_typed(address + 16, "int")
+    async def read_wchar_from_offset(self, offset: int) -> str:
+        base_address = await self.read_base_address()
+        return await self.read_wchar(base_address + offset)
 
-        if not 1 <= string_len <= MAX_STRING:
-            return ""
-
-        # strings larger than 16 bytes are pointers
-        if string_len >= sso_size:
-            string_address = await self.read_typed(address, "long long")
-        else:
-            string_address = address
-
-        try:
-            return (await self.read_bytes(string_address, string_len)).decode(encoding)
-        except UnicodeDecodeError:
-            return ""
+    async def write_wchar_to_offset(self, offset: int, wchar: str):
+        base_address = await self.read_base_address()
+        await self.write_wchar(base_address + offset, wchar)
 
     async def read_string_from_offset(
         self, offset: int, encoding: str = "utf-8", *, sso_size: int = 16
@@ -174,224 +125,59 @@ class MemoryObject(MemoryHandler):
             base_address + offset, encoding, sso_size=sso_size
         )
 
-    async def write_string(self, address: int, string: str, encoding: str = "utf-8"):
-        string_len_addr = address + 16
-        encoded = string.encode(encoding)
-        # len(encoded) instead of string bc it can be larger in some encodings
-        string_len = len(encoded)
-
-        current_string_len = await self.read_typed(address + 16, "int")
-
-        # we need to create a pointer to the string data
-        if string_len >= 15 > current_string_len:
-            # +1 for 0 byte after
-            pointer_address = await self.allocate(string_len + 1)
-
-            # need 0 byte for some c++ null termination standard
-            await self.write_bytes(pointer_address, encoded + b"\x00")
-            await self.write_typed(address, pointer_address, "long long")
-
-        # string is already a pointer
-        elif string_len >= 15 and current_string_len >= 15:
-            pointer_address = await self.read_typed(address, "long long")
-            await self.write_bytes(pointer_address, encoded + b"\x00")
-
-        # normal buffer string
-        else:
-            await self.write_bytes(address, encoded + b"\x00")
-
-        await self.write_typed(string_len_addr, string_len, "int")
-
     async def write_string_to_offset(
         self, offset: int, string: str, encoding: str = "utf-8"
     ):
         base_address = await self.read_base_address()
         await self.write_string(base_address + offset, string, encoding)
 
-    # todo: rework this into from_offset and add read_vector which takes an address
-    async def read_vector(self, offset: int, size: int = 3, data_type: str = "float"):
-        type_str = type_format_dict[data_type].replace("<", "")
-        size_per_type = struct.calcsize(type_str)
-
+    async def read_vector_from_offset(
+        self, offset: int, size: int = 3, data_type: str = "float"
+    ):
         base_address = await self.read_base_address()
-        vector_bytes = await self.read_bytes(
-            base_address + offset, size_per_type * size
-        )
+        return await self.read_vector(base_address + offset, size, data_type)
 
-        return struct.unpack("<" + type_str * size, vector_bytes)
-
-    async def write_vector(
+    async def write_vector_to_offset(
         self, offset: int, value: tuple, size: int = 3, data_type: str = "float"
     ):
-        type_str = type_format_dict[data_type].replace("<", "")
-
         base_address = await self.read_base_address()
-        packed_bytes = struct.pack("<" + type_str * size, *value)
+        await self.write_vector(base_address + offset, value, size, data_type)
 
-        await self.write_bytes(base_address + offset, packed_bytes)
+    async def read_enum_from_offset(self, offset, enum: Type[Enum]):
+        address = await self.read_base_address()
+        return await self.read_enum(address + offset, enum)
 
-    async def read_xyz(self, offset: int) -> XYZ:
-        x, y, z = await self.read_vector(offset)
-        return XYZ(x, y, z)
+    async def write_enum_to_offset(self, offset: int, value: Enum):
+        address = await self.read_base_address()
+        await self.write_enum(address + offset, value)
 
-    async def write_xyz(self, offset: int, xyz: XYZ):
-        await self.write_vector(offset, (xyz.x, xyz.y, xyz.z))
-
-    async def read_enum(self, offset, enum: type[Enum]):
-        value = await self.read_value_from_offset(offset, "int")
-        try:
-            res = enum(value)
-        except ValueError:
-            raise ReadingEnumFailed(enum, value)
-        else:
-            return res
-
-    async def write_enum(self, offset, value: Enum):
-        await self.write_value_to_offset(offset, value.value, "int")
-
-    async def read_shared_vector(
+    async def read_shared_vector_from_offset(
         self, offset: int, *, max_size: int = 1000
     ) -> list[int]:
-        start_address = await self.read_value_from_offset(offset, "long long")
-        end_address = await self.read_value_from_offset(offset + 8, "long long")
-        size = end_address - start_address
+        address = await self.read_base_address()
+        return await self.read_shared_vector(address + offset, max_size=max_size)
 
-        element_number = size // 16
-
-        if size == 0:
-            return []
-
-        # dealloc
-        if size < 0:
-            return []
-
-        if element_number > max_size:
-            raise ValueError(f"Size was {element_number} and the max was {max_size}")
-
-        try:
-            shared_pointers_data = await self.read_bytes(start_address, size)
-        except (ValueError, AddressOutOfRange, MemoryError):
-            return []
-
-        pointers = []
-        data_pos = 0
-        # Shared pointers are 16 in length
-        for _ in range(element_number):
-            # fmt: off
-            shared_pointer_data = shared_pointers_data[data_pos: data_pos + 16]
-            # fmt: on
-
-            # first 8 bytes are the address
-            pointers.append(struct.unpack("<q", shared_pointer_data[:8])[0])
-
-            data_pos += 16
-
-        return pointers
-
-    async def read_dynamic_vector(
+    async def read_dynamic_vector_from_offset(
         self, offset: int, data_type: str = "long long"
     ) -> list[int]:
-        """
-        Read a vector that changes in size
-        """
-        start_address = await self.read_value_from_offset(offset, "long long")
-        end_address = await self.read_value_from_offset(offset + 8, "long long")
+        address = await self.read_base_address()
+        return await self.read_dynamic_vector(address + offset, data_type)
 
-        type_str = type_format_dict[data_type].replace("<", "")
-        size_per_type = struct.calcsize(type_str)
+    async def read_shared_linked_list_from_offset(self, offset: int) -> list[int]:
+        address = await self.read_base_address()
+        return await self.read_shared_linked_list(address + offset)
 
-        size = (end_address - start_address) // size_per_type
-
-        if size == 0:
-            return []
-
-        current_address = start_address
-        pointers = []
-        for _ in range(size):
-            pointers.append(await self.read_typed(current_address, data_type))
-
-            current_address += size_per_type
-
-        return pointers
-
-    async def read_inlined_vector(
-            self,
-            offset: int,
-            object_size: int,
-            object_type: type,
-    ):
-        start = await self.read_value_from_offset(offset, "unsigned long long")
-        end = await self.read_value_from_offset(offset + 16, "unsigned long long")
-
-        total_size = (end - start) // object_size
-
-        current_addr = start
-
-        res = []
-        for _ in total_size:
-            res.append(object_type(self.hook_handler, current_addr))
-            current_addr += object_size
-
-        return res
-
-    async def read_shared_linked_list(self, offset: int) -> list[int]:
-        list_addr = await self.read_value_from_offset(offset, "long long")
-
-        addrs = []
-        # TODO: ensure this is always the case
-        # skip first node
-        next_node_addr = await self.read_typed(list_addr, "long long")
-        list_size = await self.read_value_from_offset(offset + 8, "int")
-
-        for i in range(list_size):
-            addr = await self.read_typed(next_node_addr + 16, "long long")
-            addrs.append(addr)
-            next_node_addr = await self.read_typed(next_node_addr, "long long")
-
-        return addrs
-
-    async def read_linked_list(self, offset: int) -> list[int]:
-        list_addr = await self.read_value_from_offset(offset, "long long")
-        list_size = await self.read_value_from_offset(offset + 8, "int")
-
-        if list_size < 1:
-            return []
-
-        addrs = []
-        list_node = await self.read_typed(list_addr, "long long")
-        # object starts +16 from node
-        addrs.append(list_node + 16)
-        # -1 because we've already read one node
-        for _ in range(list_size - 1):
-            list_node = await self.read_typed(list_node, "long long")
-            addrs.append(list_node + 16)
-
-        return addrs
+    async def read_linked_list_from_offset(self, offset: int) -> list[int]:
+        address = await self.read_base_address()
+        return await self.read_linked_list(address + offset)
 
 
-class DynamicMemoryObject(MemoryObject):
-    def __init__(self, hook_handler: HookHandler, base_address: int):
-        super().__init__(hook_handler)
-
-        # sanity check
-        if base_address == 0:
-            raise RuntimeError(
-                f"Dynamic object {type(self).__name__} passed 0 base address."
-            )
-
-        self.base_address = base_address
-
-    async def read_base_address(self) -> int:
-        return self.base_address
-
-    def __repr__(self):
-        return f"<{type(self).__name__} {self.base_address=}>"
-
-
+# TODO: move this?
 class PropertyClass(MemoryObject):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
 
+    # todo: remove
     async def maybe_read_type_name(self) -> str:
         try:
             return await self.read_type_name()
@@ -424,51 +210,3 @@ class PropertyClass(MemoryObject):
         # some of the class names can be quite long
         # i.e ClientShadowCreatureLevelTransitionCinematicAction
         return await self.read_null_terminated_string(type_name_addr, 60)
-
-
-class PropertyContainer:
-    def __init__(self):
-        pass
-
-    def __getattribute__(self, item: str):
-        try:
-            return super().__getattribute__(item)
-        except AttributeError:
-            pass
-
-
-class RawMemoryObject(DynamicMemoryObject):
-    _prop_instances = {}
-
-    def __init__(
-        self,
-        hook_handler: HookHandler,
-        base_address: int,
-        hash_data: "wizwalker.memory.hashmap.NodeData",
-    ):
-        super().__init__(hook_handler, base_address)
-        self.hash_data = hash_data
-
-    async def _generate_property_map(self):
-        pass
-
-    async def _get_prop_map(self) -> dict:
-        return {}
-
-    async def _get_prop(self, name: str):
-        prop_map = await self._get_prop_map()
-
-        if name not in prop_map.keys():
-            class_name = await self.name()
-            raise AttributeError(
-                f"MemoryObject '{class_name}' has no attribute '{name}'"
-            )
-
-        return await prop_map[name]
-
-    async def name(self) -> str:
-        return await self.hash_data.name()
-
-    async def get_bases(self) -> list[str]:
-        bases = await self.hash_data.get_bases()
-        return [await base.name() for base in bases]

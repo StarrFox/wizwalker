@@ -1,7 +1,7 @@
 from typing import Optional
 
-from wizwalker.memory.memory_object import MemoryObject, DynamicMemoryObject
-from .spell import DynamicSpell
+from wizwalker.memory.memory_object import MemoryObject
+from .spell import AddressedSpell
 
 
 # TODO: document
@@ -15,13 +15,13 @@ class CombatAction(MemoryObject):
     async def write_spell_caster(self, spell_caster: int):
         await self.write_value_to_offset(72, spell_caster, "int")
 
-    async def spell(self) -> Optional[DynamicSpell]:
+    async def spell(self) -> Optional[AddressedSpell]:
         addr = await self.read_value_from_offset(96, "long long")
 
         if addr == 0:
             return None
 
-        return DynamicSpell(self.hook_handler, addr)
+        return AddressedSpell(self.memory_reader, addr)
 
     async def spell_hits(self) -> int:
         return await self.read_value_from_offset(112, "char")
@@ -183,5 +183,5 @@ class CombatAction(MemoryObject):
     #     return await self.read_value_from_offset(352, "class TargetCritHit")
 
 
-class DynamicCombatAction(DynamicMemoryObject, CombatAction):
+class AddressedCombatAction(CombatAction):
     pass

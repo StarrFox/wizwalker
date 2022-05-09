@@ -95,15 +95,6 @@ class MemoryWriteError(WizWalkerMemoryError):
         super().__init__(f"Unable to write memory at address {address}.")
 
 
-class ReadingEnumFailed(WizWalkerMemoryError):
-    """
-    Raised when the value passed to an enum is not valid
-    """
-
-    def __init__(self, enum, value):
-        super().__init__(f"Error reading enum: {value} is not a vaid {enum}.")
-
-
 class HookNotReady(WizWalkerMemoryError):
     """
     Raised when trying to use a value from a hook before hook has run
