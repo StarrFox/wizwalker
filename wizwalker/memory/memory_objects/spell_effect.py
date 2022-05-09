@@ -1,13 +1,8 @@
-from typing import List
-
 from wizwalker.memory.memory_object import PropertyClass
-from .enums import SpellEffects, EffectTarget
+from .enums import SpellEffects, EffectTarget, HangingDisposition
 
 
 class SpellEffect(PropertyClass):
-    async def read_base_address(self) -> int:
-        raise NotImplementedError()
-
     async def effect_type(self) -> SpellEffects:
         return await self.read_enum(72, SpellEffects)
 
@@ -134,7 +129,7 @@ class SpellEffect(PropertyClass):
 
     async def maybe_effect_list(
         self, *, check_type: bool = False
-    ) -> List["AddressedSpellEffect"]:
+    ) -> list["SpellEffect"]:
         if check_type:
             type_name = await self.maybe_read_type_name()
             if type_name not in ("RandomSpellEffect", "RandomPerTargetSpellEffect", "VariableSpellEffect"):
@@ -146,10 +141,6 @@ class SpellEffect(PropertyClass):
         effects = []
 
         for addr in await self.read_shared_linked_list(224):
-            effects.append(AddressedSpellEffect(self.memory_reader, addr))
+            effects.append(SpellEffect(self.memory_reader, addr))
 
         return effects
-
-
-class AddressedSpellEffect(SpellEffect):
-    pass

@@ -1,21 +1,16 @@
-from typing import List
-
 from wizwalker.memory.memory_object import PropertyClass
 from .enums import ObjectType
-from .behavior_template import AddressedBehaviorTemplate
+from .behavior_template import BehaviorTemplate
 
 
 class WizGameObjectTemplate(PropertyClass):
-    async def read_base_address(self) -> int:
-        raise NotImplementedError()
-
     # TODO: add all behavior template types
-    async def behaviors(self) -> List[AddressedBehaviorTemplate]:
+    async def behaviors(self) -> list[BehaviorTemplate]:
         behaviors = []
         for addr in await self.read_dynamic_vector(72):
             # they sometimes set these to 0
             if addr != 0:
-                behaviors.append(AddressedBehaviorTemplate(self.memory_reader, addr))
+                behaviors.append(BehaviorTemplate(self.memory_reader, addr))
 
         return behaviors
 
@@ -120,7 +115,3 @@ class WizGameObjectTemplate(PropertyClass):
 
     # async def leash_offset_override(self) -> class SharedPointer<class LeashOffsetOverride>:
     #     return await self.read_value_from_offset(528, "class SharedPointer<class LeashOffsetOverride>")
-
-
-class AddressedWizGameObjectTemplate(WizGameObjectTemplate):
-    pass

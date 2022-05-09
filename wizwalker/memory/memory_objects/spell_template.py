@@ -1,14 +1,9 @@
-from typing import List
-
 from wizwalker.memory.memory_object import PropertyClass
 from .enums import DelayOrder, SpellSourceType
-from .spell_effect import AddressedSpellEffect
+from .spell_effect import SpellEffect
 
 
 class SpellTemplate(PropertyClass):
-    async def read_base_address(self) -> int:
-        raise NotImplementedError()
-
     # async def behaviors(self) -> class BehaviorTemplate*:
     #     return await self.read_value_from_offset(72, "class BehaviorTemplate*")
 
@@ -36,10 +31,10 @@ class SpellTemplate(PropertyClass):
     async def write_spell_base(self, spell_base: str):
         await self.write_string_to_offset(208, spell_base)
 
-    async def effects(self) -> List[AddressedSpellEffect]:
+    async def effects(self) -> list[SpellEffect]:
         effects = []
         for addr in await self.read_shared_vector(240):
-            effects.append(AddressedSpellEffect(self.memory_reader, addr))
+            effects.append(SpellEffect(self.memory_reader, addr))
 
         return effects
 
@@ -291,7 +286,3 @@ class SpellTemplate(PropertyClass):
 
     async def write_backrow_friendly(self, backrow_friendly: bool):
         await self.write_value_to_offset(737, backrow_friendly, "bool")
-
-
-class AddressedSpellTemplate(SpellTemplate):
-    pass

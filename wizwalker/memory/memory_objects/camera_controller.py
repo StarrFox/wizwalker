@@ -1,17 +1,13 @@
 from typing import Optional, Union
 
 from wizwalker import XYZ
-from wizwalker.memory.memory_object import MemoryObject, DynamicMemoryObject
+from wizwalker.memory.memory_object import PropertyClass
 
-from .client_object import DynamicClientObject, ClientObject
+from .client_object import ClientObject
 
 
-class CameraController(MemoryObject):
-    async def read_base_address(self) -> int:
-        raise NotImplementedError()
-
-    # TODO: camera 0x88 offset
-
+# TODO: camera 0x88 offset
+class CameraController(PropertyClass):
     async def position(self) -> XYZ:
         return await self.read_xyz(108)
 
@@ -38,21 +34,17 @@ class CameraController(MemoryObject):
 
 
 class FreeCameraController(CameraController):
-    async def read_base_address(self) -> int:
-        raise NotImplementedError()
+    pass
 
 
 class ElasticCameraController(CameraController):
-    async def read_base_address(self) -> int:
-        raise NotImplementedError()
-
-    async def attached_client_object(self) -> Optional[DynamicClientObject]:
+    async def attached_client_object(self) -> Optional[ClientObject]:
         addr = await self.read_value_from_offset(264, "unsigned long long")
 
         if addr == 0:
             return None
 
-        return DynamicClientObject(self.hook_handler, addr)
+        return ClientObject(self.memory_reader, addr)
 
     async def write_attached_client_object(self, attached_client_object: Union[ClientObject, int]):
         if isinstance(attached_client_object, ClientObject):
@@ -95,15 +87,3 @@ class ElasticCameraController(CameraController):
 
     async def write_min_distance(self, min_distance: float):
         await self.write_value_to_offset(322, min_distance, "float")
-
-
-class DynamicCameraController(DynamicMemoryObject, CameraController):
-    pass
-
-
-class DynamicFreeCameraController(DynamicMemoryObject, FreeCameraController):
-    pass
-
-
-class DynamicElasticCameraController(DynamicMemoryObject, ElasticCameraController):
-    pass

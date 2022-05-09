@@ -3,9 +3,6 @@ from .enums import PlayerStatus
 
 
 class BuddyEntry(PropertyClass):
-    async def read_base_address(self) -> int:
-        raise NotImplementedError
-
     # note: not defined
     async def gender(self) -> bool:
         """
@@ -15,50 +12,51 @@ class BuddyEntry(PropertyClass):
         name_tuple = await self.name_tuple()
         return name_tuple[0] == 128
 
-    # note: actual .name is name_tuple
-    async def name(self) -> str:
-        """
-        Name of this buddy
-        """
-        cache_handler = self.memory_reader.client.cache_handler
-        langcode_prefix = "CharacterNames_"
-
-        gender, first, middle, last = await self.name_tuple()
-
-        if gender == 128:
-            first_mid = "First_Girl_"
-
-        else:
-            first_mid = "First_Boy_"
-
-        first_name = await cache_handler.get_langcode_name(
-            langcode_prefix + first_mid + str(first)
-        )
-
-        if middle != 0:
-            # they have a typo in the lang file for character names
-            # so we need to account for it here
-            if middle < 49:
-                middle_name = await cache_handler.get_langcode_name(
-                    langcode_prefix + "Middle_" + str(middle - 1)
-                )
-            else:
-                middle_name = await cache_handler.get_langcode_name(
-                    langcode_prefix + "Middle_" + str(middle)
-                )
-        else:
-            # 0 is (empty) name
-            middle_name = ""
-
-        if last != 0:
-            last_name = await cache_handler.get_langcode_name(
-                langcode_prefix + "Last_" + str(last - 1)
-            )
-        else:
-            # 0 is (empty) name
-            last_name = ""
-
-        return f"{first_name} {middle_name}{last_name}"
+    # TODO: what even is this
+    # # note: actual .name is name_tuple
+    # async def name(self) -> str:
+    #     """
+    #     Name of this buddy
+    #     """
+    #     cache_handler = self.memory_reader.client.cache_handler
+    #     langcode_prefix = "CharacterNames_"
+    #
+    #     gender, first, middle, last = await self.name_tuple()
+    #
+    #     if gender == 128:
+    #         first_mid = "First_Girl_"
+    #
+    #     else:
+    #         first_mid = "First_Boy_"
+    #
+    #     first_name = await cache_handler.get_langcode_name(
+    #         langcode_prefix + first_mid + str(first)
+    #     )
+    #
+    #     if middle != 0:
+    #         # they have a typo in the lang file for character names
+    #         # so we need to account for it here
+    #         if middle < 49:
+    #             middle_name = await cache_handler.get_langcode_name(
+    #                 langcode_prefix + "Middle_" + str(middle - 1)
+    #             )
+    #         else:
+    #             middle_name = await cache_handler.get_langcode_name(
+    #                 langcode_prefix + "Middle_" + str(middle)
+    #             )
+    #     else:
+    #         # 0 is (empty) name
+    #         middle_name = ""
+    #
+    #     if last != 0:
+    #         last_name = await cache_handler.get_langcode_name(
+    #             langcode_prefix + "Last_" + str(last - 1)
+    #         )
+    #     else:
+    #         # 0 is (empty) name
+    #         last_name = ""
+    #
+    #     return f"{first_name} {middle_name}{last_name}"
 
     # note: this is actually .name defined
     async def name_tuple(self) -> tuple:

@@ -1,27 +1,24 @@
 from typing import Optional
 
 from wizwalker.memory.memory_object import MemoryObject
-from .spell import AddressedSpell
+from .spell import Spell
 
 
 # TODO: document
 class CombatAction(MemoryObject):
-    async def read_base_address(self) -> int:
-        raise NotImplementedError()
-
     async def spell_caster(self) -> int:
         return await self.read_value_from_offset(72, "int")
 
     async def write_spell_caster(self, spell_caster: int):
         await self.write_value_to_offset(72, spell_caster, "int")
 
-    async def spell(self) -> Optional[AddressedSpell]:
+    async def spell(self) -> Optional[Spell]:
         addr = await self.read_value_from_offset(96, "long long")
 
         if addr == 0:
             return None
 
-        return AddressedSpell(self.memory_reader, addr)
+        return Spell(self.memory_reader, addr)
 
     async def spell_hits(self) -> int:
         return await self.read_value_from_offset(112, "char")
@@ -181,7 +178,3 @@ class CombatAction(MemoryObject):
 
     # async def crit_hit_list(self) -> class TargetCritHit:
     #     return await self.read_value_from_offset(352, "class TargetCritHit")
-
-
-class AddressedCombatAction(CombatAction):
-    pass

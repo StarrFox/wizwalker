@@ -1,4 +1,4 @@
-from .handler import HookHandler
+from .hook_handler import HookHandler
 from .hooks import *
 from . import type_tree
 from .memory_handler import MemoryHandler

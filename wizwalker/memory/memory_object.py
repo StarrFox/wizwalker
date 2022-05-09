@@ -14,12 +14,6 @@ class MemoryObject(MemoryHandler):
     def __init__(self, memory_reader: MemoryHandler, base_address: int = None):
         super().__init__(memory_reader.process)
 
-        # sanity check
-        if base_address == 0:
-            raise RuntimeError(
-                f"Dynamic object {type(self).__name__} passed 0 base address."
-            )
-
         self.memory_reader = memory_reader
         self.base_address = base_address
 
@@ -77,7 +71,7 @@ class MemoryObject(MemoryHandler):
         try:
             addr = await self.pattern_scan(pattern, module="WizardGraphicalClient.exe")
             return await self.read_typed(addr + instruction_length, "unsigned int")
-        except (PatternFailed, PatternMultipleResults) as exc:
+        except MemoryReadError as exc:
             if static_backup is not None:
                 return static_backup
 
@@ -172,11 +166,7 @@ class MemoryObject(MemoryHandler):
         return await self.read_linked_list(address + offset)
 
 
-# TODO: move this?
 class PropertyClass(MemoryObject):
-    async def read_base_address(self) -> int:
-        raise NotImplementedError()
-
     # todo: remove
     async def maybe_read_type_name(self) -> str:
         try:

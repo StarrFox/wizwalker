@@ -2,24 +2,21 @@ from typing import Optional
 
 from wizwalker.utils import XYZ
 from wizwalker.memory.memory_object import PropertyClass
-from wizwalker.memory import memory_objects
+from .client_object import ClientObject
+
 
 class ActorBody(PropertyClass):
     """
     Base class for ActorBody
     """
-
-    async def read_base_address(self) -> int:
-        raise NotImplementedError()
-
     # note: internal
-    async def parent_client_object(self) -> Optional["memory_objects.DynamicClientObject"]:
+    async def parent_client_object(self) -> Optional[ClientObject]:
         addr = await self.read_value_from_offset(72, "unsigned long long")
 
         if addr == 0:
             return None
 
-        return memory_objects.DynamicClientObject(self.hook_handler, addr)
+        return ClientObject(self.memory_reader, addr)
 
     async def position(self) -> XYZ:
         """
@@ -149,10 +146,10 @@ class ActorBody(PropertyClass):
         await self.write_value_to_offset(136, state, "bool")
 
 
-class CurrentActorBody(ActorBody):
-    """
-    Actor body tied to the player hook
-    """
-
-    async def read_base_address(self) -> int:
-        return await self.memory_reader.read_current_player_base()
+# class CurrentActorBody(ActorBody):
+#     """
+#     Actor body tied to the player hook
+#     """
+#
+#     async def read_base_address(self) -> int:
+#         return await self.memory_reader.read_current_player_base()

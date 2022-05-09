@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Optional
 
 from wizwalker.memory.memory_object import PropertyClass
 from .enums import DelayOrder
-from .spell_template import AddressedSpellTemplate
-from .spell_effect import AddressedSpellEffect
+from .spell_template import SpellTemplate
+from .spell_effect import SpellEffect
 
 
 @dataclass
@@ -14,9 +14,6 @@ class RankStruct:
 
 
 class Spell(PropertyClass):
-    async def read_base_address(self) -> int:
-        raise NotImplementedError()
-
     async def template_id(self) -> int:
         return await self.read_value_from_offset(128, "unsigned int")
 
@@ -24,13 +21,13 @@ class Spell(PropertyClass):
         await self.write_value_to_offset(128, template_id, "unsigned int")
 
     # note: not defined
-    async def spell_template(self) -> Optional[AddressedSpellTemplate]:
+    async def spell_template(self) -> Optional[SpellTemplate]:
         addr = await self.read_value_from_offset(120, "long long")
 
         if addr == 0:
             return None
 
-        return AddressedSpellTemplate(self.memory_reader, addr)
+        return SpellTemplate(self.memory_reader, addr)
 
     # write spell_template
 
@@ -76,10 +73,10 @@ class Spell(PropertyClass):
     async def write_accuracy(self, accuracy: int):
         await self.write_value_to_offset(132, accuracy, "unsigned char")
 
-    async def spell_effects(self) -> List[AddressedSpellEffect]:
+    async def spell_effects(self) -> list[SpellEffect]:
         effects = []
         for addr in await self.read_shared_vector(88):
-            effects.append(AddressedSpellEffect(self.memory_reader, addr))
+            effects.append(SpellEffect(self.memory_reader, addr))
 
         return effects
 
@@ -179,29 +176,13 @@ class Spell(PropertyClass):
 
 
 class GraphicalSpell(Spell):
-    async def read_base_address(self) -> int:
-        raise NotImplementedError()
-
-
-class AddressedSpell(Spell):
-    pass
-
-
-class AddressedGraphicalSpell(GraphicalSpell):
     pass
 
 
 class Hand(PropertyClass):
-    async def read_base_address(self) -> int:
-        raise NotImplementedError()
-
-    async def spell_list(self) -> List[AddressedSpell]:
+    async def spell_list(self) -> list[Spell]:
         spells = []
         for addr in await self.read_shared_linked_list(72):
-            spells.append(AddressedSpell(self.memory_reader, addr))
+            spells.append(Spell(self.memory_reader, addr))
 
         return spells
-
-
-class AddressedHand(Hand):
-    pass

@@ -1,17 +1,16 @@
-import struct
-from typing import Callable, List, Optional
+from typing import Callable, Optional
 from contextlib import suppress
 
 from loguru import logger
 
 from wizwalker.memory.memory_object import PropertyClass
 from .enums import WindowFlags, WindowStyle
-from .spell import AddressedGraphicalSpell
-from .combat_participant import AddressedCombatParticipant
+from .spell import GraphicalSpell
+from .combat_participant import CombatParticipant
 from wizwalker import AddressOutOfRange, MemoryReadError, Rectangle, utils
 
 
-# TODO: Window.click
+# TODO: Window.click?
 class Window(PropertyClass):
     async def read_base_address(self) -> int:
         raise NotImplementedError()
@@ -24,28 +23,29 @@ class Window(PropertyClass):
         for child in await utils.wait_for_non_error(self.children):
             await child.debug_print_ui_tree(depth + 1)
 
-    async def debug_paint(self):
-        rect = await self.scale_to_client()
-        rect.paint_on_screen(self.memory_reader.client.window_handle)
+    # TODO: figure out solution
+    # async def debug_paint(self):
+    #     rect = await self.scale_to_client()
+    #     rect.paint_on_screen(self.memory_reader.client.window_handle)
+    #
+    # async def scale_to_client(self):
+    #     rect = await self.window_rectangle()
+    #
+    #     parent_rects = []
+    #     for parent in await self.get_parents():
+    #         parent_rects.append(await parent.window_rectangle())
+    #
+    #     ui_scale = await self.memory_reader.client.render_context.ui_scale()
+    #
+    #     return rect.scale_to_client(parent_rects, ui_scale)
 
-    async def scale_to_client(self):
-        rect = await self.window_rectangle()
-
-        parent_rects = []
-        for parent in await self.get_parents():
-            parent_rects.append(await parent.window_rectangle())
-
-        ui_scale = await self.memory_reader.client.render_context.ui_scale()
-
-        return rect.scale_to_client(parent_rects, ui_scale)
-
-    async def get_windows_with_type(self, type_name: str) -> list["AddressedWindow"]:
+    async def get_windows_with_type(self, type_name: str) -> list["Window"]:
         async def _pred(window):
             return await window.maybe_read_type_name() == type_name
 
         return await self.get_windows_with_predicate(_pred)
 
-    async def get_windows_with_name(self, name: str) -> List["AddressedWindow"]:
+    async def get_windows_with_name(self, name: str) -> list["Window"]:
         async def _pred(window):
             return await window.name() == name
 
@@ -61,7 +61,7 @@ class Window(PropertyClass):
 
     async def get_windows_with_predicate(
         self, predicate: Callable
-    ) -> List["AddressedWindow"]:
+    ) -> list["Window"]:
         """
         async def my_pred(window) -> bool:
             if await window.name() == "friend's list":
@@ -88,7 +88,7 @@ class Window(PropertyClass):
 
         return windows
 
-    async def get_parents(self) -> list["AddressedWindow"]:
+    async def get_parents(self) -> list["Window"]:
         parents = []
         current = self
         while (parent := await current.parent()) is not None:
@@ -97,7 +97,7 @@ class Window(PropertyClass):
 
         return parents
 
-    async def get_child_by_name(self, name: str) -> "AddressedWindow":
+    async def get_child_by_name(self, name: str) -> "Window":
         children = await self.children()
         for child in children:
             if await child.name() == name:
@@ -111,7 +111,7 @@ class Window(PropertyClass):
     # This is here because checking in .children slows down window filtering majorly
     async def maybe_graphical_spell(
         self, *, check_type: bool = False
-    ) -> Optional[AddressedGraphicalSpell]:
+    ) -> Optional[GraphicalSpell]:
         if check_type:
             type_name = await self.maybe_read_type_name()
             if type_name != "SpellCheckBox":
@@ -122,7 +122,7 @@ class Window(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedGraphicalSpell(self.memory_reader, addr)
+        return GraphicalSpell(self.memory_reader, addr)
 
     # see maybe_graphical_spell
     # note: not defined
@@ -137,7 +137,7 @@ class Window(PropertyClass):
     # See maybe_graphical_spell
     async def maybe_combat_participant(
         self, *, check_type: bool = False
-    ) -> Optional[AddressedCombatParticipant]:
+    ) -> Optional[CombatParticipant]:
         if check_type:
             type_name = await self.maybe_read_type_name()
             if type_name != "CombatantDataControl":
@@ -150,7 +150,7 @@ class Window(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedCombatParticipant(self.memory_reader, addr)
+        return CombatParticipant(self.memory_reader, addr)
 
     # See maybe_graphical_spell
     async def maybe_text(self, *, check_type: bool = False) -> str:
@@ -170,7 +170,7 @@ class Window(PropertyClass):
     async def write_name(self, name: str):
         await self.write_string_to_offset(80, name)
 
-    async def children(self) -> List["AddressedWindow"]:
+    async def children(self) -> list["Window"]:
         try:
             pointers = await self.read_shared_vector(112)
         except (ValueError, MemoryReadError):
@@ -183,17 +183,17 @@ class Window(PropertyClass):
                 logger.error("0 address while reading children")
 
             else:
-                windows.append(AddressedWindow(self.memory_reader, addr))
+                windows.append(Window(self.memory_reader, addr))
 
         return windows
 
-    async def parent(self) -> Optional["AddressedWindow"]:
+    async def parent(self) -> Optional["Window"]:
         addr = await self.read_value_from_offset(136, "long long")
         # the root window has no parents
         if addr == 0:
             return None
 
-        return AddressedWindow(self.memory_reader, addr)
+        return Window(self.memory_reader, addr)
 
     async def style(self) -> WindowStyle:
         style = await self.read_value_from_offset(152, "long")
@@ -276,99 +276,83 @@ class Window(PropertyClass):
     async def write_parent_offset(self, parent_offset: tuple):
         await self.write_vector(176, parent_offset, 4, "int")
 
-
-class AddressedWindow(Window):
-    pass
-
-
-class DeckListControlSpellEntry():
-    async def graphical_spell(self) -> Optional[DynamicGraphicalSpell]:
-        addr = await self.read_value_from_offset(0, "unsigned long long")
-
-        if addr == 0:
-            return None
-
-        return AddressedGraphicalSpell(self.hook_handler, addr)
-
-
-class SpellListControlSpellEntry(DynamicMemoryObject):
-    async def graphical_spell(self) -> Optional[DynamicGraphicalSpell]:
-        addr = await self.read_value_from_offset(0, "unsigned long long")
-
-        if addr == 0:
-            return None
-
-        return DynamicGraphicalSpell(self.hook_handler, addr)
-
-    async def max_copies(self) -> int:
-        return await self.read_value_from_offset(0x10, "unsigned int")
-
-    async def current_copies(self) -> int:
-        return await self.read_value_from_offset(0x14, "unsigned int")
-
-    async def _read_vector(self, address: int, size: int = 3, data_type: str = "float"):
-        type_str = type_format_dict[data_type].replace("<", "")
-        size_per_type = struct.calcsize(type_str)
-
-        vector_bytes = await self.read_bytes(
-            address, size_per_type * size
-        )
-
-        return struct.unpack("<" + type_str * size, vector_bytes)
-
-    async def window_rectangle(self) -> Rectangle:
-        rect_addr = await self.read_value_from_offset(0x18, "unsigned long long")
-
-        rect = await self._read_vector(rect_addr, 4, "int")
-        return Rectangle(*rect)
-
-
-class DeckListControl(Window):
-    async def read_base_address(self) -> int:
-        raise NotImplementedError()
-
-    async def spell_entries(self) -> List[DeckListControlSpellEntry]:
-        return await self.read_inlined_vector(0x280, 0x28, DeckListControlSpellEntry)
-
-    async def card_size_horizontal(self) -> int:
-        return await self.read_value_from_offset(0x2A4, "unsigned int")
-
-    async def card_size_vertical(self) -> int:
-        return await self.read_value_from_offset(0x2A8, "unsigned int")
-
-    async def card_spacing(self) -> int:
-        return await self.read_value_from_offset(0x2AC, "unsigned int")
-
-    async def card_spacing_vertical_adjust(self) -> int:
-        return await self.read_value_from_offset(0x2B0, "unsigned int")
-
-
-class SpellListControl(Window):
-    async def read_base_address(self) -> int:
-        raise NotImplementedError()
-
-    async def spell_entries(self) -> List[SpellListControlSpellEntry]:
-        return await self.read_inlined_vector(0x278, 0x20, SpellListControlSpellEntry)
-
-    async def card_size_horizontal(self) -> int:
-        return await self.read_value_from_offset(0x2C4, "unsigned int")
-
-    async def card_size_vertical(self) -> int:
-        return await self.read_value_from_offset(0x2C8, "unsigned int")
+# TODO: are these the deck building classes?
+# class DeckListControlSpellEntry(PropertyClass):
+#     async def graphical_spell(self) -> Optional[GraphicalSpell]:
+#         addr = await self.read_value_from_offset(0, "unsigned long long")
+#
+#         if addr == 0:
+#             return None
+#
+#         return GraphicalSpell(self.memory_handler, addr)
+#
+#
+# class SpellListControlSpellEntry(DynamicMemoryObject):
+#     async def graphical_spell(self) -> Optional[DynamicGraphicalSpell]:
+#         addr = await self.read_value_from_offset(0, "unsigned long long")
+#
+#         if addr == 0:
+#             return None
+#
+#         return DynamicGraphicalSpell(self.hook_handler, addr)
+#
+#     async def max_copies(self) -> int:
+#         return await self.read_value_from_offset(0x10, "unsigned int")
+#
+#     async def current_copies(self) -> int:
+#         return await self.read_value_from_offset(0x14, "unsigned int")
+#
+#     async def _read_vector(self, address: int, size: int = 3, data_type: str = "float"):
+#         type_str = type_format_dict[data_type].replace("<", "")
+#         size_per_type = struct.calcsize(type_str)
+#
+#         vector_bytes = await self.read_bytes(
+#             address, size_per_type * size
+#         )
+#
+#         return struct.unpack("<" + type_str * size, vector_bytes)
+#
+#     async def window_rectangle(self) -> Rectangle:
+#         rect_addr = await self.read_value_from_offset(0x18, "unsigned long long")
+#
+#         rect = await self._read_vector(rect_addr, 4, "int")
+#         return Rectangle(*rect)
+#
+#
+# class DeckListControl(Window):
+#     async def read_base_address(self) -> int:
+#         raise NotImplementedError()
+#
+#     async def spell_entries(self) -> list[DeckListControlSpellEntry]:
+#         return await self.read_inlined_vector(0x280, 0x28, DeckListControlSpellEntry)
+#
+#     async def card_size_horizontal(self) -> int:
+#         return await self.read_value_from_offset(0x2A4, "unsigned int")
+#
+#     async def card_size_vertical(self) -> int:
+#         return await self.read_value_from_offset(0x2A8, "unsigned int")
+#
+#     async def card_spacing(self) -> int:
+#         return await self.read_value_from_offset(0x2AC, "unsigned int")
+#
+#     async def card_spacing_vertical_adjust(self) -> int:
+#         return await self.read_value_from_offset(0x2B0, "unsigned int")
+#
+#
+# class SpellListControl(Window):
+#     async def read_base_address(self) -> int:
+#         raise NotImplementedError()
+#
+#     async def spell_entries(self) -> list[SpellListControlSpellEntry]:
+#         return await self.read_inlined_vector(0x278, 0x20, SpellListControlSpellEntry)
+#
+#     async def card_size_horizontal(self) -> int:
+#         return await self.read_value_from_offset(0x2C4, "unsigned int")
+#
+#     async def card_size_vertical(self) -> int:
+#         return await self.read_value_from_offset(0x2C8, "unsigned int")
 
 
-class DynamicWindow(DynamicMemoryObject, Window):
-    pass
-
-
-class DynamicDeckListControl(DynamicWindow, DeckListControl):
-    pass
-
-
-class DynamicSpellListControl(DynamicWindow, SpellListControl):
-    pass
-
-
-class CurrentRootWindow(Window):
-    async def read_base_address(self) -> int:
-        return await self.memory_reader.read_current_root_window_base()
+# class CurrentRootWindow(Window):
+#     async def read_base_address(self) -> int:
+#         return await self.memory_reader.read_current_root_window_base()

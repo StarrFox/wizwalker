@@ -1,23 +1,19 @@
-from typing import List, Optional
+from typing import Optional
 
 from wizwalker import XYZ
 from wizwalker.memory.memory_object import PropertyClass
-from .game_stats import AddressedGameStats
-from .game_object_template import AddressedWizGameObjectTemplate
-from .behavior_instance import AddressedBehaviorInstance
-from .client_zone import AddressedClientZone
+from .game_stats import GameStats
+from .game_object_template import WizGameObjectTemplate
+from .behavior_instance import BehaviorInstance
+from .client_zone import ClientZone
+from .actor_body import ActorBody
 
 
 class ClientObject(PropertyClass):
     """
     Base class for ClientObjects
     """
-
-    async def read_base_address(self) -> int:
-        raise NotImplementedError()
-
-    # TODO: test if this is actually active behaviors
-    async def inactive_behaviors(self) -> List[AddressedBehaviorInstance]:
+    async def inactive_behaviors(self) -> list[BehaviorInstance]:
         """
         This client object's inactive behaviors
 
@@ -27,12 +23,12 @@ class ClientObject(PropertyClass):
         behaviors = []
         for addr in await self.read_shared_vector(224):
             if addr != 0:
-                behaviors.append(AddressedBehaviorInstance(self.memory_reader, addr))
+                behaviors.append(BehaviorInstance(self.memory_reader, addr))
 
         return behaviors
 
     # helper method
-    async def actor_body(self) -> Optional[DynamicActorBody]:
+    async def actor_body(self) -> Optional[ActorBody]:
         for behavior in await self.inactive_behaviors():
             if await behavior.behavior_name() == "AnimationBehavior":
                 addr = await behavior.read_value_from_offset(0x70, "unsigned long long")
@@ -40,7 +36,7 @@ class ClientObject(PropertyClass):
                 if addr == 0:
                     return None
 
-                return AddressedActorBody(self.hook_handler, addr)
+                return ActorBody(self.memory_reader, addr)
 
     # helper method
     async def object_name(self) -> Optional[str]:
@@ -54,23 +50,24 @@ class ClientObject(PropertyClass):
         # explict None
         return None
 
-    # helper method
-    async def display_name(self) -> Optional[str]:
-        """
-        This client object's display name if it has one
-        """
-        object_template = await self.object_template()
-        if object_template is not None:
-            display_name_code = await object_template.display_name()
-            # this is sometimes just a blank string
-            if display_name_code:
-                return await self.hook_handler.client.cache_handler.get_langcode_name(display_name_code)
-
-        # explict None
-        return None
+    # TODO: come up with an answer for this
+    # # helper method
+    # async def display_name(self) -> Optional[str]:
+    #     """
+    #     This client object's display name if it has one
+    #     """
+    #     object_template = await self.object_template()
+    #     if object_template is not None:
+    #         display_name_code = await object_template.display_name()
+    #         # this is sometimes just a blank string
+    #         if display_name_code:
+    #             return await self.hook_handler.client.cache_handler.get_langcode_name(display_name_code)
+    #
+    #     # explict None
+    #     return None
 
     # note: not defined
-    async def parent(self) -> Optional["AddressedClientObject"]:
+    async def parent(self) -> Optional["ClientObject"]:
         """
         This client object's parent or None if it is the root client object
 
@@ -82,10 +79,10 @@ class ClientObject(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedClientObject(self.memory_reader, addr)
+        return ClientObject(self.memory_reader, addr)
 
     # note: not defined
-    async def children(self) -> list["AddressedClientObject"]:
+    async def children(self) -> list["ClientObject"]:
         """
         This client object's child client objects
 
@@ -94,12 +91,12 @@ class ClientObject(PropertyClass):
         """
         children = []
         for addr in await self.read_shared_vector(384):
-            children.append(AddressedClientObject(self.memory_reader, addr))
+            children.append(ClientObject(self.memory_reader, addr))
 
         return children
 
     # note: not defined
-    async def client_zone(self) -> Optional["AddressedClientZone"]:
+    async def client_zone(self) -> Optional["ClientZone"]:
         """
         This client object's client zone or None
 
@@ -111,10 +108,10 @@ class ClientObject(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedClientZone(self.memory_reader, addr)
+        return ClientZone(self.memory_reader, addr)
 
     # note: not defined
-    async def object_template(self) -> Optional[AddressedWizGameObjectTemplate]:
+    async def object_template(self) -> Optional[WizGameObjectTemplate]:
         """
         This client object's template object
 
@@ -126,7 +123,7 @@ class ClientObject(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedWizGameObjectTemplate(self.memory_reader, addr)
+        return WizGameObjectTemplate(self.memory_reader, addr)
 
     async def global_id_full(self) -> int:
         """
@@ -179,10 +176,11 @@ class ClientObject(PropertyClass):
         """
         await self.write_xyz(168, location)
 
-    # TODO: check what order these are in and document it
     async def orientation(self) -> tuple:
         """
         This client object's orientation
+
+        order is roll, pitch, and yaw
         """
         return await self.read_vector(180)
 
@@ -319,7 +317,7 @@ class ClientObject(PropertyClass):
         await self.write_value_to_offset(440, character_id, "unsigned long long")
 
     # Note: not defined
-    async def game_stats(self) -> Optional[AddressedGameStats]:
+    async def game_stats(self) -> Optional[GameStats]:
         """
         This client object's game stats or None if doesn't have them
 
@@ -331,21 +329,14 @@ class ClientObject(PropertyClass):
         if addr == 0:
             return None
 
-        return AddressedGameStats(self.memory_reader, addr)
+        return GameStats(self.memory_reader, addr)
 
 
-class CurrentClientObject(ClientObject):
-    """
-    Client object tied to the client hook
-    """
+# class CurrentClientObject(ClientObject):
+#     """
+#     Client object tied to the client hook
+#     """
+#
+#     async def read_base_address(self) -> int:
+#         return await self.memory_reader.read_current_client_base()
 
-    async def read_base_address(self) -> int:
-        return await self.memory_reader.read_current_client_base()
-
-
-class AddressedClientObject(ClientObject):
-    """
-    Dynamic client object that can take an address
-    """
-
-    pass

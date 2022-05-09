@@ -2,22 +2,18 @@ from typing import Union, Optional
 
 from wizwalker.memory.memory_object import MemoryObject
 from .camera_controller import (
-    DynamicCameraController,
     CameraController,
-    DynamicFreeCameraController,
-    DynamicElasticCameraController,
+    FreeCameraController,
+    ElasticCameraController,
 )
-from .client_object import DynamicClientObject
-from .character_registry import DynamicCharacterRegistry
+from .client_object import ClientObject
+from .character_registry import CharacterRegistry
 from .enums import AccountPermissions
 
 
 # note: not defined
 class GameClient(MemoryObject):
-    async def read_base_address(self) -> int:
-        raise NotImplementedError()
-
-    async def elastic_camera_controller(self) -> Optional[DynamicElasticCameraController]:
+    async def elastic_camera_controller(self) -> Optional[ElasticCameraController]:
         offset = await self.pattern_scan_offset_cached(
             rb"\x48\x8B\x93\xD8\x1F\x02\x00\x41\xFF\xD1\x32"
             rb"\xC0\xEB\x05\x41\xFF\xD1\xB0\x01\x88\x83\x20"
@@ -32,9 +28,9 @@ class GameClient(MemoryObject):
         if addr == 0:
             return None
 
-        return DynamicElasticCameraController(self.hook_handler, addr)
+        return ElasticCameraController(self.memory_reader, addr)
 
-    async def free_camera_controller(self) -> Optional[DynamicFreeCameraController]:
+    async def free_camera_controller(self) -> Optional[FreeCameraController]:
         offset = await self.pattern_scan_offset_cached(
             rb"\x48\x8B\x93\xE8\x1F\x02\x00\x48\x8B\x03\x4C"
             rb"\x8B\x88\x40\x04\x00\x00\x41\xB8\x01\x00\x00"
@@ -50,9 +46,9 @@ class GameClient(MemoryObject):
         if addr == 0:
             return None
 
-        return DynamicFreeCameraController(self.hook_handler, addr)
+        return FreeCameraController(self.memory_reader, addr)
 
-    async def selected_camera_controller(self) -> Optional[DynamicCameraController]:
+    async def selected_camera_controller(self) -> Optional[CameraController]:
         """
         The in use camera controller
         """
@@ -70,7 +66,7 @@ class GameClient(MemoryObject):
         if addr == 0:
             return None
 
-        return DynamicCameraController(self.hook_handler, addr)
+        return CameraController(self.memory_reader, addr)
 
     async def write_selected_camera_controller(self, selected_camera_controller: Union[CameraController, int]):
         """
@@ -118,7 +114,7 @@ class GameClient(MemoryObject):
         )
         await self.write_value_to_offset(offset, is_freecam, "bool")
 
-    async def root_client_object(self) -> Optional[DynamicClientObject]:
+    async def root_client_object(self) -> Optional[ClientObject]:
         """
         The root client object, all other client objects are its children
         """
@@ -136,7 +132,7 @@ class GameClient(MemoryObject):
         if addr == 0:
             return None
 
-        return DynamicClientObject(self.hook_handler, addr)
+        return ClientObject(self.memory_reader, addr)
 
     async def frames_per_second(self) -> float:
         """
@@ -175,7 +171,7 @@ class GameClient(MemoryObject):
         )
         await self.write_value_to_offset(offset, shutdown_signal, "int")
 
-    async def character_registry(self) -> Optional[DynamicCharacterRegistry]:
+    async def character_registry(self) -> Optional[CharacterRegistry]:
         """
         Get the character registry
         """
@@ -185,7 +181,7 @@ class GameClient(MemoryObject):
         if addr == 0:
             return None
 
-        return DynamicCharacterRegistry(self.hook_handler, addr)
+        return CharacterRegistry(self.memory_reader, addr)
 
     async def account_permissions(self) -> AccountPermissions:
         offset = await self.pattern_scan_offset_cached(
@@ -229,6 +225,7 @@ class GameClient(MemoryObject):
         await self.write_value_to_offset(offset, has_membership, "bool")
 
 
+# TODO: what to do about this (StaticGameClient?)
 class CurrentGameClient(GameClient):
     _base_address = None
 

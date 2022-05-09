@@ -1,12 +1,7 @@
-from typing import List
-
-from wizwalker.memory.memory_object import PropertyClass, DynamicMemoryObject
+from wizwalker.memory.memory_object import PropertyClass
 
 
 class CharacterRegistry(PropertyClass):
-    async def read_base_address(self) -> int:
-        raise NotImplementedError()
-
     # async def displayed_tips(self) -> List[int]:
     #     sub_object_addrs = await self.read_linked_list(112)
     #
@@ -29,7 +24,3 @@ class CharacterRegistry(PropertyClass):
 
     async def write_active_goal_id(self, active_goal_id: int):
         await self.write_value_to_offset(336, active_goal_id, "unsigned int")
-
-
-class DynamicCharacterRegistry(DynamicMemoryObject, CharacterRegistry):
-    pass

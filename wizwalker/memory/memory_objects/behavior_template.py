@@ -5,10 +5,6 @@ class BehaviorTemplate(PropertyClass):
     """
     Base class for behavior templates
     """
-
-    async def read_base_address(self) -> int:
-        raise NotImplementedError()
-
     async def behavior_name(self) -> str:
         """
         This behavior template's name
@@ -23,11 +19,3 @@ class BehaviorTemplate(PropertyClass):
             behavior_name: The behavior name to write
         """
         await self.write_string_to_offset(72, behavior_name)
-
-
-class AddressedBehaviorTemplate(BehaviorTemplate):
-    """
-    Dynamic behavior template that can be given an address
-    """
-
-    pass

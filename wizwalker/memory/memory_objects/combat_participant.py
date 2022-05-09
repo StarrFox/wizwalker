@@ -1,21 +1,17 @@
-from typing import List, Optional
+from typing import Optional
 
 from wizwalker.memory.memory_object import PropertyClass
 from .enums import PipAquiredByEnum
-from .game_stats import AddressedGameStats
-from .spell import AddressedHand
-from .play_deck import AddressedPlayDeck
-from .spell_effect import AddressedSpellEffect
+from .game_stats import GameStats
+from .spell import Hand
+from .play_deck import PlayDeck
+from .spell_effect import SpellEffect
 
 
 class CombatParticipant(PropertyClass):
     """
     Base class for CombatParticipants
     """
-
-    def read_base_address(self) -> int:
-        raise NotImplementedError()
-
     async def owner_id_full(self) -> int:
         """
         This combat participant's owner id
@@ -244,45 +240,45 @@ class CombatParticipant(PropertyClass):
     async def write_max_hand_size(self, max_hand_size: int):
         await self.write_value_to_offset(248, max_hand_size, "int")
 
-    async def hand(self) -> Optional[AddressedHand]:
+    async def hand(self) -> Optional[Hand]:
         addr = await self.read_value_from_offset(256, "long long")
 
         if addr == 0:
             return None
 
-        return AddressedHand(self.memory_reader, addr)
+        return Hand(self.memory_reader, addr)
 
-    async def saved_hand(self) -> Optional[AddressedHand]:
+    async def saved_hand(self) -> Optional[Hand]:
         addr = await self.read_value_from_offset(264, "long long")
 
         if addr == 0:
             return None
 
-        return AddressedHand(self.memory_reader, addr)
+        return Hand(self.memory_reader, addr)
 
-    async def play_deck(self) -> Optional[AddressedPlayDeck]:
+    async def play_deck(self) -> Optional[PlayDeck]:
         addr = await self.read_value_from_offset(272, "long long")
 
         if addr == 0:
             return None
 
-        return AddressedPlayDeck(self.memory_reader, addr)
+        return PlayDeck(self.memory_reader, addr)
 
-    async def saved_play_deck(self) -> Optional[AddressedPlayDeck]:
+    async def saved_play_deck(self) -> Optional[PlayDeck]:
         addr = await self.read_value_from_offset(280, "long long")
 
         if addr == 0:
             return None
 
-        return AddressedPlayDeck(self.memory_reader, addr)
+        return PlayDeck(self.memory_reader, addr)
 
-    async def saved_game_stats(self) -> Optional[AddressedGameStats]:
+    async def saved_game_stats(self) -> Optional[GameStats]:
         addr = await self.read_value_from_offset(288, "long long")
 
         if addr == 0:
             return None
 
-        return AddressedGameStats(self.memory_reader, addr)
+        return GameStats(self.memory_reader, addr)
 
     async def saved_primary_magic_school_id(self) -> int:
         return await self.read_value_from_offset(304, "int")
@@ -292,13 +288,13 @@ class CombatParticipant(PropertyClass):
     ):
         await self.write_value_to_offset(304, saved_primary_magic_school_id, "int")
 
-    async def game_stats(self) -> Optional[AddressedGameStats]:
+    async def game_stats(self) -> Optional[GameStats]:
         addr = await self.read_value_from_offset(312, "long long")
 
         if addr == 0:
             return None
 
-        return AddressedGameStats(self.memory_reader, addr)
+        return GameStats(self.memory_reader, addr)
 
     # TODO: figure out what color is
     # async def color(self) -> class Color:
@@ -349,24 +345,24 @@ class CombatParticipant(PropertyClass):
     async def write_is_minion(self, is_minion: bool):
         await self.write_value_to_offset(396, is_minion, "bool")
 
-    async def hanging_effects(self) -> List[AddressedSpellEffect]:
+    async def hanging_effects(self) -> list[SpellEffect]:
         hanging_effects = []
         for addr in await self.read_linked_list(408):
-            hanging_effects.append(AddressedSpellEffect(self.memory_reader, addr))
+            hanging_effects.append(SpellEffect(self.memory_reader, addr))
 
         return hanging_effects
 
-    async def public_hanging_effects(self) -> List[AddressedSpellEffect]:
+    async def public_hanging_effects(self) -> list[SpellEffect]:
         hanging_effects = []
         for addr in await self.read_linked_list(424):
-            hanging_effects.append(AddressedSpellEffect(self.memory_reader, addr))
+            hanging_effects.append(SpellEffect(self.memory_reader, addr))
 
         return hanging_effects
 
-    async def aura_effects(self) -> List[AddressedSpellEffect]:
+    async def aura_effects(self) -> list[SpellEffect]:
         aura_effects = []
         for addr in await self.read_linked_list(440):
-            aura_effects.append(AddressedSpellEffect(self.memory_reader, addr))
+            aura_effects.append(SpellEffect(self.memory_reader, addr))
 
         return aura_effects
 
@@ -374,27 +370,27 @@ class CombatParticipant(PropertyClass):
     # async def shadow_effects(self) -> class SharedPointer<class ShadowSpellTrackingData>:
     #     return await self.read_value_from_offset(456, "class SharedPointer<class ShadowSpellTrackingData>")
 
-    async def shadow_spell_effects(self) -> List[AddressedSpellEffect]:
+    async def shadow_spell_effects(self) -> list[SpellEffect]:
         shadow_spell_effects = []
         for addr in await self.read_linked_list(472):
-            shadow_spell_effects.append(AddressedSpellEffect(self.memory_reader, addr))
+            shadow_spell_effects.append(SpellEffect(self.memory_reader, addr))
 
         return shadow_spell_effects
 
-    async def death_activated_effects(self) -> List[AddressedSpellEffect]:
+    async def death_activated_effects(self) -> list[SpellEffect]:
         death_activated_effects = []
         for addr in await self.read_shared_linked_list(504):
             death_activated_effects.append(
-                AddressedSpellEffect(self.memory_reader, addr)
+                SpellEffect(self.memory_reader, addr)
             )
 
         return death_activated_effects
 
     # note: these are actually DelaySpellEffects
-    async def delay_cast_effects(self) -> List[AddressedSpellEffect]:
+    async def delay_cast_effects(self) -> list[SpellEffect]:
         delay_cast_effects = []
         for addr in await self.read_linked_list(520):
-            delay_cast_effects.append(AddressedSpellEffect(self.memory_reader, addr))
+            delay_cast_effects.append(SpellEffect(self.memory_reader, addr))
 
         return delay_cast_effects
 
@@ -466,13 +462,13 @@ class CombatParticipant(PropertyClass):
     async def write_shadow_creature_level_count(self, shadow_creature_level_count: int):
         await self.write_value_to_offset(712, shadow_creature_level_count, "int")
 
-    async def intercept_effect(self) -> Optional[AddressedSpellEffect]:
+    async def intercept_effect(self) -> Optional[SpellEffect]:
         addr = await self.read_value_from_offset(736, "long long")
 
         if addr == 0:
             return None
 
-        return AddressedSpellEffect(self.memory_reader, addr)
+        return SpellEffect(self.memory_reader, addr)
 
     async def rounds_since_shadow_pip(self) -> int:
         return await self.read_value_from_offset(768, "int")
@@ -480,13 +476,13 @@ class CombatParticipant(PropertyClass):
     async def write_rounds_since_shadow_pip(self, rounds_since_shadow_pip: int):
         await self.write_value_to_offset(768, rounds_since_shadow_pip, "int")
 
-    async def polymorph_effect(self) -> Optional[AddressedSpellEffect]:
+    async def polymorph_effect(self) -> Optional[SpellEffect]:
         addr = await self.read_value_from_offset(792, "long long")
 
         if addr == 0:
             return None
 
-        return AddressedSpellEffect(self.memory_reader, addr)
+        return SpellEffect(self.memory_reader, addr)
 
     async def confused(self) -> int:
         return await self.read_value_from_offset(188, "int")
@@ -645,7 +641,3 @@ class CombatParticipant(PropertyClass):
 
     async def write_player_time_eliminated(self, player_time_eliminated: bool):
         await self.write_value_to_offset(833, player_time_eliminated, "bool")
-
-
-class AddressedCombatParticipant(CombatParticipant):
-    pass

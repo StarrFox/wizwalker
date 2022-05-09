@@ -1,14 +1,13 @@
+from typing import Optional
+
 from wizwalker.memory.memory_object import PropertyClass
+from .behavior_template import BehaviorTemplate
 
 
 class BehaviorInstance(PropertyClass):
     """
     Base class for behavior instances
     """
-
-    async def read_base_address(self) -> int:
-        raise NotImplementedError()
-
     # note: helper method
     async def behavior_name(self) -> Optional[str]:
         template = await self.behavior_template()
@@ -34,7 +33,7 @@ class BehaviorInstance(PropertyClass):
         await self.write_value_to_offset(104, behavior_template_name_id, "unsigned int")
 
     # note: hidden
-    async def behavior_template(self) -> Optional[DynamicBehaviorTemplate]:
+    async def behavior_template(self) -> Optional[BehaviorTemplate]:
         """
         Get this behavior's template
         """
@@ -43,12 +42,4 @@ class BehaviorInstance(PropertyClass):
         if not addr:
             return None
 
-        return DynamicBehaviorTemplate(self.hook_handler, addr)
-
-
-class AddressedBehaviorInstance(BehaviorInstance):
-    """
-    Dynamic behavior instance that can be given an address
-    """
-
-    pass
+        return BehaviorTemplate(self.memory_reader, addr)

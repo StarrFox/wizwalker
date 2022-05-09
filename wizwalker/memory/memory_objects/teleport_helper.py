@@ -3,8 +3,9 @@ from wizwalker.memory.memory_object import MemoryObject
 
 
 class TeleportHelper(MemoryObject):
-    async def read_base_address(self) -> int:
-        return await self.hook_handler.read_teleport_helper()
+    # TODO: fixme
+    # async def read_base_address(self) -> int:
+    #     return await self.hook_handler.read_teleport_helper()
 
     async def position(self) -> XYZ:
         return await self.read_xyz(0)

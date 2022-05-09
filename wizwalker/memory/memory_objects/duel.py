@@ -1,25 +1,22 @@
-from typing import List, Optional
+from typing import Optional
 
 from wizwalker.utils import XYZ
 from wizwalker.memory.memory_object import PropertyClass
-from .combat_participant import AddressedCombatParticipant
+from .combat_participant import CombatParticipant
 from .enums import DuelExecutionOrder, DuelPhase, SigilInitiativeSwitchMode
-from .combat_resolver import AddressedCombatResolver
+from .combat_resolver import CombatResolver
 
 
 # TODO: add m_gameEffectInfo and friends, and fix offsets
 class Duel(PropertyClass):
-    async def read_base_address(self) -> int:
-        raise NotImplementedError()
-
     async def participant_list(
         self,
-    ) -> List[AddressedCombatParticipant]:
+    ) -> list[CombatParticipant]:
         pointers = await self.read_shared_vector(80)
 
         participants = []
         for addr in pointers:
-            participants.append(AddressedCombatParticipant(self.memory_reader, addr))
+            participants.append(CombatParticipant(self.memory_reader, addr))
 
         return participants
 
@@ -86,13 +83,13 @@ class Duel(PropertyClass):
     async def write_first_team_to_act(self, first_team_to_act: int):
         await self.write_value_to_offset(180, first_team_to_act, "int")
 
-    async def combat_resolver(self) -> Optional[AddressedCombatResolver]:
+    async def combat_resolver(self) -> Optional[CombatResolver]:
         addr = await self.read_value_from_offset(136, "long long")
 
         if addr == 0:
             return None
 
-        return AddressedCombatResolver(self.memory_reader, addr)
+        return CombatResolver(self.memory_reader, addr)
 
     async def pvp(self) -> bool:
         return await self.read_value_from_offset(176, "bool")
@@ -334,6 +331,6 @@ class Duel(PropertyClass):
         await self.write_value_to_offset(528, hide_noncombatant_distance, "float")
 
 
-class CurrentDuel(Duel):
-    async def read_base_address(self) -> int:
-        return await self.memory_reader.read_current_duel_base()
+# class CurrentDuel(Duel):
+#     async def read_base_address(self) -> int:
+#         return await self.memory_reader.read_current_duel_base()

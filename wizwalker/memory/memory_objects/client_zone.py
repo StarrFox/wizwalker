@@ -5,10 +5,6 @@ class ClientZone(PropertyClass):
     """
     Base class for ClientZones
     """
-
-    async def read_base_address(self) -> int:
-        raise NotImplementedError()
-
     async def zone_id(self) -> int:
         """
         This client zone's zone id
@@ -38,11 +34,3 @@ class ClientZone(PropertyClass):
             zone_name: The zone name to write
         """
         await self.write_string_to_offset(88, zone_name)
-
-
-class AddressedClientZone(ClientZone):
-    """
-    Dynamic client zone that can take an address
-    """
-
-    pass
