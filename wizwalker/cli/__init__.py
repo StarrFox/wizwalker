@@ -1,1 +1,2 @@
-from .console import WizWalkerConsole, start_console
+from .console import WizWalkerConsole, run_cmd
+from .type_dumper import *

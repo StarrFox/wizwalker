@@ -45,12 +45,8 @@ class SpeedWalker(ClientHandler):
 
 
 async def main(speed_multiplier: float):
-    speed_walker = SpeedWalker(speed_multiplier)
-
-    try:
+    async with SpeedWalker(speed_multiplier) as speed_walker:
         await speed_walker.run()
-    finally:
-        await speed_walker.close()
 
 
 if __name__ == "__main__":

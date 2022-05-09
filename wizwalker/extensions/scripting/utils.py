@@ -141,6 +141,10 @@ async def _teleport_to_friend(client, character_window):
 
     await client.mouse_handler.click_window(yes_button)
     # we need to click the close button within the 1 second of the teleport animation
+
+    # TODO: check for busy message error here -> race condition with needing to also click the close button
+    #  could try forcing a zone wait since the busy condition will be handled here
+
     await client.mouse_handler.click_window(close_button)
 
 
@@ -222,3 +226,24 @@ async def teleport_to_friend_from_list(
 
     # close friends window
     await friends_window.write_flags(WindowFlags(2147483648))
+
+
+async def get_window_from_path(root_window, name_path):
+    """
+    Returns a window by following a list of window names, the last window is returned
+    Returns False if any window in the source_path can't be found
+    """
+
+    async def _recurse_follow_path(window, path):
+        if len(path) == 0:
+            return window
+
+        for child in await window.children():
+            if await child.name() == path[0]:
+                found_window = await _recurse_follow_path(child, path[1:])
+                if found_window:
+                    return found_window
+
+        return False
+
+    return await _recurse_follow_path(root_window, name_path)

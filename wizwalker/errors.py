@@ -1,6 +1,3 @@
-from typing import Union
-
-
 class WizWalkerError(Exception):
     """
     Base wizwalker exception, all exceptions raised should inherit from this
@@ -77,7 +74,7 @@ class MemoryReadError(WizWalkerMemoryError):
     Raised when we couldn't read some memory
     """
 
-    def __init__(self, address_or_message: Union[int, str]):
+    def __init__(self, address_or_message: int | str):
         if isinstance(address_or_message, int):
             super().__init__(f"Unable to read memory at address {address_or_message}.")
         else:
@@ -153,9 +150,3 @@ class CardAlreadyEnchanted(WizWalkerError):
 
     def __init__(self):
         super().__init__("That card is already enchanted.")
-
-
-# TODO: remove in 2.0
-class HotkeyAlreadyRegistered(WizWalkerError):
-    def __init__(self, key: str):
-        super().__init__(f"{key} already registered")

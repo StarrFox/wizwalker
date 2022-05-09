@@ -331,3 +331,12 @@ class AccountPermissions(IntFlag):
     # 5 and 6 are probably not used
     unknown5 = 0b100000000000000
     unknown6 = 0b1000000000000000
+
+
+class PlayerStatus(Enum):
+    unknown = 0
+    offline = 1
+    link_dead = 2
+    transition = 3
+    online = 4
+    ignored = 5

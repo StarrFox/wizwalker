@@ -1,7 +1,7 @@
 import asyncio
 
 import wizwalker
-from wizwalker.hotkey import Hotkey, Listener, ModifierKeys
+from wizwalker.hotkey import ModifierKeys, Keycode, HotkeyListener
 
 
 class Quester(wizwalker.ClientHandler):
@@ -22,21 +22,23 @@ class Quester(wizwalker.ClientHandler):
     async def run(self):
         await self.activate_hooks()
 
-        quest_hotkey = Hotkey(
-            wizwalker.Keycode.Q,
+        listener = HotkeyListener()
+        await listener.add_hotkey(
+            Keycode.Q,
             self.handle_e_pressed,
             modifiers=ModifierKeys.SHIFT | ModifierKeys.NOREPEAT,
         )
-        quest_listener = Listener(quest_hotkey)
+
+        await listener.start()
 
         while True:
-            await quest_listener.listen()
+            await asyncio.sleep(1)
+
+
+async def main():
+    async with Quester() as quester:
+        await quester.run()
 
 
 if __name__ == "__main__":
-    quester = Quester()
-    try:
-        asyncio.run(quester.run())
-    finally:
-        print("Exiting")
-        asyncio.run(quester.close())
+    asyncio.run(main())

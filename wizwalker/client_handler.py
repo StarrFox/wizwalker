@@ -2,7 +2,7 @@ import asyncio
 from copy import copy
 from functools import cached_property
 from pathlib import Path
-from typing import List, Optional, Type
+from typing import Optional
 
 import wizwalker
 from wizwalker import utils
@@ -14,7 +14,7 @@ class ClientHandler:
     Manages clients
     """
 
-    def __init__(self, *, client_cls: Type[Client] = Client):
+    def __init__(self, *, client_cls: type[Client] = Client):
         self.client_cls = client_cls
 
         self._managed_handles = []
@@ -25,9 +25,6 @@ class ClientHandler:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.close()
-
-    def __repr__(self):
-        return f"<WizWalker {self.clients=}>"
 
     @cached_property
     def install_location(self) -> Path:
@@ -48,7 +45,7 @@ class ClientHandler:
             if client.is_foreground:
                 return client
 
-    def get_new_clients(self) -> List[Client]:
+    def get_new_clients(self) -> list[Client]:
         """
         Get all new clients currently not managed
 
@@ -68,7 +65,7 @@ class ClientHandler:
 
         return new_clients
 
-    def remove_dead_clients(self) -> List[Client]:
+    def remove_dead_clients(self) -> list[Client]:
         """
         Remove and return clients that are no longer running
 
@@ -86,7 +83,7 @@ class ClientHandler:
 
         return dead_clients
 
-    def get_ordered_clients(self) -> List[Client]:
+    def get_ordered_clients(self) -> list[Client]:
         """
         Get client's ordered by their position on the screen
 

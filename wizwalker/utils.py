@@ -1,21 +1,23 @@
 import asyncio
 import ctypes
 import ctypes.wintypes
-import io
+import functools
 import math
 import struct
 import subprocess
 
 # noinspection PyCompatibility
 import winreg
-import zlib
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Iterable, List, Optional
+from typing import Any, Optional
+from io import BytesIO
 
 import appdirs
 
 from wizwalker import ExceptionalTimeout
-from wizwalker.constants import Keycode, kernel32, user32, gdi32
+from wizwalker.constants import Keycode, kernel32, user32, gdi32, type_format_dict
 
 
 DEFAULT_INSTALL = "C:/ProgramData/KingsIsle Entertainment/Wizard101"
@@ -28,30 +30,46 @@ async def async_sorted(iterable, /, *, key=None, reverse=False):
     if key is None:
         return sorted(iterable, reverse=reverse)
 
-    evaluated = {}
-
-    for item in iterable:
-        evaluated[item] = await key(item)
-
-    return [
-        i[0] for i in sorted(evaluated.items(), key=lambda it: it[1], reverse=reverse)
-    ]
+    key_item_pairs = [(await key(item), item) for item in iterable]
+    return [item for _, item in sorted(key_item_pairs, reverse=reverse)]
 
 
+async def run_in_executor(func, *args, **kwargs):
+    """
+    Run a function within an executor
+
+    Args:
+        func: The function to run
+        args: Args to pass to the function
+        kwargs: Kwargs to pass to the function
+    """
+    loop = asyncio.get_event_loop()
+    function = functools.partial(func, *args, **kwargs)
+
+    return await loop.run_in_executor(None, function)
+
+
+class TypedBytes(BytesIO):
+    def split(self, index: int) -> tuple["TypedBytes", "TypedBytes"]:
+        self.seek(0)
+        buffer = self.read(index)
+        return type(self)(buffer), type(self)(self.read())
+
+    def read_typed(self, type_name: str):
+        type_format = type_format_dict[type_name]
+        size = struct.calcsize(type_format)
+        data = self.read(size)
+        return struct.unpack(type_format, data)[0]
+
+
+@dataclass
 class XYZ:
-    def __init__(self, x: float, y: float, z: float):
-        self.x = x
-        self.y = y
-        self.z = z
+    x: float
+    y: float
+    z: float
 
     def __sub__(self, other):
         return self.distance(other)
-
-    def __str__(self):
-        return f"<XYZ ({self.x}, {self.y}, {self.z})>"
-
-    def __repr__(self):
-        return str(self)
 
     def __iter__(self):
         return iter((self.x, self.y, self.z))
@@ -88,48 +106,40 @@ class XYZ:
         return self.yaw(other)
 
 
+@dataclass
 class Rectangle:
-    def __init__(self, x1: int, y1: int, x2: int, y2: int):
-        self.x1 = x1
-        self.y1 = y1
-        self.x2 = x2
-        self.y2 = y2
-
-    def __str__(self):
-        return f"<Rectangle ({self.x1}, {self.y1}, {self.x2}, {self.y2})>"
-
-    def __repr__(self):
-        return str(self)
+    x1: float
+    y1: float
+    x2: float
+    y2: float
 
     def __iter__(self):
         return iter((self.x1, self.x2, self.y1, self.y2))
 
-    def scale_to_client(self, parents: List["Rectangle"], factor: float) -> "Rectangle":
+    def scale_to_client(
+        self, parents: Iterable["Rectangle"], factor: float
+    ) -> "Rectangle":
         """
         Scale this rectangle base on parents and a scale factor
 
         Args:
-            parents: List of other rectangles
+            parents: Iterable of rectangles
             factor: Factor to scale by
 
         Returns:
             The scaled rectangle
         """
-        x1_sum = self.x1
-        y1_sum = self.y1
+        rects = [self, *parents]
 
-        for rect in parents:
-            x1_sum += rect.x1
-            y1_sum += rect.y1
+        x_factor = factor * sum(rect.x1 for rect in rects)
+        y_factor = factor * sum(rect.y1 for rect in rects)
 
-        converted = Rectangle(
-            int(x1_sum * factor),
-            int(y1_sum * factor),
-            int(((self.x2 - self.x1) * factor) + (x1_sum * factor)),
-            int(((self.y2 - self.y1) * factor) + (y1_sum * factor)),
+        return Rectangle(
+            int(x_factor),
+            int(y_factor),
+            int(x_factor + factor * (self.x2 - self.x1)),
+            int(y_factor + factor * (self.y2 - self.y1)),
         )
-
-        return converted
 
     def center(self):
         """
@@ -138,10 +148,10 @@ class Rectangle:
         Returns:
             The center point
         """
-        center_x = ((self.x2 - self.x1) // 2) + self.x1
-        center_y = ((self.y2 - self.y1) // 2) + self.y1
-
-        return center_x, center_y
+        return (
+            (self.x1 + self.x2) // 2,
+            (self.y1 + self.y2) // 2,
+        )
 
     def paint_on_screen(self, window_handle: int, *, rgb: tuple = (255, 0, 0)):
         """
@@ -152,28 +162,17 @@ class Rectangle:
             window_handle: Handle to the window to paint the rectangle on
         """
         paint_struct = PAINTSTRUCT()
-        # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdc
-        device_context = user32.GetDC(window_handle)
-        brush = gdi32.CreateSolidBrush(ctypes.wintypes.RGB(*rgb))
-
         user32.BeginPaint(window_handle, ctypes.byref(paint_struct))
 
-        # left, top = top left corner; right, bottom = bottom right corner
-        draw_rect = ctypes.wintypes.RECT()
-        draw_rect.left = self.x1
-        draw_rect.top = self.y1
-        draw_rect.right = self.x2
-        draw_rect.bottom = self.y2
+        device_context = user32.GetDC(window_handle)
+        gdi32.SetDCBrushColor(device_context, ctypes.wintypes.RGB(*rgb))
+        brush = gdi32.GetStockObject(18)
 
-        # https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-createrectrgnindirect
-        region = gdi32.CreateRectRgnIndirect(ctypes.byref(draw_rect))
-        # https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-fillrgn
-        gdi32.FillRgn(device_context, region, brush)
+        rect = ctypes.wintypes.RECT(self.x1, self.y1, self.x2, self.y2)
+        user32.FillRect(device_context, ctypes.byref(rect), brush)
 
         user32.EndPaint(window_handle, ctypes.byref(paint_struct))
         user32.ReleaseDC(window_handle, device_context)
-        gdi32.DeleteObject(brush)
-        gdi32.DeleteObject(region)
 
 
 class PAINTSTRUCT(ctypes.Structure):
@@ -195,15 +194,18 @@ def order_clients(clients):
     return sorted(clients, key=sort_clients)
 
 
+# TODO: fix the actual issue here, passing install defaults to ClientHandler/Client
+#  doubt anyone would be working with two different installs at the same time but
+#  it should be supported anyway
 _OVERRIDE_PATH = None
 
 
 def override_wiz_install_location(path: str):
     """
-    Override the path returned by get_wiz_install
+    Override the source_path returned by get_wiz_install
 
     Args:
-        path: The path to override with
+        path: The source_path to override with
     """
     # hacking old behavior so I dont have to actually fix the issue
     global _OVERRIDE_PATH
@@ -227,7 +229,7 @@ def get_wiz_install() -> Path:
             winreg.HKEY_CURRENT_USER,
             r"Software\Microsoft\Windows\CurrentVersion\Uninstall\{A9E27FF5-6294-46A8-B8FD-77B1DECA3021}",
             0,
-            winreg.KEY_READ,
+            winreg.KEY_ALL_ACCESS,
         ) as key:
             install_location = Path(
                 winreg.QueryValueEx(key, "InstallLocation")[0]
@@ -483,18 +485,27 @@ def get_logs_folder() -> Path:
     return log_dir
 
 
-def get_system_directory(max_size: int = 100) -> Path:
+def get_system_directory() -> Path:
     """
     Get the windows system directory
-
-    Args:
-        max_size: Max size of the string
     """
     # https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getsystemdirectoryw
-    buffer = ctypes.create_unicode_buffer(max_size)
-    kernel32.GetSystemDirectoryW(buffer, max_size)
+    length = kernel32.GetSystemDirectoryW(None, 0)
+
+    buffer = ctypes.create_unicode_buffer(length)
+    kernel32.GetSystemDirectoryW(buffer, length)
 
     return Path(buffer.value)
+
+
+def get_foreground_window_handle() -> Optional[int]:
+    """
+    Get the window currently in the forground
+
+    Returns:
+        Handle to the window currently in the forground
+    """
+    return user32.GetForegroundWindow()
 
 
 def get_foreground_window() -> Optional[int]:
@@ -507,7 +518,7 @@ def get_foreground_window() -> Optional[int]:
     return user32.GetForegroundWindow()
 
 
-def set_foreground_window(window_handle: int) -> bool:
+def set_foreground_window_handle(window_handle: int) -> bool:
     """
     Bring a window to the foreground
 
@@ -516,28 +527,34 @@ def set_foreground_window(window_handle: int) -> bool:
 
     Returns:
         False if the operation failed True otherwise
+
+    Notes:
+        These conditions must be true to set the foreground
+        https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setforegroundwindow#remarks
     """
     return user32.SetForegroundWindow(window_handle) != 0
 
 
-def get_window_title(handle: int, max_size: int = 100) -> str:
+def get_window_handle_title(handle: int) -> str:
     """
     Get a window's title bar text
 
     Args:
         handle: Handle to the window
-        max_size: Max size to read
 
     Returns:
         The window title
     """
+    # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowtextlengthw
+    length = user32.GetWindowTextLengthW(handle)
+
     # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowtextw
-    window_title = ctypes.create_unicode_buffer(max_size)
-    user32.GetWindowTextW(handle, ctypes.byref(window_title), max_size)
+    window_title = ctypes.create_unicode_buffer(length)
+    user32.GetWindowTextW(handle, ctypes.byref(window_title), length + 1)
     return window_title.value
 
 
-def set_window_title(handle: int, window_title: str):
+def set_window_handle_title(handle: int, window_title: str):
     """
     Set a window's title bar text
 
@@ -549,7 +566,7 @@ def set_window_title(handle: int, window_title: str):
     user32.SetWindowTextW(handle, window_title)
 
 
-def get_window_rectangle(handle: int) -> Rectangle:
+def get_window_handle_rectangle(handle: int) -> Rectangle:
     """
     Get a window's Rectangle
 
@@ -599,10 +616,10 @@ def get_all_wizard_handles() -> list:
         if target_class == class_name.value:
             return True
 
-    return get_windows_from_predicate(callback)
+    return get_window_handles_by_predicate(callback)
 
 
-def get_windows_from_predicate(predicate: Callable) -> list:
+def get_window_handles_by_predicate(predicate: Callable) -> list:
     """
     Get all windows that match a predicate
 
@@ -639,162 +656,6 @@ def get_windows_from_predicate(predicate: Callable) -> list:
     user32.EnumWindows(callback, 0)
 
     return handles
-
-
-# TODO: 2.0 move all these pharse functions to cache_handler, and rename them to parse instead of pharse
-def pharse_template_id_file(file_data: bytes) -> dict:
-    """
-    Pharse a template id file's data
-    """
-    if not file_data.startswith(b"BINd"):
-        raise RuntimeError("No BINd id string")
-
-    data = zlib.decompress(file_data[0xD:])
-
-    total_size = len(data)
-    data = io.BytesIO(data)
-
-    data.seek(0x24)
-
-    out = {}
-    while data.tell() < total_size:
-        size = ord(data.read(1)) // 2
-
-        string = data.read(size).decode()
-        data.read(8)  # unknown bytes
-
-        # Little endian int
-        entry_id = struct.unpack("<i", data.read(4))[0]
-
-        data.read(0x10)  # next entry
-
-        out[entry_id] = string
-
-    return out
-
-
-def pharse_node_data(file_data: bytes) -> dict:
-    """
-    Converts data into a dict of node nums to points
-    """
-    entry_start = b"\xFE\xDB\xAE\x04"
-
-    node_data = {}
-    # no nodes
-    if len(file_data) == 20:
-        return node_data
-
-    # header
-    file_data = file_data[20:]
-
-    last_start = 0
-    while file_data:
-        start = file_data.find(entry_start, last_start)
-        if start == -1:
-            break
-
-        # fmt: off
-        entry = file_data[start: start + 48 + 2]
-
-        cords_data = entry[16: 16 + (4 * 3)]
-        x = struct.unpack("<f", cords_data[0:4])[0]
-        y = struct.unpack("<f", cords_data[4:8])[0]
-        z = struct.unpack("<f", cords_data[8:12])[0]
-
-        node_num = entry[48: 48 + 2]
-        unpacked_num = struct.unpack("<H", node_num)[0]
-        # fmt: on
-
-        node_data[unpacked_num] = (x, y, z)
-
-    return node_data
-
-
-# implemented from https://github.com/PeechezNCreem/navwiz/
-# this licence covers the below function
-# Boost Software License - Version 1.0 - August 17th, 2003
-#
-# Permission is hereby granted, free of charge, to any person or organization
-# obtaining a copy of the software and accompanying documentation covered by
-# this license (the "Software") to use, reproduce, display, distribute,
-# execute, and transmit the Software, and to prepare derivative works of the
-# Software, and to permit third-parties to whom the Software is furnished to
-# do so, all subject to the following:
-#
-# The copyright notices in the Software and this entire statement, including
-# the above license grant, this restriction and the following disclaimer,
-# must be included in all copies of the Software, in whole or in part, and
-# all derivative works of the Software, unless such copies or derivative
-# works are solely in the form of machine-executable object code generated by
-# a source language processor.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO EVENT
-# SHALL THE COPYRIGHT HOLDERS OR ANYONE DISTRIBUTING THE SOFTWARE BE LIABLE
-# FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
-# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
-def pharse_nav_data(file_data: bytes):
-    file_data = file_data[2:]
-
-    vertex_count_bytes = file_data[:4]
-    file_data = file_data[4:]
-
-    vertex_count = struct.unpack("<i", vertex_count_bytes)[0]
-
-    vertices = []
-    for idx in range(vertex_count):
-        position_bytes = file_data[:12]
-        file_data = file_data[12:]
-
-        x, y, z = struct.unpack("<fff", position_bytes)
-        vertices.append(XYZ(x, y, z))
-
-        vertex_index_bytes = file_data[:2]
-        file_data = file_data[2:]
-
-        vertex_index = struct.unpack("<h", vertex_index_bytes)[0]
-
-        if vertex_index != idx:
-            raise RuntimeError(
-                f"vertex index doesnt match expected: {idx} got: {vertex_index}"
-            )
-
-    edge_count_bytes = file_data[:4]
-    file_data = file_data[4:]
-
-    edge_count = struct.unpack("<i", edge_count_bytes)[0]
-
-    edges = []
-    for idx in range(edge_count):
-        start_stop_bytes = file_data[:4]
-        file_data = file_data[4:]
-
-        start, stop = struct.unpack("<hh", start_stop_bytes)
-
-        edges.append((start, stop))
-
-    return vertices, edges
-
-
-async def send_hotkey(window_handle: int, modifers: List[Keycode], key: Keycode):
-    """
-    Send a hotkey
-
-    Args:
-        window_handle: Handle to the window to send the hotkey to
-        modifers: Keys to hold down
-        key: The key to press
-    """
-    for modifier in modifers:
-        user32.SendMessageW(window_handle, 0x100, modifier.value, 0)
-
-    user32.SendMessageW(window_handle, 0x100, key.value, 0)
-    user32.SendMessageW(window_handle, 0x101, key.value, 0)
-
-    for modifier in modifers:
-        user32.SendMessageW(window_handle, 0x101, modifier.value, 0)
 
 
 async def timed_send_key(window_handle: int, key: Keycode, seconds: float):

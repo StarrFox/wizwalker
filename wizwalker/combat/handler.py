@@ -1,7 +1,7 @@
 import asyncio
-from typing import Callable, List
-from warnings import warn
+from collections.abc import Callable
 
+import wizwalker
 from .member import CombatMember
 from .card import CombatCard
 from ..memory import DuelPhase, EffectTarget, SpellEffects, WindowFlags
@@ -13,7 +13,7 @@ class CombatHandler:
     Handles client's battles
     """
 
-    def __init__(self, client):
+    def __init__(self, client: "wizwalker.Client"):
         self.client = client
 
         self._spell_check_boxes = None
@@ -36,22 +36,6 @@ class CombatHandler:
             await self.wait_until_next_round(round_number)
 
         self._spell_check_boxes = None
-
-    # TODO: remove in 2.0
-    async def wait_for_hand_visible(self, sleep_time: float = 0.5):
-        """
-        Wait for the hand window to be visible
-        """
-        warn(
-            "This method is depreciated and will be removed in 2.0 please use wait_for_planning_phase instead",
-            DeprecationWarning,
-        )
-
-        hand = await self.client.root_window.get_windows_with_name("Hand")
-        # this window is always in ui tree
-        hand = hand[0]
-        while WindowFlags.visible not in await hand.flags():
-            await asyncio.sleep(sleep_time)
 
     async def wait_for_planning_phase(self, sleep_time: float = 0.5):
         """
@@ -102,7 +86,7 @@ class CombatHandler:
         self._spell_check_boxes = spell_checkbox_windows
         return self._spell_check_boxes
 
-    async def get_cards(self) -> List[CombatCard]:
+    async def get_cards(self) -> list[CombatCard]:
         """
         List of active CombatCards
         """
@@ -117,7 +101,7 @@ class CombatHandler:
 
         return cards
 
-    async def get_cards_with_predicate(self, pred: Callable) -> List[CombatCard]:
+    async def get_cards_with_predicate(self, pred: Callable) -> list[CombatCard]:
         """
         Return cards that match a predicate
 
@@ -138,7 +122,7 @@ class CombatHandler:
         """
 
         async def _pred(card):
-            return name.lower() == (await card.name()).lower()
+            return name.lower() == (await card.display_name()).lower()
 
         possible = await self.get_cards_with_predicate(_pred)
 
@@ -224,7 +208,7 @@ class CombatHandler:
 
         return await utils.async_sorted(damage_enchants, key=_sort_by_damage)
 
-    async def get_members(self) -> List[CombatMember]:
+    async def get_members(self) -> list[CombatMember]:
         """
         List of active CombatMembers
         """
@@ -239,7 +223,7 @@ class CombatHandler:
 
         return members
 
-    async def get_members_with_predicate(self, pred: Callable) -> List[CombatMember]:
+    async def get_members_with_predicate(self, pred: Callable) -> list[CombatMember]:
         """
         Return members that match a predicate
 
@@ -266,7 +250,7 @@ class CombatHandler:
 
         raise ValueError("Couldn't find client's CombatMember")
 
-    async def get_all_monster_members(self) -> List[CombatMember]:
+    async def get_all_monster_members(self) -> list[CombatMember]:
         """
         Get all members who are monsters
         """
@@ -279,7 +263,7 @@ class CombatHandler:
 
         return monsters
 
-    async def get_all_player_members(self) -> List[CombatMember]:
+    async def get_all_player_members(self) -> list[CombatMember]:
         """
         Get all members who are players
         """
@@ -291,6 +275,38 @@ class CombatHandler:
                 players.append(member)
 
         return players
+
+    async def get_members_on_team(
+        self, same_as_client: bool = True
+    ) -> list[CombatMember]:
+        """
+        Get all members that are enemies
+
+        Args:
+            same_as_client: get team members on the client's team or False for the other team
+        """
+        client_member = await self.get_client_member()
+
+        part = await client_member.get_participant()
+        client_team_id = await part.team_id()
+
+        async def _on_other_team(member):
+            member_part = await member.get_participant()
+            member_team_id = await member_part.team_id()
+
+            return member_team_id != client_team_id
+
+        async def _on_same_team(member):
+            member_part = await member.get_participant()
+            member_team_id = await member_part.team_id()
+
+            return member_team_id == client_team_id
+
+        if same_as_client:
+            return await self.get_members_with_predicate(_on_same_team)
+
+        else:
+            return await self.get_members_with_predicate(_on_other_team)
 
     async def get_member_named(self, name: str) -> CombatMember:
         """

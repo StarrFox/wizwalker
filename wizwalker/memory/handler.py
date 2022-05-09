@@ -18,11 +18,11 @@ from .hooks import (
     RenderContextHook,
     MovementTeleportHook,
 )
-from .memory_reader import MemoryReader
+from .memory_handler import MemoryHandler
 
 
 # noinspection PyUnresolvedReferences
-class HookHandler(MemoryReader):
+class HookHandler(MemoryHandler):
     """
     Manages hooks
     """

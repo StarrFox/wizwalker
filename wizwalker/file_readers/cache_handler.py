@@ -1,14 +1,15 @@
 import json
 from collections import defaultdict
-from functools import cached_property
+from collections.abc import Iterable
+from functools import cached_property, partial
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Optional
 
-import aiofiles
 from loguru import logger
 
 from wizwalker import utils
 from .wad import Wad
+from .parsers import parse_template_id_file
 
 
 class CacheHandler:
@@ -17,7 +18,7 @@ class CacheHandler:
         self._template_ids = None
         self._node_cache = None
 
-        self._root_wad = Wad.from_game_data("root")
+        self._root_wad = Wad.from_game_data("Root")
 
     @cached_property
     def install_location(self) -> Path:
@@ -27,15 +28,27 @@ class CacheHandler:
         return utils.get_wiz_install()
 
     @cached_property
-    def cache_dir(self):
+    def cache_dir(self) -> Path:
         """
         The dir parsed data is stored in
         """
         return utils.get_cache_folder()
 
+    @cached_property
+    def langmap_file(self) -> Path:
+        return self.cache_dir / "langmap.json"
+
+    @cached_property
+    def template_ids_file(self) -> Path:
+        return self.cache_dir / "template_ids.json"
+
+    @cached_property
+    def wadcache_file(self) -> Path:
+        return self.cache_dir / "wad_cache.json"
+
     async def _check_updated(
-        self, wad_file: Wad, files: Union[List[str], str]
-    ) -> List[str]:
+        self, wad_file: Wad, files: Iterable[str] | str
+    ) -> list[str]:
         if isinstance(files, str):
             files = [files]
 
@@ -45,14 +58,15 @@ class CacheHandler:
         res = []
 
         for file_name in files:
-            file_info = await wad_file.get_file_info(file_name)
+            file_info = await wad_file.get_info(file_name)
 
-            if self._wad_cache[wad_file.name][file_name] != file_info.size:
+            file_version = dict(crc=file_info.crc, size=file_info.size)
+            if self._wad_cache[wad_file.name][file_name].values() != file_version:
                 logger.info(
-                    f"{file_name} has updated. old: {self._wad_cache[wad_file.name][file_name]} new: {file_info.size}"
+                    f"{file_name} has updated. old: {self._wad_cache[wad_file.name][file_name]} new: {file_version}"
                 )
                 res.append(file_name)
-                self._wad_cache[wad_file.name][file_name] = file_info.size
+                self._wad_cache[wad_file.name][file_name] = file_version
 
             else:
                 logger.info(f"{file_name} has not updated from {file_info.size}")
@@ -60,8 +74,8 @@ class CacheHandler:
         return res
 
     async def check_updated(
-        self, wad_file: Wad, files: Union[List[str], str]
-    ) -> List[str]:
+        self, wad_file: Wad, files: Iterable[str] | str
+    ) -> list[str]:
         """
         Checks if some wad files have changed since we last accessed them
 
@@ -75,27 +89,23 @@ class CacheHandler:
 
         return res
 
-    # TODO: rename in 2.0 to _cache
-    async def cache(self):
+    async def _cache(self):
         """
         Caches various file data
         """
-        root_wad = Wad.from_game_data("Root")
-
         logger.info("Caching template if needed")
-        await self._cache_template(root_wad)
+        await self._cache_template(self._root_wad)
 
     async def _cache_template(self, root_wad):
         template_file = await self.check_updated(root_wad, "TemplateManifest.xml")
 
         if template_file:
-            file_data = await root_wad.get_file("TemplateManifest.xml")
-            pharsed_template_ids = utils.pharse_template_id_file(file_data)
+            file_data = await root_wad.read("TemplateManifest.xml")
+            parsed_template_ids = parse_template_id_file(file_data)
             del file_data
 
-            async with aiofiles.open(self.cache_dir / "template_ids.json", "w+") as fp:
-                json_data = json.dumps(pharsed_template_ids)
-                await fp.write(json_data)
+            json_data = json.dumps(parsed_template_ids)
+            await utils.run_in_executor(self.template_ids_file.write_text, json_data)
 
     async def get_template_ids(self) -> dict:
         """
@@ -104,11 +114,12 @@ class CacheHandler:
         Returns:
             the loaded template ids
         """
-        await self.cache()
-        async with aiofiles.open(self.cache_dir / "template_ids.json") as fp:
-            message_data = await fp.read()
-
-        return json.loads(message_data)
+        await self._cache()
+        try:
+            json_data = await utils.run_in_executor(self.template_ids_file.read_text)
+        except FileNotFoundError:
+            return {}
+        return json.loads(json_data)
 
     @staticmethod
     def _parse_lang_file(file_data):
@@ -129,17 +140,22 @@ class CacheHandler:
 
         return {lang_name: lang_mapping}
 
-    async def _get_all_lang_file_names(self, root_wad: Wad) -> List[str]:
+    @staticmethod
+    async def _get_all_lang_file_names(root_wad: Wad) -> list[str]:
         lang_file_names = []
 
-        for file_name in await root_wad.names():
+        for file_name in await root_wad.name_list():
             if file_name.startswith("Locale/English/"):
                 lang_file_names.append(file_name)
 
         return lang_file_names
 
     async def _read_lang_file(self, root_wad: Wad, lang_file: str):
-        file_data = await root_wad.get_file(lang_file)
+        file_data = await root_wad.read(lang_file)
+
+        if not file_data:
+            raise ValueError(f"{lang_file} has not yet been loaded")
+
         parsed_lang = self._parse_lang_file(file_data)
 
         return parsed_lang
@@ -147,15 +163,12 @@ class CacheHandler:
     async def _cache_lang_file(self, root_wad: Wad, lang_file: str):
         if not await self.check_updated(root_wad, lang_file):
             return
+
         parsed_lang = await self._read_lang_file(root_wad, lang_file)
         if parsed_lang is None:
             return
 
-        lang_map = await self._get_langcode_map()
-        lang_map.update(parsed_lang)
-        async with aiofiles.open(self.cache_dir / "langmap.json", "w+") as fp:
-            json_data = json.dumps(lang_map)
-            await fp.write(json_data)
+        await self._update_langcode_map(parsed_lang)
 
     async def _cache_lang_files(self, root_wad: Wad):
         lang_file_names = await self._get_all_lang_file_names(root_wad)
@@ -169,21 +182,23 @@ class CacheHandler:
                 parsed_lang_map.update(parsed_lang)
 
         await self.write_wad_cache()
-        lang_map = await self._get_langcode_map()
-        lang_map.update(parsed_lang_map)
-        async with aiofiles.open(self.cache_dir / "langmap.json", "w+") as fp:
-            json_data = json.dumps(lang_map)
-            await fp.write(json_data)
+        await self._update_langcode_map(parsed_lang_map)
 
     async def _get_langcode_map(self) -> dict:
         try:
-            async with aiofiles.open(self.cache_dir / "langmap.json") as fp:
-                data = await fp.read()
-                return json.loads(data)
-
-        # file not found
-        except OSError:
+            data = await utils.run_in_executor(self.langmap_file.read_text)
+        except FileNotFoundError:
             return {}
+        return json.loads(data)
+
+    async def _update_langcode_map(self, langcodes):
+        lang_map = await self._get_langcode_map()
+        lang_map.update(langcodes)
+        await self._write_langcode_map(lang_map)
+
+    async def _write_langcode_map(self, langcode_map):
+        json_data = json.dumps(langcode_map)
+        await utils.run_in_executor(self.langmap_file.write_text, json_data)
 
     async def cache_all_langcode_maps(self):
         await self._cache_lang_files(self._root_wad)
@@ -203,24 +218,21 @@ class CacheHandler:
         Returns:
             a dict with the current cache data
         """
+        wad_cache_factory = partial(defaultdict, partial(defaultdict, dict))
+        wad_cache = defaultdict(wad_cache_factory)
+
         try:
-            async with aiofiles.open(self.cache_dir / "wad_cache.data") as fp:
-                data = await fp.read()
+            data = await utils.run_in_executor(self.wadcache_file.read_text)
+        except FileNotFoundError:
+            return wad_cache
 
-        # file not found
-        except OSError:
-            data = None
+        wad_cache_data = json.loads(data)
 
-        wad_cache = defaultdict(lambda: defaultdict(lambda: -1))
-
-        if data:
-            wad_cache_data = json.loads(data)
-
-            # this is so the default dict inside the default dict isn't replaced
-            # by .update
-            for k, v in wad_cache_data.items():
-                for k1, v1 in v.items():
-                    wad_cache[k][k1] = v1
+        # this is so the default dict inside the default dict isn't replaced
+        # by .update
+        for wad_name, wad_files in wad_cache_data.items():
+            for file_name, (crc, size) in wad_files.items():
+                wad_cache[wad_name][file_name].update(crc=crc, size=size)
 
         return wad_cache
 
@@ -228,9 +240,8 @@ class CacheHandler:
         """
         Writes wad cache to disk
         """
-        async with aiofiles.open(self.cache_dir / "wad_cache.data", "w+") as fp:
-            json_data = json.dumps(self._wad_cache)
-            await fp.write(json_data)
+        json_data = json.dumps(self._wad_cache)
+        await utils.run_in_executor(self.wadcache_file.write_text, json_data)
 
     async def get_template_name(self, template_id: int) -> Optional[str]:
         """
@@ -257,9 +268,10 @@ class CacheHandler:
             ValueError: If the langcode does not have a match
 
         """
-        split_point = langcode.find("_")
-        lang_filename = langcode[:split_point]
-        code = langcode[split_point + 1 :]
+        try:
+            lang_filename, code = langcode.split("_", maxsplit=1)
+        except ValueError:
+            raise ValueError(f"Invalid langcode format: {langcode}")
 
         lang_files = await self._get_all_lang_file_names(self._root_wad)
 

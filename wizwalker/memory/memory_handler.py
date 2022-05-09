@@ -2,7 +2,7 @@ import asyncio
 import functools
 import regex
 import struct
-from typing import Any, Union
+from typing import Any
 
 import pefile
 import pymem
@@ -23,7 +23,7 @@ from wizwalker import (
 )
 
 
-class MemoryReader:
+class MemoryHandler:
     """
     Represents anything that needs to read/write from/to memory
     """
@@ -33,27 +33,12 @@ class MemoryReader:
 
         self._symbol_table = {}
 
-    # TODO: 2.0 make this a property
+    @property
     def is_running(self) -> bool:
         """
         If the process we're reading/writing to/from is running
         """
         return utils.check_if_process_running(self.process.process_handle)
-
-    @staticmethod
-    async def run_in_executor(func, *args, **kwargs):
-        """
-        Run a function within an executor
-
-        Args:
-            func: The function to run
-            args: Args to pass to the function
-            kwargs: Kwargs to pass to the function
-        """
-        loop = asyncio.get_event_loop()
-        function = functools.partial(func, *args, **kwargs)
-
-        return await loop.run_in_executor(None, function)
 
     def _get_symbols(self, file_path: str, *, force_reload: bool = False):
         if (dll_table := self._symbol_table.get(file_path)) and not force_reload:
@@ -138,7 +123,7 @@ class MemoryReader:
 
     async def pattern_scan(
         self, pattern: bytes, *, module: str = None, return_multiple: bool = False
-    ) -> Union[list, int]:
+    ) -> list | int:
         """
         Scan for a pattern
 
@@ -160,7 +145,7 @@ class MemoryReader:
             if module_object is None:
                 raise ValueError(f"{module} module not found.")
 
-            found_addresses = await self.run_in_executor(
+            found_addresses = await utils.run_in_executor(
                 self._scan_entire_module,
                 self.process.process_handle,
                 module_object,
@@ -168,7 +153,7 @@ class MemoryReader:
             )
 
         else:
-            found_addresses = await self.run_in_executor(
+            found_addresses = await utils.run_in_executor(
                 self._scan_all,
                 self.process.process_handle,
                 pattern,
@@ -218,7 +203,7 @@ class MemoryReader:
         if not file_path.exists():
             raise ValueError(f"No module named {module_name}")
 
-        symbols = await self.run_in_executor(
+        symbols = await utils.run_in_executor(
             self._get_symbols, file_path, force_reload=force_reload
         )
 
@@ -241,7 +226,7 @@ class MemoryReader:
         Returns:
             The allocated address
         """
-        return await self.run_in_executor(self.process.allocate, size)
+        return await utils.run_in_executor(self.process.allocate, size)
 
     async def free(self, address: int):
         """
@@ -250,7 +235,7 @@ class MemoryReader:
         Args:
              address: The address to free
         """
-        await self.run_in_executor(self.process.free, address)
+        await utils.run_in_executor(self.process.free, address)
 
     # TODO: figure out how params works
     async def start_thread(self, address: int):
@@ -279,11 +264,11 @@ class MemoryReader:
             raise AddressOutOfRange(address)
 
         try:
-            return await self.run_in_executor(self.process.read_bytes, address, size)
+            return await utils.run_in_executor(self.process.read_bytes, address, size)
         except pymem.exception.MemoryReadError:
             # we don't want to run is running for every read
             # so we just check after we error
-            if not self.is_running():
+            if not self.is_running:
                 raise ClientClosedError()
             else:
                 raise MemoryReadError(address)
@@ -299,7 +284,7 @@ class MemoryReader:
         size = len(value)
         logger.debug(f"Writing bytes {value} to address {address} with size {size}")
         try:
-            await self.run_in_executor(
+            await utils.run_in_executor(
                 self.process.write_bytes,
                 address,
                 value,
@@ -307,7 +292,7 @@ class MemoryReader:
             )
         except pymem.exception.MemoryWriteError:
             # see read_bytes
-            if not self.is_running():
+            if not self.is_running:
                 raise ClientClosedError()
             else:
                 raise MemoryWriteError(address)

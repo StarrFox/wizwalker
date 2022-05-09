@@ -36,11 +36,14 @@ class BehaviorInstance(PropertyClass):
         """
         await self.write_value_to_offset(104, behavior_template_name_id, "unsigned int")
 
-    # note: not defined
+    # note: hidden
     async def behavior_template(self) -> Optional[DynamicBehaviorTemplate]:
+        """
+        Get this behavior's template
+        """
         addr = await self.read_value_from_offset(0x58, "unsigned long long")
 
-        if addr == 0:
+        if not addr:
             return None
 
         return DynamicBehaviorTemplate(self.hook_handler, addr)

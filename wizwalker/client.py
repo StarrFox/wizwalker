@@ -1,8 +1,9 @@
 import asyncio
 import struct
 import warnings
+from collections.abc import Callable
 from functools import cached_property
-from typing import Callable, List, Optional
+from typing import Optional
 
 import pymem
 
@@ -11,7 +12,8 @@ from . import (
     Keycode,
     MemoryReadError,
     ReadingEnumFailed,
-    utils, ExceptionalTimeout,
+    utils,
+    ExceptionalTimeout,
 )
 from .constants import WIZARD_SPEED
 from .memory import (
@@ -32,9 +34,9 @@ from .mouse_handler import MouseHandler
 from .utils import (
     XYZ,
     check_if_process_running,
-    get_window_title,
-    set_window_title,
-    get_window_rectangle,
+    get_window_handle_title,
+    set_window_handle_title,
+    get_window_handle_rectangle,
     wait_for_value,
     maybe_wait_for_any_value_with_timeout,
 )
@@ -88,11 +90,11 @@ class Client:
         """
         Get or set this window's title
         """
-        return get_window_title(self.window_handle)
+        return get_window_handle_title(self.window_handle)
 
     @title.setter
     def title(self, window_title: str):
-        set_window_title(self.window_handle, window_title)
+        set_window_handle_title(self.window_handle, window_title)
 
     @property
     def is_foreground(self) -> bool:
@@ -100,22 +102,26 @@ class Client:
         If this client is the foreground window
 
         Set this to True to bring it to the foreground
+
+        Notes:
+            These conditions must be true to set the foreground
+            https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setforegroundwindow#remarks
         """
-        return utils.get_foreground_window() == self.window_handle
+        return utils.get_foreground_window_handle() == self.window_handle
 
     @is_foreground.setter
     def is_foreground(self, value: bool):
         if value is False:
             return
 
-        utils.set_foreground_window(self.window_handle)
+        utils.set_foreground_window_handle(self.window_handle)
 
     @property
     def window_rectangle(self):
         """
         Get this client's window rectangle
         """
-        return get_window_rectangle(self.window_handle)
+        return get_window_handle_rectangle(self.window_handle)
 
     @cached_property
     def process_id(self) -> int:
@@ -220,8 +226,6 @@ class Client:
             return self._world_view_window
 
         pos = await self.root_window.get_windows_with_name("WorldView")
-        # TODO: test this claim on login screen
-        # world view always exists
         self._world_view_window = pos[0]
         return self._world_view_window
 
@@ -343,7 +347,7 @@ class Client:
 
         if not maybe_space_window:
             # TODO: replace error
-            raise ValueError("must open inventory screen to get")
+            raise ValueError("Must open inventory screen to get")
 
         text = await maybe_space_window[0].maybe_text()
         text = text.replace("<center>", "")
@@ -404,16 +408,6 @@ class Client:
             seconds: How long to send it for
         """
         await utils.timed_send_key(self.window_handle, key, seconds)
-
-    async def send_hotkey(self, modifers: List[Keycode], key: Keycode):
-        """
-        send a hotkey
-
-        Args:
-            modifers: The key modifers i.e CTRL, ALT
-            key: The key being modified
-        """
-        await utils.send_hotkey(self.window_handle, modifers, key)
 
     async def goto(self, x: float, y: float):
         """

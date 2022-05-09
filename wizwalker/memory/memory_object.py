@@ -1,25 +1,25 @@
 import struct
 from enum import Enum
-from typing import Any, List, Type
+from typing import Any
 
+import wizwalker
 from wizwalker.constants import type_format_dict
 from wizwalker.errors import (
     AddressOutOfRange,
     MemoryReadError,
     ReadingEnumFailed,
-    PatternFailed,
-    PatternMultipleResults
+    WizWalkerMemoryError,
 )
 from wizwalker.utils import XYZ
 from .handler import HookHandler
-from .memory_reader import MemoryReader
+from .memory_handler import MemoryHandler
 
 
 MAX_STRING = 5_000
 
 
 # TODO: add .find_instances that find instances of whichever class used it
-class MemoryObject(MemoryReader):
+class MemoryObject(MemoryHandler):
     """
     Class for any represented classes from memory
     """
@@ -147,14 +147,16 @@ class MemoryObject(MemoryReader):
         base_address = await self.read_base_address()
         await self.write_wide_string(base_address + offset, string, encoding)
 
-    async def read_string(self, address: int, encoding: str = "utf-8") -> str:
+    async def read_string(
+        self, address: int, encoding: str = "utf-8", *, sso_size: int = 16
+    ) -> str:
         string_len = await self.read_typed(address + 16, "int")
 
         if not 1 <= string_len <= MAX_STRING:
             return ""
 
         # strings larger than 16 bytes are pointers
-        if string_len >= 16:
+        if string_len >= sso_size:
             string_address = await self.read_typed(address, "long long")
         else:
             string_address = address
@@ -165,10 +167,12 @@ class MemoryObject(MemoryReader):
             return ""
 
     async def read_string_from_offset(
-        self, offset: int, encoding: str = "utf-8"
+        self, offset: int, encoding: str = "utf-8", *, sso_size: int = 16
     ) -> str:
         base_address = await self.read_base_address()
-        return await self.read_string(base_address + offset, encoding)
+        return await self.read_string(
+            base_address + offset, encoding, sso_size=sso_size
+        )
 
     async def write_string(self, address: int, string: str, encoding: str = "utf-8"):
         string_len_addr = address + 16
@@ -233,7 +237,7 @@ class MemoryObject(MemoryReader):
     async def write_xyz(self, offset: int, xyz: XYZ):
         await self.write_vector(offset, (xyz.x, xyz.y, xyz.z))
 
-    async def read_enum(self, offset, enum: Type[Enum]):
+    async def read_enum(self, offset, enum: type[Enum]):
         value = await self.read_value_from_offset(offset, "int")
         try:
             res = enum(value)
@@ -247,7 +251,7 @@ class MemoryObject(MemoryReader):
 
     async def read_shared_vector(
         self, offset: int, *, max_size: int = 1000
-    ) -> List[int]:
+    ) -> list[int]:
         start_address = await self.read_value_from_offset(offset, "long long")
         end_address = await self.read_value_from_offset(offset + 8, "long long")
         size = end_address - start_address
@@ -286,7 +290,7 @@ class MemoryObject(MemoryReader):
 
     async def read_dynamic_vector(
         self, offset: int, data_type: str = "long long"
-    ) -> List[int]:
+    ) -> list[int]:
         """
         Read a vector that changes in size
         """
@@ -330,7 +334,7 @@ class MemoryObject(MemoryReader):
 
         return res
 
-    async def read_shared_linked_list(self, offset: int):
+    async def read_shared_linked_list(self, offset: int) -> list[int]:
         list_addr = await self.read_value_from_offset(offset, "long long")
 
         addrs = []
@@ -346,7 +350,7 @@ class MemoryObject(MemoryReader):
 
         return addrs
 
-    async def read_linked_list(self, offset: int) -> List[int]:
+    async def read_linked_list(self, offset: int) -> list[int]:
         list_addr = await self.read_value_from_offset(offset, "long long")
         list_size = await self.read_value_from_offset(offset + 8, "int")
 
@@ -420,3 +424,51 @@ class PropertyClass(MemoryObject):
         # some of the class names can be quite long
         # i.e ClientShadowCreatureLevelTransitionCinematicAction
         return await self.read_null_terminated_string(type_name_addr, 60)
+
+
+class PropertyContainer:
+    def __init__(self):
+        pass
+
+    def __getattribute__(self, item: str):
+        try:
+            return super().__getattribute__(item)
+        except AttributeError:
+            pass
+
+
+class RawMemoryObject(DynamicMemoryObject):
+    _prop_instances = {}
+
+    def __init__(
+        self,
+        hook_handler: HookHandler,
+        base_address: int,
+        hash_data: "wizwalker.memory.hashmap.NodeData",
+    ):
+        super().__init__(hook_handler, base_address)
+        self.hash_data = hash_data
+
+    async def _generate_property_map(self):
+        pass
+
+    async def _get_prop_map(self) -> dict:
+        return {}
+
+    async def _get_prop(self, name: str):
+        prop_map = await self._get_prop_map()
+
+        if name not in prop_map.keys():
+            class_name = await self.name()
+            raise AttributeError(
+                f"MemoryObject '{class_name}' has no attribute '{name}'"
+            )
+
+        return await prop_map[name]
+
+    async def name(self) -> str:
+        return await self.hash_data.name()
+
+    async def get_bases(self) -> list[str]:
+        bases = await self.hash_data.get_bases()
+        return [await base.name() for base in bases]
