@@ -160,24 +160,19 @@ class MemoryReader:
             if module_object is None:
                 raise ValueError(f"{module} module not found.")
 
-            found_addresses = await self.run_in_executor(
-                self._scan_entire_module,
+            found_addresses = self._scan_entire_module(
                 self.process.process_handle,
                 module_object,
                 pattern,
             )
 
         else:
-            found_addresses = await self.run_in_executor(
-                self._scan_all,
+            found_addresses = self._scan_all(
                 self.process.process_handle,
                 pattern,
                 return_multiple,
             )
 
-        logger.debug(
-            f"Got results (first 10) {found_addresses[:10]} from pattern {pattern}"
-        )
         if (found_length := len(found_addresses)) == 0:
             raise PatternFailed(pattern)
         elif found_length > 1 and not return_multiple:
@@ -241,7 +236,7 @@ class MemoryReader:
         Returns:
             The allocated address
         """
-        return await self.run_in_executor(self.process.allocate, size)
+        return self.process.allocate(size)
 
     async def free(self, address: int):
         """
@@ -250,7 +245,7 @@ class MemoryReader:
         Args:
              address: The address to free
         """
-        await self.run_in_executor(self.process.free, address)
+        self.process.free(address)
 
     # TODO: figure out how params works
     async def start_thread(self, address: int):
@@ -297,14 +292,9 @@ class MemoryReader:
             value: The bytes to write
         """
         size = len(value)
-        logger.debug(f"Writing bytes {value} to address {address} with size {size}")
+
         try:
-            await self.run_in_executor(
-                self.process.write_bytes,
-                address,
-                value,
-                size,
-            )
+            self.process.write_bytes(address, value, size)
         except pymem.exception.MemoryWriteError:
             # see read_bytes
             if not self.is_running():
