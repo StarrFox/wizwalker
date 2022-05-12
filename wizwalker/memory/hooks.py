@@ -294,6 +294,14 @@ class ClientHook(SimpleHook):
     instruction_length = 7
     noops = 2
 
+    # this is because the 18 byte at the start was tacked on
+    async def get_jump_address(self, pattern: bytes, module: str = None) -> int:
+        """
+        gets the address to write jump at
+        """
+        jump_address = await self.pattern_scan(pattern, module=module)
+        return jump_address + 1
+
     async def bytecode_generator(self, packed_exports):
         # fmt: off
         bytecode = (
