@@ -160,14 +160,18 @@ class MemoryReader:
             if module_object is None:
                 raise ValueError(f"{module} module not found.")
 
-            found_addresses = self._scan_entire_module(
+            # this can take a long time to run when collecting multiple results
+            # so must be run in an executor
+            found_addresses = await self.run_in_executor(
+                self._scan_entire_module,
                 self.process.process_handle,
                 module_object,
                 pattern,
             )
 
         else:
-            found_addresses = self._scan_all(
+            found_addresses = await self.run_in_executor(
+                self._scan_all,
                 self.process.process_handle,
                 pattern,
                 return_multiple,
