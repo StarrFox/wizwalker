@@ -304,6 +304,17 @@ async def start_instances_with_login(instance_number: int, logins: Iterable):
         instance_login(handle, username, password)
 
 
+def patch_open_browser():
+    """
+    Patches EmbeddedBrowserConfig so that the game doesn't
+    open a web browser when closed
+    """
+    install_location = get_wiz_install()
+    data = '<Objects><Class Name="class EmbeddedBrowserConfig"></Class></Objects>'
+    browser_config = install_location / "bin" / "EmbeddedBrowserConfig.xml"
+    browser_config.write_text(data)
+
+
 def calculate_perfect_yaw(current_xyz: XYZ, target_xyz: XYZ) -> float:
     """
     Calculates the perfect yaw to reach an xyz in a stright line

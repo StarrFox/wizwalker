@@ -5,7 +5,7 @@ from warnings import warn
 from .member import CombatMember
 from .card import CombatCard
 from ..memory import DuelPhase, EffectTarget, SpellEffects, WindowFlags
-from wizwalker import utils
+from wizwalker import utils, WizWalkerMemoryError
 
 
 class CombatHandler:
@@ -60,9 +60,16 @@ class CombatHandler:
         Args:
             sleep_time: Time to sleep between checks
         """
-        await utils.wait_for_value(
-            self.client.duel.duel_phase, DuelPhase.planning, sleep_time
-        )
+        while True:
+            try:
+                phase = await self.client.duel.duel_phase()
+                if phase in (DuelPhase.planning, DuelPhase.ended):
+                    break
+
+                await asyncio.sleep(sleep_time)
+
+            except WizWalkerMemoryError:
+                break
 
     async def wait_for_combat(self, sleep_time: float = 0.5):
         """
