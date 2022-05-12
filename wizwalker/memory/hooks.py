@@ -4,6 +4,7 @@ import ctypes.wintypes
 import struct
 from typing import Any, Tuple
 from contextlib import suppress
+import warnings
 
 from loguru import logger
 
@@ -11,7 +12,9 @@ from .memory_reader import MemoryReader
 from wizwalker.constants import kernel32
 
 
+# TODO: 2.0 delete (useless)
 def pack_to_int_or_longlong(num: int) -> bytes:
+    warnings.warn(DeprecationWarning("Will be removed in the next major release"))
     try:
         return struct.pack("<i", num)
     except struct.error:
@@ -172,7 +175,7 @@ class SimpleHook(AutoBotBaseHook):
             # addr = self.alloc(export[1])
             addr = self.hook_handler.process.allocate(export[1])
             setattr(self, export[0], addr)
-            packed_addr = pack_to_int_or_longlong(addr)
+            packed_addr = struct.pack("<Q", addr)
             packed_exports.append((export[0], packed_addr))
 
         bytecode = await self.bytecode_generator(packed_exports)
@@ -677,7 +680,7 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
 
     async def get_hook_bytecode(self) -> bytes:
         await self.set_mouse_pos_addr()
-        packed_mouse_pos_addr = pack_to_int_or_longlong(self.mouse_pos_addr)
+        packed_mouse_pos_addr = struct.pack("<Q", self.mouse_pos_addr)
 
         # fmt: off
         bytecode = (
