@@ -278,6 +278,7 @@ class HookHandler(MemoryReader):
 
         self._active_hooks.append(duel_hook)
         self._base_addrs["current_duel"] = duel_hook.current_duel_addr
+        self._base_addrs["current_duel_phase"] = duel_hook.current_duel_phase
 
         if wait_for_ready:
             await self._wait_for_value(duel_hook.current_duel_addr, timeout)
@@ -303,6 +304,22 @@ class HookHandler(MemoryReader):
             The current duel base address
         """
         return await self._read_hook_base_addr("current_duel", "Duel")
+
+    async def read_current_duel_phase(self) -> int:
+        """
+        Read current cached duel phase
+
+        Returns:
+            The current duel phase
+        """
+        addr = self._base_addrs.get("current_duel_phase")
+        if addr is None:
+            raise HookNotActive("Duel")
+
+        try:
+            return await self.read_typed(addr, "unsigned int")
+        except pymem.exception.MemoryReadError:
+            raise HookNotReady("Duel")
 
     async def activate_quest_hook(
         self, *, wait_for_ready: bool = False, timeout: float = None

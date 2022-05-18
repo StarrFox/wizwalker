@@ -262,7 +262,7 @@ class DuelHook(SimpleHook):
         rb"\x44\x0F\xB6\xE0\x88\x44\x24\x60\xE8....\x44\x8D\x6B\x0F"
         rb"\x44\x8D\x73\x10\x4C\x8D.....\x83\xF8\x64\x7E\x0A\xE8....\xE9"
     )
-    exports = [("current_duel_addr", 8)]
+    exports = [("current_duel_addr", 8), ("current_duel_phase", 4)]
     instruction_length = 8
     noops = 3
 
@@ -271,10 +271,12 @@ class DuelHook(SimpleHook):
         bytecode = (
                 # if al == 1 rcx is ClientDuel
                 b"\x84\xc0"  # test al,al
-                b"\x74\x0F"  # je 8
+                b"\x74\x20"  # je 32 (to original code)
                 b"\x50"  # push rax
                 b"\x48\x89\xc8"  # mov rax,rcx
                 b"\x48\xA3" + packed_exports[0][1] +  # movabs [current_duel_addr],rax
+                b"\x48\x8B\x80\xC0\x00\x00\x00"  # mov rax,[rax+C0]
+                b"\x48\xA3" + packed_exports[1][1] +  # movabs [current_duel_phase],rax
                 b"\x58"  # pop rax
                 # original code
                 b"\x44\x0F\xB6\xE0"  # movzx r12d,al
@@ -283,6 +285,10 @@ class DuelHook(SimpleHook):
         # fmt: on
 
         return bytecode
+
+    async def posthook(self):
+        # init duel phase with 7 so in_combat returns False
+        await self.write_typed(self.current_duel_phase, 7, "unsigned int")
 
 
 class ClientHook(SimpleHook):
