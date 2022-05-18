@@ -75,6 +75,11 @@ class CombatHandler:
         """
         Wait until in combat
         """
+        await utils.maybe_wait_for_value_with_timeout(
+            self.client.duel.read_base_address,
+            value=0,
+            inverse_value=True,
+        )
         await utils.wait_for_value(self.in_combat, True, sleep_time)
         await self.handle_combat()
 
