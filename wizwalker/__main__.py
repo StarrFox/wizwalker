@@ -62,7 +62,7 @@ def cli():
 @click.argument("logins", nargs=-1)
 @click.option(
     "--nowait", is_flag=True, default=False, help="Don't wait for completion of startup process",
-)
+) # TODO: 2.0: change default behavior to not sleep
 def start_wiz(instances, logins, nowait):
     """
     Start multiple wizard101 instances and optionally login to them
