@@ -415,6 +415,9 @@ async def maybe_wait_for_value_with_timeout(
                 elif value is not None and not inverse_value and res == value:
                     return res
 
+                elif value is None and inverse_value and res is not None:
+                    return res
+
                 else:
                     return res
 
@@ -425,6 +428,8 @@ async def maybe_wait_for_value_with_timeout(
 
                 else:
                     raise e
+
+            await asyncio.sleep(sleep_time)
 
     try:
         return await asyncio.wait_for(_inner(), timeout)
@@ -455,10 +460,12 @@ async def maybe_wait_for_any_value_with_timeout(
             except Exception as e:
                 if ignore_exceptions:
                     possible_exception = e
-                    await asyncio.sleep(sleep_time)
+
 
                 else:
                     raise e
+
+            await asyncio.sleep(sleep_time)
 
     try:
         return await asyncio.wait_for(_inner(), timeout)
