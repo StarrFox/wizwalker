@@ -280,7 +280,7 @@ def instance_login(window_handle: int, username: str, password: str):
 # --- [cancelButton] ControlButton
 # --- [title1] ControlText
 # --- [loginName] ControlEdit
-async def start_instances_with_login(instance_number: int, logins: Iterable):
+async def start_instances_with_login(instance_number: int, logins: Iterable, wait_for_ready=True):
     """
     Start a number of instances and login to them with logins
 
@@ -295,7 +295,8 @@ async def start_instances_with_login(instance_number: int, logins: Iterable):
 
     # TODO: have way to properly check if instances are on login screen
     # waiting for instances to start
-    await asyncio.sleep(7)
+    if wait_for_ready:
+      await asyncio.sleep(7)
 
     new_handles = set(get_all_wizard_handles()).difference(start_handles)
 
