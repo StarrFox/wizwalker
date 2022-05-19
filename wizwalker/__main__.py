@@ -44,17 +44,7 @@ def cli():
     start_console(locals={"walker": walker})
 
 
-# @main.command()
-# @click.argument("script_location", type=click.Path(exists=True, dir_okay=False))
-# def run_script(script_location):
-#     script_location = Path(script_location)
-#     parsed = parse(script_location.read_text())
-#
-#     walker = WizWalker()
-#
-#     asyncio.run(run_wizwalker_script(walker, parsed))
-
-
+# TODO: 2.0: remove --nowait, make start_instances_with_login not wait if there are no logins
 @main.command()
 @click.option(
     "--instances", default=1, show_default=True, help="Number of instances to start"
@@ -62,7 +52,7 @@ def cli():
 @click.argument("logins", nargs=-1)
 @click.option(
     "--nowait", is_flag=True, default=False, help="Don't wait for completion of startup process",
-) # TODO: 2.0: change default behavior to not sleep
+)
 def start_wiz(instances, logins, nowait):
     """
     Start multiple wizard101 instances and optionally login to them

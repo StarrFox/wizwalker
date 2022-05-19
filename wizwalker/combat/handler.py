@@ -144,26 +144,57 @@ class CombatHandler:
 
         return cards
 
-    async def get_card_named(self, name: str) -> CombatCard:
+    async def get_cards_with_name(self, name: str) -> List[CombatCard]:
         """
-        Returns the first Card with name
-        """
+        Args:
+            name: The name (debug name) of the cards to find
 
+        Returns: list of possible CombatCards with the name
+        """
         async def _pred(card):
             return name.lower() == (await card.name()).lower()
 
-        possible = await self.get_cards_with_predicate(_pred)
+        return await self.get_cards_with_predicate(_pred)
+
+    async def get_card_named(self, name: str) -> CombatCard:
+        """
+        Args:
+            name: The name (display name) of the card to find
+
+        Returns: The first Card with name
+        """
+        possible = await self.get_cards_with_name(name)
 
         if possible:
             return possible[0]
 
         raise ValueError(f"Couldn't find a card named {name}")
 
-    async def get_cards_with_display_name(self, display_name: str):
+    async def get_cards_with_display_name(self, display_name: str) -> List[CombatCard]:
+        """
+        Args:
+            display_name: The display name of the cards to find
+
+        Returns: list of possible CombatCards with the display name
+        """
         async def _pred(card: CombatCard):
             return display_name.lower() in (await card.display_name()).lower()
 
         return await self.get_cards_with_predicate(_pred)
+
+    async def get_card_with_display_name(self, display_name: str) -> CombatCard:
+        """
+        Args:
+            display_name: The display name of the card to find
+
+        Returns: The first Card with display name
+        """
+        possible = await self.get_cards_with_display_name(display_name)
+
+        if possible:
+            return possible[0]
+
+        raise ValueError(f"Couldn't find a card display named {display_name}")
 
     # TODO: add allow_treasure_cards that defaults to False
     async def get_damaging_aoes(self, *, check_enchanted: bool = None):
