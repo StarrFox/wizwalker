@@ -1,4 +1,4 @@
-set shell := ["powershell.exe", "-c"]
+set windows-powershell
 
 # install enviroment
 install:
