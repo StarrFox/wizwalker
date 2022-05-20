@@ -40,17 +40,25 @@ jobs:
           name: github-pages
           path: ./docs/
 
-  # Deploy the artifact to GitHub pages.
-  # This is a separate job so that only actions/deploy-pages has the necessary permissions.
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v1
+      - name: Clone repo
+        run: git clone https://github.com/StarrFox/wizwalker --branch gh-pages --single-branch gh-pages
+
+      - name: Copy new docs into repo
+        run: xcopy /E /I /Y "docs" "gh-pages"
+        shell: cmd
+
+      - name: Commit changes
+        run: |
+          cd gh-pages
+          git config --local user.email "action@github.com"
+          git config --local user.name = "GitHub Action"
+          git add .
+          git commit -a -m "Update documentation"
+
+      - name: Push changes
+        if: ${{ success() }}
+        uses: ad-m/github-push-action@master
+        with:
+          branch: gh-pages
+          directory: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}
