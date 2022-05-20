@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "wizwalker"
-version = "1.7.3"
+version = "1.8.0"
 description = "Wizard101 scripting library"
 authors = ["StarrFox <starrfox6312@gmail.com>"]
 license = "GPL-3.0-or-later"
