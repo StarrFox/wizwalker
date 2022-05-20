@@ -9,10 +9,6 @@ on:
     # tags:
     #   - '*'
 
-# security: restrict permissions for CI jobs.
-permissions:
-  contents: read
-
 jobs:
   # Build the documentation and upload the static HTML files as an artifact.
   build:
