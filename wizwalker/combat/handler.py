@@ -297,15 +297,18 @@ class CombatHandler:
 
         return members
 
-    async def get_client_member(self) -> CombatMember:
+    async def get_client_member(self, *, retries: int = 5, sleep_time: float = 0.5) -> CombatMember:
         """
         Get the client's CombatMember
         """
-        members = await self.get_members()
+        for _ in range(retries):
+            members = await self.get_members()
 
-        for member in members:
-            if await member.is_client():
-                return member
+            for member in members:
+                if await member.is_client():
+                    return member
+
+            await asyncio.sleep(sleep_time)
 
         raise ValueError("Couldn't find client's CombatMember")
 
