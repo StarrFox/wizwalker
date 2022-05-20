@@ -1,45 +1,56 @@
-name: Upload_docs
+name: upload_docs
 
+# build the documentation whenever there are new commits on main
 on:
   push:
     branches:
       - master
+    # Alternative: only build for tags.
+    # tags:
+    #   - '*'
+
+# security: restrict permissions for CI jobs.
+permissions:
+  contents: read
 
 jobs:
+  # Build the documentation and upload the static HTML files as an artifact.
   build:
-
     runs-on: windows-latest
-
     steps:
-    - uses: actions/checkout@v1
-    - name: Set up Python 3.8
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-    - name: Install poetry
-      run: py -3.8 -m pip install poetry
-    - name: Install deps
-      run: poetry install
-    - name: Build docs
-      run: poetry run sphinx-build docs docs/_build/html
-    - uses: actions/upload-artifact@v1
-      with:
-        name: HTML_DOCS
-        path: docs/_build/html
-    - name: Commit documentation changes
-      run: |
-        git clone https://github.com/StarrFox/wizwalker.git --branch gh-pages --single-branch gh-pages
-        xcopy /E /I /Y "docs\_build\html" "gh-pages"
-        cd gh-pages
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add .
-        git commit -m "Update documentation" -a
-      shell: cmd
-    - name: Push changes
-      if: ${{ success() }}
-      uses: ad-m/github-push-action@master
-      with:
-        branch: gh-pages
-        directory: gh-pages
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v3
+
+      - name: Set up python
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.8
+
+      - name: Install poetry
+        run: py -3.8 -m pip install poetry
+
+      - name: Install environment
+        run: poetry install
+
+      - name: Build docs
+        run: poetry run pdoc -t pdoc_template -o ./docs/ ./wizwalker/
+
+      - name: Upload docs artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: github-pages
+          path: ./docs/
+
+  # Deploy the artifact to GitHub pages.
+  # This is a separate job so that only actions/deploy-pages has the necessary permissions.
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v1
