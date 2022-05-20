@@ -36,7 +36,7 @@ from .utils import (
     set_window_title,
     get_window_rectangle,
     wait_for_value,
-    maybe_wait_for_any_value_with_timeout,
+    maybe_wait_for_any_value_with_timeout, maybe_wait_for_value_with_timeout,
 )
 
 
@@ -442,6 +442,7 @@ class Client:
             *,
             move_after: bool = False,
             wait_on_inuse: bool = False,
+            wait_on_inuse_timeout: float = 1.0,
     ):
         """
         Teleport the client
@@ -453,12 +454,13 @@ class Client:
         Keyword Args:
             move_after: depreciated
             wait_on_inuse: If we should wait for the update bool to be False
+            wait_on_inuse_timeout: Time to wait for inuse flag to be setback
         """
         # we do this because the old teleport only required the body hook
         client_object = await self.body.parent_client_object()
         client_object_addr = await client_object.read_base_address()
 
-        await self._teleport_object(client_object_addr, xyz, wait_on_inuse)
+        await self._teleport_object(client_object_addr, xyz, wait_on_inuse, wait_on_inuse_timeout)
 
         if move_after:
             warnings.warn(DeprecationWarning("Move after will be removed in 2.0"))
@@ -474,6 +476,7 @@ class Client:
             *,
             move_after: bool = True,
             wait_on_inuse: bool = False,
+            wait_on_inuse_timeout: float = 1.0,
     ):
         """
         Teleport while playing as pet
@@ -483,11 +486,13 @@ class Client:
             yaw: yaw to set or None to not change
 
         Keyword Args:
-            move_after: If the client's pet should rotate some to update the player model position
+            move_after: depreciated
+            wait_on_inuse: If should wait for inuse flag to be setback
+            wait_on_inuse_timeout: Time to wait for inuse flag to be setback
         """
         client_object_addr = await self.client_object.read_base_address()
 
-        await self._teleport_object(client_object_addr, xyz, wait_on_inuse)
+        await self._teleport_object(client_object_addr, xyz, wait_on_inuse, wait_on_inuse_timeout)
 
         if move_after:
             warnings.warn(DeprecationWarning("Move after will be removed in 2.0"))
@@ -496,12 +501,22 @@ class Client:
         if yaw is not None:
             await self.body.write_yaw(yaw)
 
-    async def _teleport_object(self, object_address: int, xyz: XYZ, wait_on_inuse: bool = False):
+    async def _teleport_object(
+            self,
+            object_address: int,
+            xyz: XYZ,
+            wait_on_inuse: bool = False,
+            wait_on_inuse_timeout: float = 1.0,
+    ):
         if await self._teleport_helper.should_update():
             if not wait_on_inuse:
                 raise ValueError("Tried to teleport while should update bool is set")
 
-            await wait_for_value(self._teleport_helper.should_update, False)
+            await maybe_wait_for_value_with_timeout(
+                self._teleport_helper.should_update,
+                value=False,
+                timeout=wait_on_inuse_timeout,
+            )
 
         jes = await self._get_je_instruction_forward_backwards()
 
