@@ -199,13 +199,9 @@ class Client:
             List of the matching entities
         """
         async def predicate(entity):
-            try:
-                mob_display_name = await maybe_wait_for_any_value_with_timeout(
-                    entity.display_name,
-                    0.1,
-                    timeout=1
-                )
-            except ExceptionalTimeout:
+            mob_display_name = await entity.display_name()
+
+            if mob_display_name is None:
                 return False
 
             return display_name.lower() in mob_display_name.lower()

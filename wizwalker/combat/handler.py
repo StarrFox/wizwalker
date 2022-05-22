@@ -5,7 +5,7 @@ from warnings import warn
 from .member import CombatMember
 from .card import CombatCard
 from ..memory import DuelPhase, EffectTarget, SpellEffects, WindowFlags
-from wizwalker import utils, WizWalkerMemoryError
+from wizwalker import utils, WizWalkerMemoryError, MemoryInvalidated
 
 
 class CombatHandler:
@@ -240,7 +240,7 @@ class CombatHandler:
 
     async def get_damage_enchants(self, *, sort_by_damage: bool = False):
         """
-        Get enchants that increse the damage of spells
+        Get enchants that increase the damage of spells
 
         Keyword Args:
             sort_by_damage: If enchants should be sorted by how much damage they add
@@ -350,6 +350,7 @@ class CombatHandler:
 
         raise ValueError(f"Couldn't find a member named {name}")
 
+    # TODO: 2.0 switch to display name
     async def attempt_cast(
         self,
         name: str,
@@ -452,26 +453,91 @@ class AoeHandler(CombatHandler):
     Subclass of CombatHandler that just casts enchanted aoes
     """
 
+    async def _wait_for_non_planning_phase(self, sleep_time: float = 0.5):
+        while True:
+            try:
+                phase = await self.client.duel.duel_phase()
+                if phase != DuelPhase.planning or phase == DuelPhase.ended:
+                    break
+
+                await asyncio.sleep(sleep_time)
+
+            except WizWalkerMemoryError:
+                break
+
+    async def handle_combat(self):
+        """
+        Handles an entire combat interaction
+        """
+        while await self.in_combat():
+            await self.wait_for_planning_phase()
+
+            if await self.client.duel.duel_phase() == DuelPhase.ended:
+                break
+
+            # TODO: handle this taking longer than planning timer time
+            await self.handle_round()
+            await self._wait_for_non_planning_phase()
+
+        self._spell_check_boxes = None
+
+    async def get_client_member(self, *, retries: int = 5, sleep_time: float = 0.5) -> CombatMember:
+        """
+        Get the client's CombatMember
+        """
+        for _ in range(retries):
+            members = await self.get_members()
+
+            for member in members:
+                try:
+                    if await member.is_client():
+                        return member
+                except MemoryInvalidated:
+                    pass
+
+            await asyncio.sleep(sleep_time)
+
+        raise ValueError("Couldn't find client's CombatMember")
+
     async def handle_round(self):
+        async def _try_do(callback, *args, **kwargs):
+            retries = 5
+            while True:
+                res = await callback(*args, **kwargs)
+
+                if not res:
+                    if retries <= 0:
+                        return res
+
+                    retries -= 1
+                    await asyncio.sleep(0.4)
+
+                else:
+                    return res
+
         enchanted_aoes = await self.get_damaging_aoes(check_enchanted=True)
         if enchanted_aoes:
             await enchanted_aoes[0].cast(None)
 
-        unenchanted_aoes = await self.get_damaging_aoes(check_enchanted=False)
-        enchants = await self.get_damage_enchants(sort_by_damage=True)
+        unenchanted_aoes = await _try_do(self.get_damaging_aoes, check_enchanted=False)
+        enchants = await _try_do(self.get_damage_enchants, sort_by_damage=True)
 
         # enchant card then cast card
         if enchants and unenchanted_aoes:
             await enchants[0].cast(unenchanted_aoes[0])
-            enchanted_aoes = await self.get_damaging_aoes(check_enchanted=True)
+            enchanted_aoes = await _try_do(self.get_damaging_aoes, check_enchanted=True)
 
-            if not enchanted_aoes:
-                raise Exception("Enchant failure")
+            if enchanted_aoes:
+                to_cast = enchanted_aoes[0]
 
-            to_cast = enchanted_aoes[0]
+                if await to_cast.is_castable():
+                    await to_cast.cast(None)
 
-            if await to_cast.is_castable():
-                await to_cast.cast(None)
+                else:
+                    await self.pass_button()
+
+            else:
+                await self.pass_button()
 
         # no enchants so just cast card
         elif not enchants and unenchanted_aoes:
@@ -479,21 +545,28 @@ class AoeHandler(CombatHandler):
 
             if await to_cast.is_castable():
                 await to_cast.cast(None)
+                return
 
         # hand full of enchants or enchants + other cards
         elif enchants and not unenchanted_aoes:
             if len(await self.get_cards()) == 7:
                 await enchants[0].discard()
+                return
 
             # TODO: draw tc?
             else:
-                raise Exception("No hits in hand")
+                # try one last time
+                await asyncio.sleep(1)
+                aoes = await _try_do(self.get_damaging_aoes)
+
+                if not aoes:
+                    raise Exception("No hits in hand")
+
+                else:
+                    await aoes[0].cast(None)
+                    return
 
         # no enchants or aoes in hand
         else:
-            # TODO: maybe flee instead?
-            if len(await self.get_cards()) == 0:
-                raise Exception("Out of cards")
-
-            # TODO: add method for people to subclass for this?
-            raise Exception("Out of hits and enchants")
+            await self.pass_button()
+            await self.pass_button()
