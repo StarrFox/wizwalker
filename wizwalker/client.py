@@ -39,7 +39,7 @@ from .utils import (
     set_window_handle_title,
     get_window_handle_rectangle,
     wait_for_value,
-    maybe_wait_for_any_value_with_timeout,
+    maybe_wait_for_any_value_with_timeout, maybe_wait_for_value_with_timeout,
 )
 
 
@@ -438,6 +438,9 @@ class Client:
             *,
             move_after: bool = False,
             wait_on_inuse: bool = False,
+            wait_on_inuse_timeout: float = 1.0,
+            purge_on_after_unuser_fixer: bool = False,
+            purge_on_after_unuser_fixer_timeout: float = 0.6,
     ):
         """
         Teleport the client
@@ -449,12 +452,22 @@ class Client:
         Keyword Args:
             move_after: depreciated
             wait_on_inuse: If we should wait for the update bool to be False
+            wait_on_inuse_timeout: Time to wait for inuse flag to be setback
+            purge_on_after_unuser_fixer: If should wait for inuse flag after and reset if not set
+            purge_on_after_unuser_fixer_timeout: Time to wait for inuse flag to reset if not set
         """
         # we do this because the old teleport only required the body hook
         client_object = await self.body.parent_client_object()
         client_object_addr = await client_object.read_base_address()
 
-        await self._teleport_object(client_object_addr, xyz, wait_on_inuse)
+        await self._teleport_object(
+            client_object_addr,
+            xyz,
+            wait_on_inuse,
+            wait_on_inuse_timeout,
+            purge_on_after_unuser_fixer,
+            purge_on_after_unuser_fixer_timeout,
+        )
 
         if move_after:
             warnings.warn(DeprecationWarning("Move after will be removed in 2.0"))
@@ -470,6 +483,9 @@ class Client:
             *,
             move_after: bool = True,
             wait_on_inuse: bool = False,
+            wait_on_inuse_timeout: float = 1.0,
+            purge_on_after_unuser_fixer: bool = False,
+            purge_on_after_unuser_fixer_timeout: float = 0.6,
     ):
         """
         Teleport while playing as pet
@@ -479,11 +495,22 @@ class Client:
             yaw: yaw to set or None to not change
 
         Keyword Args:
-            move_after: If the client's pet should rotate some to update the player model position
+            move_after: depreciated
+            wait_on_inuse: If should wait for inuse flag to be setback
+            wait_on_inuse_timeout: Time to wait for inuse flag to be setback
+            purge_on_after_unuser_fixer: If should wait for inuse flag after and reset if not set
+            purge_on_after_unuser_fixer_timeout: Time to wait for inuse flag to reset if not set
         """
         client_object_addr = await self.client_object.read_base_address()
 
-        await self._teleport_object(client_object_addr, xyz, wait_on_inuse)
+        await self._teleport_object(
+            client_object_addr,
+            xyz,
+            wait_on_inuse,
+            wait_on_inuse_timeout,
+            purge_on_after_unuser_fixer,
+            purge_on_after_unuser_fixer_timeout,
+        )
 
         if move_after:
             warnings.warn(DeprecationWarning("Move after will be removed in 2.0"))
@@ -492,17 +519,29 @@ class Client:
         if yaw is not None:
             await self.body.write_yaw(yaw)
 
-    async def _teleport_object(self, object_address: int, xyz: XYZ, wait_on_inuse: bool = False):
+    async def _teleport_object(
+            self,
+            object_address: int,
+            xyz: XYZ,
+            wait_on_inuse: bool = False,
+            wait_on_inuse_timeout: float = 1.0,
+            purge_on_after_unuser_fixer: bool = False,
+            purge_on_after_unuser_fixer_timeout: float = 0.6,
+    ):
+        if not self.hook_handler._check_if_hook_active(MovementTeleportHook):
+            raise RuntimeError("Movement teleport not active")
+
         if await self._teleport_helper.should_update():
             if not wait_on_inuse:
                 raise ValueError("Tried to teleport while should update bool is set")
 
-            await wait_for_value(self._teleport_helper.should_update, False)
+            await maybe_wait_for_value_with_timeout(
+                self._teleport_helper.should_update,
+                value=False,
+                timeout=wait_on_inuse_timeout,
+            )
 
         jes = await self._get_je_instruction_forward_backwards()
-
-        if not self.hook_handler._check_if_hook_active(MovementTeleportHook):
-            raise RuntimeError("Movement teleport not active")
 
         await self._teleport_helper.write_target_object_address(object_address)
         await self._teleport_helper.write_position(xyz)
@@ -510,6 +549,20 @@ class Client:
 
         for je in jes:
             await self.hook_handler.write_bytes(je, b"\x90" * 6)
+
+        if purge_on_after_unuser_fixer:
+            try:
+                await maybe_wait_for_value_with_timeout(
+                    self._teleport_helper.should_update,
+                    value=False,
+                    timeout=purge_on_after_unuser_fixer_timeout,
+                )
+            except ExceptionalTimeout:
+                movement_teleport_hook = self.hook_handler._get_hook_by_type(MovementTeleportHook)
+                for je, old_bytes in zip(jes, movement_teleport_hook._old_jes_bytes):
+                    await self.hook_handler.write_bytes(je, old_bytes)
+
+                await self._teleport_helper.write_should_update(False)
 
     async def _get_je_instruction_forward_backwards(self):
         """

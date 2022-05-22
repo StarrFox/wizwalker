@@ -1,3 +1,5 @@
+set windows-powershell
+
 # install enviroment
 install:
   poetry install
@@ -9,7 +11,7 @@ cli: install
 
 # build docs
 docs: install
-  cd docs && poetry run make html
+  poetry run pdoc -t pdoc_template ./wizwalker/
 
 # publish a major, minor, or patch version
 publish TYPE: install

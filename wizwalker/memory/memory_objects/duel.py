@@ -334,3 +334,9 @@ class Duel(PropertyClass):
 # class CurrentDuel(Duel):
 #     async def read_base_address(self) -> int:
 #         return await self.memory_reader.read_current_duel_base()
+
+    # async def duel_phase(self) -> DuelPhase:
+    #     # read_current_duel_phase
+    #     # return await self.read_enum(192, DuelPhase)
+    #     duel_phase = await self.hook_handler.read_current_duel_phase()
+    #     return DuelPhase(duel_phase)

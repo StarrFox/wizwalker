@@ -6,7 +6,7 @@ class CombatMember:
     def __init__(
         self,
         combat_handler: "wizwalker.combat.CombatHandler",
-        combatant_control: "wizwalker.memory.AddressedWindow",
+        combatant_control: "wizwalker.memory.Window",
     ):
         self.combat_handler = combat_handler
 
@@ -16,7 +16,14 @@ class CombatMember:
         """
         Get the underlying participant object
         """
-        return await self._combatant_control.maybe_combat_participant()
+        part = await self._combatant_control.maybe_combat_participant()
+
+        if part is None:
+            raise wizwalker.MemoryInvalidated(
+                "This combat member is no longer valid; you most likely need to reget members"
+            )
+
+        return part
 
     async def get_stats(self):
         """

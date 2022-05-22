@@ -7,7 +7,7 @@ from .card import CombatCard
 
 # TODO
 # from ..memory import DuelPhase, EffectTarget, SpellEffects, WindowFlags
-from wizwalker import utils
+from wizwalker import utils, WizWalkerMemoryError
 
 
 class CombatHandler:
@@ -46,14 +46,26 @@ class CombatHandler:
         Args:
             sleep_time: Time to sleep between checks
         """
-        await utils.wait_for_value(
-            self.client.duel.duel_phase, DuelPhase.planning, sleep_time
-        )
+        while True:
+            try:
+                phase = await self.client.duel.duel_phase()
+                if phase in (DuelPhase.planning, DuelPhase.ended):
+                    break
+
+                await asyncio.sleep(sleep_time)
+
+            except WizWalkerMemoryError:
+                break
 
     async def wait_for_combat(self, sleep_time: float = 0.5):
         """
         Wait until in combat
         """
+        await utils.maybe_wait_for_value_with_timeout(
+            self.client.duel.read_base_address,
+            value=0,
+            inverse_value=True,
+        )
         await utils.wait_for_value(self.in_combat, True, sleep_time)
         await self.handle_combat()
 
@@ -118,26 +130,57 @@ class CombatHandler:
 
         return cards
 
+    async def get_cards_with_name(self, name: str) -> List[CombatCard]:
+        """
+        Args:
+            name: The name (debug name) of the cards to find
+
+        Returns: list of possible CombatCards with the name
+        """
+        async def _pred(card):
+            return name.lower() == (await card.name()).lower()
+
+        return await self.get_cards_with_predicate(_pred)
+
     async def get_card_named(self, name: str) -> CombatCard:
         """
-        Returns the first Card with name
+        Args:
+            name: The name (display name) of the card to find
+
+        Returns: The first Card with name
         """
-
-        async def _pred(card):
-            return name.lower() == (await card.display_name()).lower()
-
-        possible = await self.get_cards_with_predicate(_pred)
+        possible = await self.get_cards_with_name(name)
 
         if possible:
             return possible[0]
 
         raise ValueError(f"Couldn't find a card named {name}")
 
-    async def get_cards_with_display_name(self, display_name: str):
+    async def get_cards_with_display_name(self, display_name: str) -> List[CombatCard]:
+        """
+        Args:
+            display_name: The display name of the cards to find
+
+        Returns: list of possible CombatCards with the display name
+        """
         async def _pred(card: CombatCard):
             return display_name.lower() in (await card.display_name()).lower()
 
         return await self.get_cards_with_predicate(_pred)
+
+    async def get_card_with_display_name(self, display_name: str) -> CombatCard:
+        """
+        Args:
+            display_name: The display name of the card to find
+
+        Returns: The first Card with display name
+        """
+        possible = await self.get_cards_with_display_name(display_name)
+
+        if possible:
+            return possible[0]
+
+        raise ValueError(f"Couldn't find a card display named {display_name}")
 
     # TODO: add allow_treasure_cards that defaults to False
     async def get_damaging_aoes(self, *, check_enchanted: bool = None):
@@ -240,15 +283,18 @@ class CombatHandler:
 
         return members
 
-    async def get_client_member(self) -> CombatMember:
+    async def get_client_member(self, *, retries: int = 5, sleep_time: float = 0.5) -> CombatMember:
         """
         Get the client's CombatMember
         """
-        members = await self.get_members()
+        for _ in range(retries):
+            members = await self.get_members()
 
-        for member in members:
-            if await member.is_client():
-                return member
+            for member in members:
+                if await member.is_client():
+                    return member
+
+            await asyncio.sleep(sleep_time)
 
         raise ValueError("Couldn't find client's CombatMember")
 

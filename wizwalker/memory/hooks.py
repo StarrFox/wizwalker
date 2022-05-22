@@ -5,13 +5,16 @@ import struct
 import regex
 from typing import Any, Tuple
 from contextlib import suppress
+import warnings
 
 from loguru import logger
 
 from .memory_handler import MemoryHandler
 
 
+# TODO: 2.0 delete (useless)
 def pack_to_int_or_longlong(num: int) -> bytes:
+    warnings.warn(DeprecationWarning("Will be removed in the next major release"))
     try:
         return struct.pack("<i", num)
     except struct.error:
@@ -172,7 +175,7 @@ class SimpleHook(AutoBotBaseHook):
             # addr = self.alloc(export[1])
             addr = self.hook_handler.process.allocate(export[1])
             setattr(self, export[0], addr)
-            packed_addr = pack_to_int_or_longlong(addr)
+            packed_addr = struct.pack("<Q", addr)
             packed_exports.append((export[0], packed_addr))
 
         bytecode = await self.bytecode_generator(packed_exports)
@@ -259,7 +262,7 @@ class DuelHook(SimpleHook):
         rb"\x44\x0F\xB6\xE0\x88\x44\x24\x60\xE8....\x44\x8D\x6B\x0F"
         rb"\x44\x8D\x73\x10\x4C\x8D.....\x83\xF8\x64\x7E\x0A\xE8....\xE9"
     )
-    exports = [("current_duel_addr", 8)]
+    exports = [("current_duel_addr", 8), ("current_duel_phase", 4)]
     instruction_length = 8
     noops = 3
 
@@ -268,10 +271,12 @@ class DuelHook(SimpleHook):
         bytecode = (
                 # if al == 1 rcx is ClientDuel
                 b"\x84\xc0"  # test al,al
-                b"\x74\x0F"  # je 8
+                b"\x74\x20"  # je 32 (to original code)
                 b"\x50"  # push rax
                 b"\x48\x89\xc8"  # mov rax,rcx
                 b"\x48\xA3" + packed_exports[0][1] +  # movabs [current_duel_addr],rax
+                b"\x48\x8B\x80\xC0\x00\x00\x00"  # mov rax,[rax+C0]
+                b"\x48\xA3" + packed_exports[1][1] +  # movabs [current_duel_phase],rax
                 b"\x58"  # pop rax
                 # original code
                 b"\x44\x0F\xB6\xE0"  # movzx r12d,al
@@ -281,15 +286,27 @@ class DuelHook(SimpleHook):
 
         return bytecode
 
+    async def posthook(self):
+        # init duel phase with 7 so in_combat returns False
+        await self.write_typed(self.current_duel_phase, 7, "unsigned int")
+
 
 class ClientHook(SimpleHook):
     pattern = (
-        rb"\x48......\x48\x8B\x7C\x24\x40\x48\x85\xFF\x74\x29\x8B\xC6\xF0\x0F\xC1\x47\x08\x83\xF8\x01\x75\x1D"
+        rb"\x18\x48......\x48\x8B\x7C\x24\x40\x48\x85\xFF\x74\x29\x8B\xC6\xF0\x0F\xC1\x47\x08\x83\xF8\x01\x75\x1D"
         rb"\x48\x8B\x07\x48\x8B\xCF\xFF\x50\x08\xF0\x0F\xC1\x77\x0C"
     )
     exports = [("current_client_addr", 8)]
     instruction_length = 7
     noops = 2
+
+    # this is because the 18 byte at the start was tacked on
+    async def get_jump_address(self, pattern: bytes, module: str = None) -> int:
+        """
+        gets the address to write jump at
+        """
+        jump_address = await self.pattern_scan(pattern, module=module)
+        return jump_address + 1
 
     async def bytecode_generator(self, packed_exports):
         # fmt: off
@@ -677,7 +694,7 @@ class MouselessCursorMoveHook(User32GetClassInfoBaseHook):
 
     async def get_hook_bytecode(self) -> bytes:
         await self.set_mouse_pos_addr()
-        packed_mouse_pos_addr = pack_to_int_or_longlong(self.mouse_pos_addr)
+        packed_mouse_pos_addr = struct.pack("<Q", self.mouse_pos_addr)
 
         # fmt: off
         bytecode = (

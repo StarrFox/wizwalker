@@ -288,7 +288,7 @@ def instance_login(window_handle: int, username: str, password: str):
 # --- [cancelButton] ControlButton
 # --- [title1] ControlText
 # --- [loginName] ControlEdit
-async def start_instances_with_login(instance_number: int, logins: Iterable):
+async def start_instances_with_login(instance_number: int, logins: Iterable, wait_for_ready=True):
     """
     Start a number of instances and login to them with logins
 
@@ -303,13 +303,25 @@ async def start_instances_with_login(instance_number: int, logins: Iterable):
 
     # TODO: have way to properly check if instances are on login screen
     # waiting for instances to start
-    await asyncio.sleep(7)
+    if wait_for_ready:
+      await asyncio.sleep(7)
 
     new_handles = set(get_all_wizard_handles()).difference(start_handles)
 
     for handle, username_password in zip(new_handles, logins):
         username, password = username_password.split(":")
         instance_login(handle, username, password)
+
+
+def patch_open_browser():
+    """
+    Patches EmbeddedBrowserConfig so that the game doesn't
+    open a web browser when closed
+    """
+    install_location = get_wiz_install()
+    data = '<Objects><Class Name="class EmbeddedBrowserConfig"></Class></Objects>'
+    browser_config = install_location / "bin" / "EmbeddedBrowserConfig.xml"
+    browser_config.write_text(data)
 
 
 def calculate_perfect_yaw(current_xyz: XYZ, target_xyz: XYZ) -> float:
@@ -346,14 +358,15 @@ def calculate_perfect_yaw(current_xyz: XYZ, target_xyz: XYZ) -> float:
     return perfect_yaw
 
 
+# TODO: 2.0 rename coro to awaitable (do for other wait_for methods also)
 async def wait_for_value(
     coro, want, sleep_time: float = 0.5, *, ignore_errors: bool = True
 ):
     """
-    Wait for a coro to return a value
+    Wait for a awaitable to return a value
 
     Args:
-        coro: Coro to wait for
+        coro: awaitable to wait for
         want: Value wanted
         sleep_time: Time between calls
         ignore_errors: If errors should be ignored
@@ -412,6 +425,9 @@ async def maybe_wait_for_value_with_timeout(
                 elif value is not None and not inverse_value and res == value:
                     return res
 
+                elif value is None and inverse_value and res is not None:
+                    return res
+
                 else:
                     return res
 
@@ -422,6 +438,8 @@ async def maybe_wait_for_value_with_timeout(
 
                 else:
                     raise e
+
+            await asyncio.sleep(sleep_time)
 
     try:
         return await asyncio.wait_for(_inner(), timeout)
@@ -452,10 +470,12 @@ async def maybe_wait_for_any_value_with_timeout(
             except Exception as e:
                 if ignore_exceptions:
                     possible_exception = e
-                    await asyncio.sleep(sleep_time)
+
 
                 else:
                     raise e
+
+            await asyncio.sleep(sleep_time)
 
     try:
         return await asyncio.wait_for(_inner(), timeout)

@@ -21,7 +21,7 @@ class ClientClosedError(WizWalkerError):
 
 class HookNotActive(WizWalkerError):
     """
-    Raised when doing something that requires a hook to be active
+    Raised when doing something that requires a hook to be active,
     but it is not
 
     Attributes:
@@ -67,6 +67,12 @@ class PatternFailed(WizWalkerMemoryError):
         super().__init__(
             f"Pattern {pattern} failed. You most likely need to restart the client."
         )
+
+
+class MemoryInvalidated(WizWalkerMemoryError):
+    """
+    Raised when trying to read memory that has deallocated
+    """
 
 
 class MemoryReadError(WizWalkerMemoryError):

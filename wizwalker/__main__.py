@@ -45,12 +45,16 @@ def cli():
     run_cmd()
 
 
+# TODO: 2.0: remove --nowait, make start_instances_with_login not wait if there are no logins
 @main.command()
 @click.option(
     "--instances", default=1, show_default=True, help="Number of instances to start"
 )
 @click.argument("logins", nargs=-1)
-def start_wiz(instances, logins):
+@click.option(
+    "--nowait", is_flag=True, default=False, help="Don't wait for completion of startup process",
+)
+def start_wiz(instances, logins, nowait):
     """
     Start multiple wizard101 instances and optionally login to them
     """
@@ -58,7 +62,7 @@ def start_wiz(instances, logins):
         click.echo("Not enough or too many logins for the number of instances")
         exit(1)
 
-    asyncio.run(utils.start_instances_with_login(instances, logins))
+    asyncio.run(utils.start_instances_with_login(instances, logins, wait_for_ready=not nowait))
 
 
 @main.group()
