@@ -7,8 +7,8 @@ import struct
 import subprocess
 
 # noinspection PyCompatibility
-import winreg
 from collections.abc import Callable, Iterable
+from copy import copy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
@@ -18,6 +18,7 @@ import appdirs
 
 from wizwalker import ExceptionalTimeout
 from wizwalker.constants import Keycode, kernel32, user32, gdi32, type_format_dict
+from .file_location_handler import FileLocationHandler
 
 
 DEFAULT_INSTALL = "C:/ProgramData/KingsIsle Entertainment/Wizard101"
@@ -97,13 +98,17 @@ class XYZ:
 
     def relative_yaw(self, *, x: float = None, y: float = None):
         """Calculate relative yaw to reach another x and/or y relative to current"""
-        if x is None:
-            x = self.x
-        if y is None:
-            y = self.y
+        other = self.copy()
 
-        other = type(self)(x, y, self.z)
+        if x is not None:
+            other.x = x
+        if y is not None:
+            other.y = y
+
         return self.yaw(other)
+
+    def copy(self):
+        return copy(self)
 
 
 @dataclass
@@ -194,53 +199,9 @@ def order_clients(clients):
     return sorted(clients, key=sort_clients)
 
 
-# TODO: fix the actual issue here, passing install defaults to ClientHandler/Client
-#  doubt anyone would be working with two different installs at the same time but
-#  it should be supported anyway
-_OVERRIDE_PATH = None
-
-
-def override_wiz_install_location(path: str):
-    """
-    Override the source_path returned by get_wiz_install
-
-    Args:
-        path: The source_path to override with
-    """
-    # hacking old behavior so I dont have to actually fix the issue
-    global _OVERRIDE_PATH
-    _OVERRIDE_PATH = path
-
-
-def get_wiz_install() -> Path:
-    """
-    Get the game install root dir
-    """
-    if _OVERRIDE_PATH:
-        return Path(_OVERRIDE_PATH).absolute()
-
-    default_install_path = Path(DEFAULT_INSTALL)
-
-    if default_install_path.exists():
-        return default_install_path
-
-    try:
-        with winreg.OpenKey(
-            winreg.HKEY_CURRENT_USER,
-            r"Software\Microsoft\Windows\CurrentVersion\Uninstall\{A9E27FF5-6294-46A8-B8FD-77B1DECA3021}",
-            0,
-            winreg.KEY_ALL_ACCESS,
-        ) as key:
-            install_location = Path(
-                winreg.QueryValueEx(key, "InstallLocation")[0]
-            ).absolute()
-            return install_location
-    except OSError:
-        raise Exception("Wizard101 install not found.")
-
-
 def get_wiz_version() -> str:
-    game_path = get_wiz_install()
+    install_locator = FileLocationHandler()
+    game_path = install_locator.get_game_install_location()
     revision = game_path / "Bin" / "revision.dat"
     return revision.read_text().strip("\n")
 
@@ -249,7 +210,8 @@ def start_instance():
     """
     Starts a wizard101 instance
     """
-    location = get_wiz_install()
+    install_locator = FileLocationHandler()
+    location = install_locator.get_game_install_location()
     subprocess.Popen(
         rf"{location}\Bin\WizardGraphicalClient.exe -L login.us.wizard101.com 12000",
         cwd=rf"{location}\Bin",
@@ -304,7 +266,7 @@ async def start_instances_with_login(instance_number: int, logins: Iterable, wai
     # TODO: have way to properly check if instances are on login screen
     # waiting for instances to start
     if wait_for_ready:
-      await asyncio.sleep(7)
+        await asyncio.sleep(7)
 
     new_handles = set(get_all_wizard_handles()).difference(start_handles)
 
@@ -318,7 +280,8 @@ def patch_open_browser():
     Patches EmbeddedBrowserConfig so that the game doesn't
     open a web browser when closed
     """
-    install_location = get_wiz_install()
+    install_locator = FileLocationHandler()
+    install_location = install_locator.get_game_install_location()
     data = '<Objects><Class Name="class EmbeddedBrowserConfig"></Class></Objects>'
     browser_config = install_location / "bin" / "EmbeddedBrowserConfig.xml"
     browser_config.write_text(data)
@@ -684,6 +647,7 @@ def get_window_handles_by_predicate(predicate: Callable) -> list:
     return handles
 
 
+# TODO: improve this
 async def timed_send_key(window_handle: int, key: Keycode, seconds: float):
     """
     Send a key for a number of seconds

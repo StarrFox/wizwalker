@@ -2,7 +2,8 @@ from typing import Optional
 
 from wizwalker.utils import XYZ
 from wizwalker.memory.memory_object import PropertyClass
-from .client_object import ClientObject
+# circular dependency fix
+from wizwalker.memory import memory_objects
 
 
 class ActorBody(PropertyClass):
@@ -10,13 +11,13 @@ class ActorBody(PropertyClass):
     Base class for ActorBody
     """
     # note: internal
-    async def parent_client_object(self) -> Optional[ClientObject]:
+    async def parent_client_object(self) -> Optional["memory_objects.ClientObject"]:
         addr = await self.read_value_from_offset(72, "unsigned long long")
 
         if addr == 0:
             return None
 
-        return ClientObject(self.memory_reader, addr)
+        return memory_objects.ClientObject(self.memory_reader, addr)
 
     async def position(self) -> XYZ:
         """

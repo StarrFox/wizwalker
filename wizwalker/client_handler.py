@@ -7,6 +7,7 @@ from typing import Optional
 import wizwalker
 from wizwalker import utils
 from .client import Client
+from .file_location_handler import FileLocationHandler
 
 
 class ClientHandler:
@@ -16,6 +17,8 @@ class ClientHandler:
 
     def __init__(self, *, client_cls: type[Client] = Client):
         self.client_cls = client_cls
+
+        self._install_locator = FileLocationHandler()
 
         self._managed_handles = []
         self.clients = []
@@ -31,7 +34,7 @@ class ClientHandler:
         """
         Wizard101 install location
         """
-        return utils.get_wiz_install()
+        return self._install_locator.get_game_install_location()
 
     @staticmethod
     def start_wiz_client():

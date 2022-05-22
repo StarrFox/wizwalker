@@ -1,4 +1,3 @@
-import asyncio
 import struct
 import zlib
 from dataclasses import dataclass
@@ -7,7 +6,9 @@ from typing import Optional
 from mmap import mmap, ACCESS_READ
 from io import BytesIO
 
-from wizwalker.utils import get_wiz_install, run_in_executor
+from wizwalker.utils import run_in_executor
+from wizwalker.file_location_handler import FileLocationHandler
+
 
 _NO_COMPRESS = frozenset(
     (
@@ -49,7 +50,10 @@ class Wad:
         Args:
             name: name of the wad
         """
-        file_path = get_wiz_install() / "Data" / "GameData" / name
+        install_locator = FileLocationHandler()
+        install_path = install_locator.get_game_install_location()
+
+        file_path = install_path / "Data" / "GameData" / name
         return cls(file_path.with_suffix(".wad"))
 
     def __repr__(self):

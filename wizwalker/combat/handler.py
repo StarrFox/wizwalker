@@ -6,7 +6,7 @@ from .member import CombatMember
 from .card import CombatCard
 
 # TODO
-# from ..memory import DuelPhase, EffectTarget, SpellEffects, WindowFlags
+from wizwalker.memory.memory_objects import DuelPhase, EffectTarget, SpellEffects, WindowFlags
 from wizwalker import utils, WizWalkerMemoryError
 
 
@@ -130,7 +130,7 @@ class CombatHandler:
 
         return cards
 
-    async def get_cards_with_name(self, name: str) -> List[CombatCard]:
+    async def get_cards_with_name(self, name: str) -> list[CombatCard]:
         """
         Args:
             name: The name (debug name) of the cards to find
@@ -156,7 +156,7 @@ class CombatHandler:
 
         raise ValueError(f"Couldn't find a card named {name}")
 
-    async def get_cards_with_display_name(self, display_name: str) -> List[CombatCard]:
+    async def get_cards_with_display_name(self, display_name: str) -> list[CombatCard]:
         """
         Args:
             display_name: The display name of the cards to find

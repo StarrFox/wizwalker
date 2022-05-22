@@ -6,6 +6,7 @@ from .constants import *
 from .errors import *
 from .utils import XYZ, Rectangle
 from . import combat, memory, utils
+from .file_location_handler import FileLocationHandler
 from .file_readers import CacheHandler, NifMap, Wad
 from .mouse_handler import MouseHandler
 from .client import Client

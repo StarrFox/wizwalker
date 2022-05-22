@@ -8,6 +8,7 @@ from typing import Optional
 from loguru import logger
 
 from wizwalker import utils
+from wizwalker.file_location_handler import FileLocationHandler
 from .wad import Wad
 from .parsers import parse_template_id_file
 
@@ -16,6 +17,7 @@ class CacheHandler:
     def __init__(self):
         self._wad_cache = None
         self._template_ids = None
+        self._install_locator = FileLocationHandler()
 
     @cached_property
     def _root_wad(self) -> Wad:
@@ -26,7 +28,7 @@ class CacheHandler:
         """
         Wizard101 install location
         """
-        return utils.get_wiz_install()
+        return self._install_locator.get_game_install_location()
 
     @cached_property
     def cache_dir(self) -> Path:

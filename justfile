@@ -18,4 +18,3 @@ publish TYPE: install
   poetry version {{TYPE}}
   poetry build
   poetry publish
-
