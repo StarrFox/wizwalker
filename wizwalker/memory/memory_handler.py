@@ -231,7 +231,7 @@ class MemoryHandler:
         Returns:
             The allocated address
         """
-        return await utils.run_in_executor(self.process.allocate, size)
+        return self.process.allocate(size)
 
     async def free(self, address: int):
         """
@@ -240,7 +240,7 @@ class MemoryHandler:
         Args:
              address: The address to free
         """
-        await utils.run_in_executor(self.process.free, address)
+        self.process.free(address)
 
     # TODO: figure out how params works
     async def start_thread(self, address: int):
@@ -250,7 +250,7 @@ class MemoryHandler:
         Args:
             address: The address to start the thread at
         """
-        await self.run_in_executor(self.process.start_thread, address)
+        await utils.run_in_executor(self.process.start_thread, address)
 
     async def read_bytes(self, address: int, size: int) -> bytes:
         """
@@ -269,7 +269,7 @@ class MemoryHandler:
             raise AddressOutOfRange(address)
 
         try:
-            return await utils.run_in_executor(self.process.read_bytes, address, size)
+            return self.process.read_bytes(address, size)
         except pymem.exception.MemoryReadError:
             # we don't want to run is running for every read
             # so we just check after we error
@@ -287,10 +287,8 @@ class MemoryHandler:
             value: The bytes to write
         """
         size = len(value)
-        logger.debug(f"Writing bytes {value} to address {address} with size {size}")
         try:
-            await utils.run_in_executor(
-                self.process.write_bytes,
+            self.process.write_bytes(
                 address,
                 value,
                 size,

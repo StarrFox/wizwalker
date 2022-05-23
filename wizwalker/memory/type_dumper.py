@@ -143,12 +143,20 @@ class TextTypeDumper(TypeDumper):
 
 
 class JsonTypeDumper(TypeDumper):
+    @staticmethod
+    async def output(output_file, output):
+        def _output():
+            with open(output_file, "w+") as fp:
+                json.dump(output, fp, indent=4)
+
+        await asyncio.to_thread(_output)
+
     async def dump(self, output_file: str | Path, *, indent: int = 4):
         output = {}
         async for formated_class in self.class_loop(self.type_tree):
             output.update(formated_class)
 
-        await self.output(output_file, json.dumps(output, indent=indent))
+        await self.output(output_file, output)
 
     async def format_enum_option(self, name: str, value: int):
         return {name: value}
