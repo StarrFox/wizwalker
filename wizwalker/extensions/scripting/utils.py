@@ -33,8 +33,23 @@ async def paint_window_for(window, time: float = 2):
     paint_task.cancel()
 
 
-async def _maybe_get_named_window(parent, name: str):
-    possible = await parent.get_windows_with_name(name)
+async def _maybe_get_named_window(parent, name: str, retries: int = 4):
+    async def _try_do(callback, *args, **kwargs):
+        while True:
+            res = await callback(*args, **kwargs)
+
+            if not res:
+                nonlocal retries
+                if retries <= 0:
+                    return res
+
+                retries -= 1
+                await asyncio.sleep(0.4)
+
+            else:
+                return res
+
+    possible = await _try_do(parent.get_windows_with_name, name)
 
     if not possible:
         raise ValueError(f"No child window named {name}")
@@ -168,15 +183,23 @@ async def teleport_to_friend_from_list(
     if all(i is None for i in (icon_list, icon_index, name)):
         raise ValueError("Must specify icon_list and icon_index or name or all")
 
-    friends_window = await _maybe_get_named_window(
-        client.root_window, "NewFriendsListWindow"
-    )
-
-    # open friend's list if closed
-    if not await friends_window.is_visible():
+    try:
+        friends_window = await _maybe_get_named_window(
+            client.root_window, "NewFriendsListWindow"
+        )
+    except ValueError:
+        # friend's list isn't open so open it
         friend_button = await _maybe_get_named_window(client.root_window, "btnFriends")
-
         await client.mouse_handler.click_window(friend_button)
+
+        friends_window = await _maybe_get_named_window(
+            client.root_window, "NewFriendsListWindow"
+        )
+    else:
+        if not await friends_window.is_visible():
+            # friend's list isn't open so open it
+            friend_button = await _maybe_get_named_window(client.root_window, "btnFriends")
+            await client.mouse_handler.click_window(friend_button)
 
     await _cycle_to_online_friends(client, friends_window)
 
