@@ -643,6 +643,7 @@ class HookHandler(MemoryReader):
 
         del self._base_addrs["mouse_position"]
 
+    # TODO: 2.0 switch this to a helper object like movement teleport and quest
     async def write_mouse_position(self, x: int, y: int):
         """
         Write mouse position to memory
