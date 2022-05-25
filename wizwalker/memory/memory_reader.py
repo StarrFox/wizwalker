@@ -9,7 +9,6 @@ import pymem
 import pymem.exception
 import pymem.process
 import pymem.ressources.structure
-from loguru import logger
 
 from wizwalker import (
     AddressOutOfRange,

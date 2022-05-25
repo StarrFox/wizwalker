@@ -364,6 +364,35 @@ class MemoryObject(MemoryReader):
 
         return addrs
 
+    async def _get_std_map_children(self, node, mapped_type, mapped_return):
+        # some keys may be smaller but the entire 8 bytes seemed to always be reserved
+        key = await self.read_typed(node + 0x20, "unsigned long long")
+        mapped_data = await self.read_typed(node + 0x28, "unsigned long long")
+
+        mapped_return[key] = mapped_type(self.hook_handler, mapped_data)
+
+        is_leaf = await self.read_typed(node + 0x19, "bool")
+        if not is_leaf:
+            if left_node := await self.read_typed(node, "unsigned long long"):
+                await self._get_std_map_children(left_node, mapped_return)
+
+            if right_node := await self.read_typed(node + 0x10, "unsigned long long"):
+                await self._get_std_map_children(right_node, mapped_return)
+
+    # TODO: 2.0 replace this with complex memory read type
+    #  class StdMap(MemoryComplex):
+    #      # impl method to read here
+    #      ...
+    #  read_complex_from_offset(0x80, StdMap)
+    async def read_std_map(self, offset: int, mapped_type: Type["MemoryObject"]) -> dict:
+        mapped_return = {}
+
+        root = await self.read_value_from_offset(offset, "unsigned long long")
+        first_node = await self.read_typed(root + 0x8, "unsigned long long")
+
+        await self._get_std_map_children(first_node, mapped_type, mapped_return)
+        return mapped_return
+
 
 class DynamicMemoryObject(MemoryObject):
     def __init__(self, hook_handler: HookHandler, base_address: int):
