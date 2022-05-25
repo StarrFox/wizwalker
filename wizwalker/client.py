@@ -437,9 +437,9 @@ class Client:
             yaw: float = None,
             *,
             move_after: bool = False,
-            wait_on_inuse: bool = False,
+            wait_on_inuse: bool = True,
             wait_on_inuse_timeout: float = 1.0,
-            purge_on_after_unuser_fixer: bool = False,
+            purge_on_after_unuser_fixer: bool = True,
             purge_on_after_unuser_fixer_timeout: float = 0.6,
     ):
         """
@@ -482,9 +482,9 @@ class Client:
             yaw: float = None,
             *,
             move_after: bool = True,
-            wait_on_inuse: bool = False,
+            wait_on_inuse: bool = True,
             wait_on_inuse_timeout: float = 1.0,
-            purge_on_after_unuser_fixer: bool = False,
+            purge_on_after_unuser_fixer: bool = True,
             purge_on_after_unuser_fixer_timeout: float = 0.6,
     ):
         """
@@ -523,9 +523,9 @@ class Client:
             self,
             object_address: int,
             xyz: XYZ,
-            wait_on_inuse: bool = False,
+            wait_on_inuse: bool = True,
             wait_on_inuse_timeout: float = 1.0,
-            purge_on_after_unuser_fixer: bool = False,
+            purge_on_after_unuser_fixer: bool = True,
             purge_on_after_unuser_fixer_timeout: float = 0.6,
     ):
         if not self.hook_handler._check_if_hook_active(MovementTeleportHook):
