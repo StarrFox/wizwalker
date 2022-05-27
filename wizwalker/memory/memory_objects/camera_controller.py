@@ -91,10 +91,10 @@ class ElasticCameraController(CameraController):
         await self.write_value_to_offset(328, max_distance, "float")
 
     async def min_distance(self) -> float:
-        return await self.read_value_from_offset(322, "float")
+        return await self.read_value_from_offset(332, "float")
 
     async def write_min_distance(self, min_distance: float):
-        await self.write_value_to_offset(322, min_distance, "float")
+        await self.write_value_to_offset(332, min_distance, "float")
 
 
 class DynamicCameraController(DynamicMemoryObject, CameraController):
