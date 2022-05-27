@@ -513,12 +513,12 @@ class MemoryHandler:
         packed_bytes = struct.pack("<" + type_str * size, *value)
         await self.write_bytes(address, packed_bytes)
 
-    async def read_xyz(self, offset: int) -> XYZ:
-        x, y, z = await self.read_vector(offset)
+    async def read_xyz(self, address: int) -> XYZ:
+        x, y, z = await self.read_vector(address)
         return XYZ(x, y, z)
 
-    async def write_xyz(self, offset: int, xyz: XYZ):
-        await self.write_vector(offset, (xyz.x, xyz.y, xyz.z))
+    async def write_xyz(self, address: int, xyz: XYZ):
+        await self.write_vector(address, (xyz.x, xyz.y, xyz.z))
 
     async def read_enum(self, address, enum: Type[Enum]):
         value = await self.read_typed(address, "int")

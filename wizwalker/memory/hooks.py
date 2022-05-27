@@ -2,23 +2,13 @@ import asyncio
 import ctypes
 import ctypes.wintypes
 import struct
-import regex
 from typing import Any, Tuple
 from contextlib import suppress
-import warnings
 
 from loguru import logger
 
 from .memory_handler import MemoryHandler
-
-
-# TODO: 2.0 delete (useless)
-def pack_to_int_or_longlong(num: int) -> bytes:
-    warnings.warn(DeprecationWarning("Will be removed in the next major release"))
-    try:
-        return struct.pack("<i", num)
-    except struct.error:
-        return struct.pack("<q", num)
+from wizwalker.constants import kernel32
 
 
 class MemoryHook(MemoryHandler):

@@ -124,6 +124,14 @@ optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 
 [[package]]
+name = "iced-x86"
+version = "1.17.0"
+description = "iced-x86 is a blazing fast and correct x86/x64 disassembler, assembler and instruction decoder"
+category = "main"
+optional = false
+python-versions = "~=3.7"
+
+[[package]]
 name = "idna"
 version = "3.3"
 description = "Internationalized Domain Names in Applications (IDNA)"
@@ -447,7 +455,7 @@ dev = ["pytest (>=4.6.2)", "black (>=19.3b0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "026ccaa23f69fec116b378991f79ee2d7fc1ccce0fc33ac8b9907ce7d4dff823"
+content-hash = "490fa5b56dcf56318b534c1b389743e558bb2f1033883d98d18dc21fdb70a893"
 
 [metadata.files]
 alabaster = [
@@ -495,6 +503,18 @@ docutils = [
 ]
 future = [
     {file = "future-0.18.2.tar.gz", hash = "sha256:b1bead90b70cf6ec3f0710ae53a525360fa360d306a86583adc6bf83a4db537d"},
+]
+iced-x86 = [
+    {file = "iced-x86-1.17.0.tar.gz", hash = "sha256:a18d5649aafadd72f2c3c0ad7a82fd49018e8061951df97cb9be04fad5f633d9"},
+    {file = "iced_x86-1.17.0-cp37-abi3-macosx_10_12_x86_64.whl", hash = "sha256:5c2d98794f634a6e7552127c4a497fe272b719fe796d2c5332ba8a4b88946886"},
+    {file = "iced_x86-1.17.0-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c46cd850ce144b5f9fca7072a2e9a754268e5d15e2377bafa4b95a6fc8a142dc"},
+    {file = "iced_x86-1.17.0-cp37-abi3-manylinux_2_5_i686.manylinux1_i686.manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:0782d7531c67cbaab53acf9db294c00bc058ed4beea32667d28d95994abc5b28"},
+    {file = "iced_x86-1.17.0-cp37-abi3-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:0b4e98ab870495ab5951049fc960ed905b93ce79045efe299522dfb163270146"},
+    {file = "iced_x86-1.17.0-cp37-abi3-musllinux_1_1_x86_64.whl", hash = "sha256:dc96b7b24a7e26ec551de933ca1f396c588fd0e79ccea5a40e3dd563986c1587"},
+    {file = "iced_x86-1.17.0-cp37-abi3-win32.whl", hash = "sha256:099b243660d30abef5f8a5f0614b99b8a2689a4ad86f9b77fd8253727e480cb2"},
+    {file = "iced_x86-1.17.0-cp37-abi3-win_amd64.whl", hash = "sha256:5f3730425345ecdf135ced0559650edd984bc1f2b358a0edf6131beefd27a5cb"},
+    {file = "iced_x86-1.17.0-pp38-pypy38_pp73-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:c1d43be86fc18090bb2924ce5f0d12658cd93bef92e38c0572ec61d5cefc5e2b"},
+    {file = "iced_x86-1.17.0-pp38-pypy38_pp73-win_amd64.whl", hash = "sha256:2a43e05f8b8cb121833982dd2e4c69937c252a8f8db016de4939bbed9c379dc1"},
 ]
 idna = [
     {file = "idna-3.3-py3-none-any.whl", hash = "sha256:84d9dd047ffa80596e0f246e2eab0b391788b0503584e8945f2368256d2735ff"},

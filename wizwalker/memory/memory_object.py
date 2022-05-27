@@ -4,6 +4,7 @@ from typing import Any, Type
 
 from wizwalker.errors import MemoryReadError
 from .memory_handler import MemoryHandler
+from .. import XYZ
 
 
 class MemoryObject(MemoryHandler):
@@ -136,6 +137,14 @@ class MemoryObject(MemoryHandler):
     ):
         base_address = await self.read_base_address()
         await self.write_vector(base_address + offset, value, size, data_type)
+
+    async def read_xyz_from_offset(self, offset: int) -> XYZ:
+        base_address = await self.read_base_address()
+        return await self.read_xyz(base_address + offset)
+
+    async def write_xyz_to_offset(self, offset: int, xyz: XYZ):
+        base_address = await self.read_base_address()
+        await self.write_xyz(base_address + offset, xyz)
 
     async def read_enum_from_offset(self, offset, enum: Type[Enum]):
         address = await self.read_base_address()

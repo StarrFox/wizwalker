@@ -13,6 +13,7 @@ from .wad import Wad
 from .parsers import parse_template_id_file
 
 
+# TODO: completely redesign this (remove caching of stuff that doesn't need it)
 class CacheHandler:
     def __init__(self):
         self._wad_cache = None
