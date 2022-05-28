@@ -7,10 +7,11 @@ from iced_x86 import (
     Decoder,
 )
 
+import wizwalker
 from wizwalker import XYZ
 from wizwalker.memory.memory_object import MemoryObject
 from wizwalker.utils import maybe_wait_for_value_with_timeout
-from wizwalker.memory.memory_objects import Duel, DuelPhase
+from wizwalker.memory.memory_objects import Duel, DuelPhase, ClientObject
 
 # size of
 # push rax
@@ -35,6 +36,25 @@ def _debug_print_disasm(machine_code: bytes, rip: int, name: str = None):
 
     for instr in decoder:
         print(f"{instr.ip:016X} {instr}")
+
+
+class HookVariable(MemoryObject):
+    def __init__(self, memory_reader: "wizwalker.memory.MemoryHandler", size: int = 8):
+        super().__init__(memory_reader)
+        self.size = size
+
+        self._variable_address = None
+
+    def __del__(self):
+        if self._variable_address:
+            self.process.free(self._variable_address)
+
+    async def read_base_address(self) -> int:
+        if self._variable_address:
+            return self._variable_address
+
+        self._variable_address = await self.allocate(self.size)
+        return self._variable_address
 
 
 class HookedMemoryObject(MemoryObject):
@@ -201,47 +221,6 @@ class HookedMemoryObject(MemoryObject):
         raise NotImplementedError()
 
 
-# TODO: decide if should be removed
-# class HookedActorBody(HookedMemoryObject):
-#     HOOK_PATTERN = rb"\xF2\x0F\x10\x40\x58\xF2"
-#     HOOK_MODULE = "WizardGraphicalClient.exe"
-#
-#     async def hook_get_machine_code(self, hook_address: int, original_instructions: list[Instruction]) -> bytes:
-#         actor_body = await self.hook_get_named_variable("actor body")
-#
-#         not_player_label = 1
-#
-#         instructions = [
-#             Instruction.create_reg(Code.PUSH_R64, Register.RCX),
-#             Instruction.create_reg_mem(
-#                 Code.MOV_R64_RM64,
-#                 Register.RCX,
-#                 MemoryOperand(Register.RAX, displ=0x474)
-#             ),
-#             Instruction.create_reg_u32(Code.CMP_RM32_IMM8, Register.ECX, 8),
-#             Instruction.create_reg(Code.POP_R64, Register.RCX),
-#             Instruction.create_branch(Code.JNE_REL8_16, not_player_label),
-#             # this is because our hook code pushes rax onto the stack and uses it to jump
-#             Instruction.create_reg(Code.POP_R64, Register.RAX),
-#             Instruction.create_mem_reg(
-#                 Code.MOV_MOFFS64_RAX,
-#                 MemoryOperand.ctor_u64(displ=actor_body, displ_size=8),
-#                 Register.RAX,
-#             ),
-#             Instruction.create_reg(Code.PUSH_R64, Register.RAX)
-#         ]
-#
-#         # this makes that branch jump here
-#         original_instructions[0].ip = not_player_label
-#
-#         instructions += original_instructions
-#
-#         encoder = BlockEncoder(64)
-#         encoder.add_many(instructions)
-#
-#         return encoder.encode(hook_address)
-
-
 class HookedQuestHelperPosition(HookedMemoryObject):
     HOOK_PATTERN = rb".........\xF3\x0F\x11\x45\xE0.........\xF3\x0F\x11\x4D\xE4.........\xF3\x0F\x11\x45\xE8\x48"
     HOOK_MODULE = "WizardGraphicalClient.exe"
@@ -283,43 +262,7 @@ class HookedQuestHelperPosition(HookedMemoryObject):
         return await self.read_xyz_from_offset(0)
 
 
-"""
 # NOTE: CombatPlanningPhaseWindow::handle
-class DuelHook(SimpleHook):
-    pattern = (
-        rb"\x44\x0F\xB6\xE0\x88\x44\x24\x60\xE8....\x44\x8D\x6B\x0F"
-        rb"\x44\x8D\x73\x10\x4C\x8D.....\x83\xF8\x64\x7E\x0A\xE8....\xE9"
-    )
-    exports = [("current_duel_addr", 8), ("current_duel_phase", 4)]
-    instruction_length = 8
-    noops = 3
-
-    async def bytecode_generator(self, packed_exports):
-        # fmt: off
-        bytecode = (
-                # if al == 1 rcx is ClientDuel
-                b"\x84\xc0"  # test al,al
-                b"\x74\x20"  # je 32 (to original code)
-                b"\x50"  # push rax
-                b"\x48\x89\xc8"  # mov rax,rcx
-                b"\x48\xA3" + packed_exports[0][1] +  # movabs [current_duel_addr],rax
-                b"\x48\x8B\x80\xC0\x00\x00\x00"  # mov rax,[rax+C0]
-                b"\x48\xA3" + packed_exports[1][1] +  # movabs [current_duel_phase],rax
-                b"\x58"  # pop rax
-                # original code
-                b"\x44\x0F\xB6\xE0"  # movzx r12d,al
-                b"\x88\x44\x24\x60"  # mov [rsp+60],al
-        )
-        # fmt: on
-
-        return bytecode
-
-    async def posthook(self):
-        # init duel phase with 7 so in_combat returns False
-        await self.write_typed(self.current_duel_phase, 7, "unsigned int")
-"""
-
-
 class HookedDuel(HookedMemoryObject, Duel):
     HOOK_PATTERN = rb"\x41\x8B\xD5\x0F\x57\xC0\x0F\x11\x45\x94\x45\x8B\xC6\x33\xC9"
     HOOK_MODULE = "WizardGraphicalClient.exe"
@@ -386,6 +329,39 @@ class HookedDuel(HookedMemoryObject, Duel):
         await self.write_enum(client_duel_phase, duel_phase)
 
 
+class HookedClientObject(HookedMemoryObject, ClientObject):
+    HOOK_PATTERN = rb"\x48\x8B\x18\x48\x8B\x9B\xB8\x01\x00\x00\x48\x8B\x7C\x24\x40\x48\x85\xFF\x74\x29"
+    HOOK_MODULE = "WizardGraphicalClient.exe"
+
+    async def hook_get_machine_code(
+            self,
+            hook_address: int,
+            original_instructions: list[Instruction]
+    ) -> bytes:
+        client_object = await self.hook_get_named_variable("client object")
+
+        instructions = [
+            Instruction.create_reg(Code.PUSH_R64, Register.RAX),
+            Instruction.create_reg_reg(Code.CMOVE_R64_RM64, Register.RAX, Register.RDI),
+            Instruction.create_mem_reg(
+                Code.MOV_MOFFS64_RAX,
+                MemoryOperand(displ=client_object, displ_size=8),
+                Register.RAX,
+            ),
+            Instruction.create_reg(Code.POP_R64, Register.RAX),
+        ]
+
+        instructions += original_instructions
+
+        encoder = BlockEncoder(64)
+        encoder.add_many(instructions)
+
+        return encoder.encode(hook_address)
+
+    async def read_base_address(self) -> int:
+        return await self._hook_read_named_variable("client object")
+
+
 if __name__ == "__main__":
     import asyncio
 
@@ -397,13 +373,12 @@ if __name__ == "__main__":
             async with ClientHandler() as ch:
                 client = ch.get_new_clients()[0]
 
-                tested_hook = HookedDuel(client.hook_handler)
+                tested_hook = HookedClientObject(client.hook_handler)
                 await tested_hook.hook_activate()
                 await tested_hook.hook_wait_for_ready(None)
 
                 for _ in range(50):
-                    print(await tested_hook.round_num())
-                    print(await tested_hook.duel_phase())
+                    print(await tested_hook.location())
                     await asyncio.sleep(0.1)
 
                 # input("pause")
