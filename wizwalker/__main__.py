@@ -96,7 +96,9 @@ def text(file_path):
                 return
 
             client = clients[0]
+            click.echo("Loading type tree from open client")
             type_tree = await get_type_tree(client)
+            click.echo(f'Writing types to file: "{file_path}"')
             dumper = TextTypeDumper(type_tree)
             await dumper.dump(file_path)
 
