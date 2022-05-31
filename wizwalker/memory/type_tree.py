@@ -147,9 +147,13 @@ class PropertyList(MemoryObject):
 
         return res
 
-    # TODO
-    async def functions(self):
-        pass
+    async def functions(self) -> list["Function"]:
+        res = []
+
+        for addr in await self.read_shared_vector_from_offset(0x70):
+            res.append(Function(self.memory_reader, addr))
+
+        return res
 
     async def name(self) -> str:
         return await self.read_string_from_offset(0xB8, sso_size=10)
@@ -231,6 +235,37 @@ class Property(MemoryObject):
             current += 0x48
 
         return enum_opts
+
+
+class Function(MemoryObject):
+    async def list(self) -> Optional["PropertyList"]:
+        addr = await self.read_value_from_offset(0x30, "long long")
+
+        if not addr:
+            return None
+
+        return PropertyList(self.memory_reader, addr)
+
+    async def name(self) -> str:
+        return await self.read_string_from_offset(0x38)
+
+    async def details(self) -> Optional["FunctionDetails"]:
+        addr = await self.read_value_from_offset(0x58, "long long")
+
+        if not addr:
+            return None
+
+        return FunctionDetails(self.memory_reader, addr)
+
+
+class FunctionDetails(MemoryObject):
+    # this is the actual function Function refers to
+    async def called_function(self) -> int:
+        return await self.read_value_from_offset(0x30, "unsigned long long")
+
+    # not sure what this is but it seems important
+    async def something(self) -> int:
+        return await self.read_value_from_offset(0x3C, "unsigned int")
 
 
 class Container(MemoryObject):
