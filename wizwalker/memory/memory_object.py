@@ -170,6 +170,10 @@ class MemoryObject(MemoryHandler):
         address = await self.read_base_address()
         return await self.read_shared_linked_list(address + offset)
 
+    async def read_shared_linked_list_from_offset(self, offset: int) -> list[int]:
+        address = await self.read_base_address()
+        return await self.read_shared_linked_list(address + offset)
+
     async def read_linked_list_from_offset(self, offset: int) -> list[int]:
         address = await self.read_base_address()
         return await self.read_linked_list(address + offset)

@@ -43,13 +43,15 @@ class CombatCard:
                 self._spell_window
             )
 
-            await asyncio.sleep(sleep_time)
+            if sleep_time is not None:
+                await asyncio.sleep(sleep_time)
 
             await self.combat_handler.client.mouse_handler.set_mouse_position_to_window(
                 target._spell_window
             )
 
-            await asyncio.sleep(sleep_time)
+            if sleep_time is not None:
+                await asyncio.sleep(sleep_time)
 
             if debug_paint:
                 await target._spell_window.debug_paint()

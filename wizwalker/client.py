@@ -207,13 +207,9 @@ class Client:
             List of the matching entities
         """
         async def predicate(entity):
-            try:
-                mob_display_name = await maybe_wait_for_any_value_with_timeout(
-                    entity.display_name,
-                    0.1,
-                    timeout=1
-                )
-            except ExceptionalTimeout:
+            mob_display_name = await entity.display_name()
+
+            if mob_display_name is None:
                 return False
 
             return display_name.lower() in mob_display_name.lower()
@@ -437,9 +433,9 @@ class Client:
             yaw: float = None,
             *,
             move_after: bool = False,
-            wait_on_inuse: bool = False,
+            wait_on_inuse: bool = True,
             wait_on_inuse_timeout: float = 1.0,
-            purge_on_after_unuser_fixer: bool = False,
+            purge_on_after_unuser_fixer: bool = True,
             purge_on_after_unuser_fixer_timeout: float = 0.6,
     ):
         """
@@ -482,9 +478,9 @@ class Client:
             yaw: float = None,
             *,
             move_after: bool = True,
-            wait_on_inuse: bool = False,
+            wait_on_inuse: bool = True,
             wait_on_inuse_timeout: float = 1.0,
-            purge_on_after_unuser_fixer: bool = False,
+            purge_on_after_unuser_fixer: bool = True,
             purge_on_after_unuser_fixer_timeout: float = 0.6,
     ):
         """
@@ -523,9 +519,9 @@ class Client:
             self,
             object_address: int,
             xyz: XYZ,
-            wait_on_inuse: bool = False,
+            wait_on_inuse: bool = True,
             wait_on_inuse_timeout: float = 1.0,
-            purge_on_after_unuser_fixer: bool = False,
+            purge_on_after_unuser_fixer: bool = True,
             purge_on_after_unuser_fixer_timeout: float = 0.6,
     ):
         if not self.hook_handler._check_if_hook_active(MovementTeleportHook):
