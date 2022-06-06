@@ -1,7 +1,6 @@
 import asyncio
 import ctypes
 import ctypes.wintypes
-import struct
 
 import wizwalker
 from wizwalker import user32
@@ -15,8 +14,6 @@ class MouseHandler:
     def __init__(self, client: "wizwalker.Client"):
         self.client = client
         self.click_lock = None
-
-        self._click_window_shell_code_address = None
 
     async def activate_mouseless(self):
         """
@@ -55,13 +52,10 @@ class MouseHandler:
         Args:
             window: The window to click
         """
-        await self._call_click_window_shell_code_with_window(window)
+        scaled_rect = await window.scale_to_client()
+        center = scaled_rect.center()
 
-        if kwargs:
-            scaled_rect = await window.scale_to_client()
-            center = scaled_rect.center()
-
-            await self.click(*center, **kwargs)
+        await self.click(*center, **kwargs)
 
     async def click_window_with_name(self, name: str, **kwargs):
         """
@@ -83,95 +77,6 @@ class MouseHandler:
             raise ValueError(f"Multiple windows with name {name}.")
 
         await self.click_window(possible_window[0], **kwargs)
-
-    async def _call_click_window_shell_code_with_window(self, window: "wizwalker.memory.window.DynamicWindow"):
-        window_addr = await window.read_base_address()
-
-        shell_code = await self._get_click_window_shell_code_address()
-        self.client.hook_handler.process.start_thread(shell_code, window_addr)
-
-    async def _get_click_window_shell_code_address(self) -> int:
-        """
-        push rcx
-        push rdx
-        push r8
-
-        xor eax,eax
-        xor ebx,ebx
-        xor r15,r15
-        xor r13,r13
-        xor r12,r12
-        xor r11,r11
-        xor r10,r10
-        xor r9,r9
-        xor ebp,ebp
-        xor edi,edi
-
-        mov r8,zeroed_pos
-        mov rdx,zeroed_arg2
-
-        mov rax,window.click address
-        call rax
-
-        pop r8
-        pop rdx
-        pop rcx
-
-        ret (for thread handling)
-        """
-        if self._click_window_shell_code_address:
-            return self._click_window_shell_code_address
-
-        zeroed_pos = await self.client.hook_handler.allocate(8)
-        # zeroed_pos = 0x0000019D79254080
-        # writes 0 to position (just to be sure)
-        # await self.client.hook_handler.write_typed(zeroed_pos, 0, "long long")
-        await self.client.hook_handler.write_typed(zeroed_pos, 10, "int")
-        await self.client.hook_handler.write_typed(zeroed_pos + 4, 10, "int")
-        # await self.client.hook_handler.write_typed(zeroed_pos, 0x0000019D79250CC0, "unsigned long long")
-
-        # not sure what this argument is, it seems to always be 0 though
-        zeroed_second_arg = await self.client.hook_handler.allocate(8)
-        await self.client.hook_handler.write_typed(zeroed_second_arg, 0, "long long")
-
-        packed_zeroed_pos = struct.pack("<Q", zeroed_pos)
-        packed_zeroed_second_arg = struct.pack("<Q", zeroed_second_arg)
-
-        window_click = await self.client.hook_handler.pattern_scan(
-            rb"\x40\x53\x48\x83\xEC\x20\x48\x8B\x01\x48\x8B"
-            rb"\xD9\x81\xA1\x9C\x00\x00\x00\xFF\xFF\xDF\xFF"
-            rb"\xC6\x81\x61\x02\x00\x00\x00\xFF\x90\xB8\x01"
-            rb"\x00\x00\x48\x8B\xCB\xE8",
-            module="WizardGraphicalClient.exe"
-        )
-
-        packed_window_click = struct.pack("<Q", window_click)
-
-        machine_code = (
-                b"\x51\x52\x41\x50"
-
-                b"\x31\xC0\x31\xDB\x4D\x31\xFF\x4D\x31"  # xor blob
-                b"\xED\x4D\x31\xE4\x4D\x31\xDB\x4D\x31"
-                b"\xD2\x4D\x31\xC9\x31\xED\x31\xFF"
-
-                b"\x49\xB8" + packed_zeroed_pos +
-                b"\x48\xBA" + packed_zeroed_second_arg +
-                b"\x48\xB8" + packed_window_click +
-                b"\xFF\xD0"  # call rax
-
-                b"\x41\x58\x5A\x59"
-
-                b"\xC3"  # ret
-        )
-
-        self._click_window_shell_code_address = await self.client.hook_handler.allocate(len(machine_code) + 10)
-
-        await self.client.hook_handler.write_bytes(
-            self._click_window_shell_code_address,
-            machine_code,
-        )
-
-        return self._click_window_shell_code_address
 
     # TODO: add errors (HookNotActive)
     async def click(
