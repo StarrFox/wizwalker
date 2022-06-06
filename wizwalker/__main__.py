@@ -11,7 +11,7 @@ from loguru import logger
 from wizwalker import Wad, WizWalker, utils, ClientHandler
 from wizwalker.cli import start_console
 from wizwalker.cli.type_dumper import dump_class_to_string, dump_class_to_json
-from wizwalker.memory.type_tree import get_hash_map
+from wizwalker.memory.type_tree import get_type_tree
 
 
 logger.enable("wizwalker")
@@ -97,7 +97,7 @@ def text(file_path):
 
             client = clients[0]
 
-            hash_map = await get_hash_map(client)
+            hash_map = await get_type_tree(client)
 
             out = file_path.open("w+")
 
@@ -138,7 +138,7 @@ def json_(file_path, indent):
 
             client = clients[0]
 
-            hash_map = await get_hash_map(client)
+            hash_map = await get_type_tree(client)
 
             res = {}
 

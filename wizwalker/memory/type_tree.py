@@ -304,7 +304,7 @@ async def get_hash_nodes(client: "wizwalker.Client") -> set[HashNode]:
     return await _read_all_nodes(client, root_node)
 
 
-async def get_hash_map(client: "wizwalker.Client") -> dict[str, HashNode]:
+async def get_type_tree(client: "wizwalker.Client") -> dict[str, HashNode]:
     nodes = await get_hash_nodes(client)
 
     hash_map = {}
