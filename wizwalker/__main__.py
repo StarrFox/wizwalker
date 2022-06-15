@@ -57,9 +57,13 @@ def start_wiz(instances, logins, nowait):
     """
     Start multiple wizard101 instances and optionally login to them
     """
-    if instances != len(logins) and instances != 1:
+    num_logins = len(logins)
+    if instances != num_logins and instances != 1:
         click.echo("Not enough or too many logins for the number of instances")
         exit(1)
+
+    if num_logins > instances:
+        instances = num_logins
 
     asyncio.run(utils.start_instances_with_login(instances, logins, wait_for_ready=not nowait))
 
